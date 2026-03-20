@@ -126,7 +126,8 @@ mod_report_server <- function(id, rv, config) {
             cruise_info = rv$cruise_info,
             classifier_name = rv$classifier_name,
             use_llm = use_llm,
-            annotator = config$annotator
+            annotator = config$annotator,
+            image_counts = rv$image_counts
           )
 
           report_path(out_file)

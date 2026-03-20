@@ -26,6 +26,7 @@ server <- function(input, output, session) {
       stringsAsFactors = FALSE
     ),
     ferrybox_chl = NULL,
+    image_counts = NULL,
     cruise_info = "",
     classifier_name = NULL,
     data_loaded = FALSE
@@ -53,6 +54,11 @@ server <- function(input, output, session) {
   })
 
   # Maps
+  output$image_count_map <- renderPlot({
+    req(rv$image_counts, nrow(rv$image_counts) > 0)
+    create_image_count_map(rv$image_counts)
+  })
+
   output$biomass_map <- renderPlot({
     id <- showNotification("Generating maps...", type = "message",
                            duration = NULL, closeButton = FALSE)

@@ -49,6 +49,53 @@ filter_metadata <- function(metadata, cruise = NULL, date_from = NULL, date_to =
   metadata
 }
 
+#' Fetch image count metadata from the IFCB Dashboard
+#'
+#' Retrieves per-sample metadata including image counts and coordinates
+#' from the dashboard's export_metadata API endpoint. This is a lightweight
+#' call that does not download any raw data files.
+#'
+#' @param dashboard_url Dashboard base URL (e.g. "https://ifcb.example.com").
+#' @param dataset_name Dataset name (e.g. "RV_Svea").
+#' @param start_date Start date (Date or character yyyy-mm-dd).
+#' @param end_date End date (Date or character yyyy-mm-dd).
+#' @return A data.frame with columns: pid, sample_time, latitude, longitude,
+#'   n_images, ml_analyzed. Returns empty data.frame on failure.
+#' @export
+fetch_image_counts <- function(dashboard_url, dataset_name,
+                               start_date, end_date) {
+  url <- paste0(
+    sub("/$", "", dashboard_url),
+    "/api/export_metadata/", dataset_name,
+    "?start_date=", as.character(start_date),
+    "&end_date=", as.character(end_date)
+  )
+
+  tryCatch({
+    resp <- httr2::request(url) |>
+      httr2::req_timeout(30) |>
+      httr2::req_perform()
+
+    raw_text <- httr2::resp_body_string(resp)
+    df <- utils::read.csv(textConnection(raw_text), stringsAsFactors = FALSE)
+
+    # Keep only rows with valid coordinates
+    df <- df[!is.na(df$latitude) & !is.na(df$longitude) &
+               df$latitude != 0 & df$longitude != 0, ]
+
+    df[, c("pid", "sample_time", "latitude", "longitude",
+           "n_images", "ml_analyzed")]
+  }, error = function(e) {
+    warning("Failed to fetch image counts: ", e$message, call. = FALSE)
+    data.frame(
+      pid = character(0), sample_time = character(0),
+      latitude = numeric(0), longitude = numeric(0),
+      n_images = integer(0), ml_analyzed = numeric(0),
+      stringsAsFactors = FALSE
+    )
+  })
+}
+
 #' Download raw IFCB files for selected bins
 #'
 #' Downloads .roi, .adc, and .hdr files to local storage. Skips files that

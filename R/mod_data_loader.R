@@ -307,8 +307,16 @@ mod_data_loader_server <- function(id, config, rv) {
           # Build descriptive cruise info from sample dates
           rv$cruise_info <- build_cruise_info(matched$sample_time)
 
-          # Step 4: Ferrybox data
-          shiny::incProgress(0.1, detail = "Collecting ferrybox data...")
+          # Step 4a: Fetch cruise-wide image counts
+          shiny::incProgress(0.05, detail = "Fetching image counts...")
+          sample_dates <- as.Date(matched$sample_time)
+          rv$image_counts <- fetch_image_counts(
+            config$dashboard_url, config$dashboard_dataset,
+            min(sample_dates), max(sample_dates)
+          )
+
+          # Step 4b: Ferrybox data
+          shiny::incProgress(0.05, detail = "Collecting ferrybox data...")
           fb_result <- merge_ferrybox_data(config, matched,
                                            proc$station_summary)
           rv$station_summary <- fb_result$station_summary

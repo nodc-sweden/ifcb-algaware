@@ -14,7 +14,9 @@ generate_report(
   taxa_lookup = NULL,
   cruise_info = "",
   classifier_name = NULL,
-  use_llm = FALSE
+  use_llm = FALSE,
+  annotator = "",
+  image_counts = NULL
 )
 }
 \arguments{
@@ -39,6 +41,12 @@ name used for automated classification.}
 
 \item{use_llm}{Logical; if TRUE and OPENAI_API_KEY is set, generate
 report text using an LLM. Default FALSE uses placeholder text.}
+
+\item{annotator}{Character string with the analyst name for the
+introduction statement.}
+
+\item{image_counts}{Optional data frame from \code{fetch_image_counts()}
+with cruise-wide image counts and coordinates for the track map.}
 }
 \value{
 Invisible path to the created document.

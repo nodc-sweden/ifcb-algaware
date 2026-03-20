@@ -89,6 +89,41 @@ create_biomass_maps <- function(station_summary) {
   list(biomass_map = biomass_map, chl_map = chl_map)
 }
 
+#' Create an image count map from cruise metadata
+#'
+#' Plots per-sample image counts along the cruise track, showing spatial
+#' distribution of cell abundance as measured by the IFCB.
+#'
+#' @param image_counts Data frame from \code{fetch_image_counts()} with
+#'   columns: latitude, longitude, n_images.
+#' @return A ggplot object.
+#' @export
+create_image_count_map <- function(image_counts) {
+  world <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf")
+
+  ggplot2::ggplot() +
+    ggplot2::geom_sf(data = world, fill = "gray95", color = "gray70") +
+    ggplot2::coord_sf(xlim = c(10, 22), ylim = c(54, 60), expand = FALSE) +
+    ggplot2::geom_point(
+      data = image_counts,
+      ggplot2::aes(x = .data$longitude, y = .data$latitude,
+                   color = .data$n_images),
+      size = 2.5, alpha = 0.8
+    ) +
+    ggplot2::scale_color_gradient(
+      low = "orange", high = "darkred",
+      name = "Image count"
+    ) +
+    ggplot2::ggtitle("IFCB image counts") +
+    ggplot2::theme_minimal(base_size = 12) +
+    ggplot2::theme(
+      panel.background = ggplot2::element_rect(fill = "aliceblue"),
+      axis.title = ggplot2::element_blank(),
+      legend.position = "bottom",
+      legend.key.width = ggplot2::unit(1.5, "cm")
+    )
+}
+
 #' Create a heatmap of biovolume by species and station
 #'
 #' HAB species are marked with a red asterisk (*) on the y-axis labels.

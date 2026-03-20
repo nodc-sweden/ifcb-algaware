@@ -70,6 +70,7 @@ ui <- bslib::page_sidebar(
       icon = shiny::icon("map"),
       conditionalPanel(
         condition = "output.data_loaded",
+        plotOutput("image_count_map", height = "400px"),
         plotOutput("biomass_map", height = "400px"),
         plotOutput("chl_map", height = "400px")
       )

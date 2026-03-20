@@ -17,6 +17,8 @@
 #'   report text using an LLM. Default FALSE uses placeholder text.
 #' @param annotator Character string with the analyst name for the
 #'   introduction statement.
+#' @param image_counts Optional data frame from \code{fetch_image_counts()}
+#'   with cruise-wide image counts and coordinates for the track map.
 #' @return Invisible path to the created document.
 #' @export
 generate_report <- function(output_path, station_summary,
@@ -27,7 +29,8 @@ generate_report <- function(output_path, station_summary,
                             cruise_info = "",
                             classifier_name = NULL,
                             use_llm = FALSE,
-                            annotator = "") {
+                            annotator = "",
+                            image_counts = NULL) {
   template <- system.file("templates", "report_template.docx",
                           package = "algaware")
   if (!nzchar(template)) {
@@ -108,9 +111,27 @@ generate_report <- function(output_path, station_summary,
   doc <- add_formatted_par(doc, english_text, taxa_lookup, style = "Normal")
   doc <- officer::body_add_par(doc, "")
 
-  # Biomass maps
-  doc <- officer::body_add_par(doc, "Biomass and Chlorophyll",
-                               style = "heading 2")
+  # Maps
+  doc <- officer::body_add_par(doc, "Maps", style = "heading 2")
+  fig_num <- 1L
+
+  # Image count map (cruise-wide)
+  if (!is.null(image_counts) && nrow(image_counts) > 0) {
+    img_map <- create_image_count_map(image_counts)
+    doc <- add_plot_to_doc(doc, img_map, temp_files,
+      width = 7, height = 5, display_width = 6, display_height = 4.3)
+    temp_files <- attr(doc, "temp_files") %||% temp_files
+    doc <- officer::body_add_par(
+      doc,
+      paste0("Figure ", fig_num,
+             ". IFCB image counts along the cruise track."),
+      style = "Normal"
+    )
+    doc <- officer::body_add_par(doc, "")
+    fig_num <- fig_num + 1L
+  }
+
+  # Biomass map
   maps <- create_biomass_maps(station_summary)
 
   doc <- add_plot_to_doc(doc, maps$biomass_map, temp_files,
@@ -118,23 +139,27 @@ generate_report <- function(output_path, station_summary,
   temp_files <- attr(doc, "temp_files") %||% temp_files
   doc <- officer::body_add_par(
     doc,
-    "Figure 1. Total carbon biomass at AlgAware stations.",
+    paste0("Figure ", fig_num,
+           ". Total carbon biomass at AlgAware stations."),
     style = "Normal"
   )
   doc <- officer::body_add_par(doc, "")
+  fig_num <- fig_num + 1L
 
+  # Chlorophyll map
   doc <- add_plot_to_doc(doc, maps$chl_map, temp_files,
     width = 7, height = 5, display_width = 6, display_height = 4.3)
   temp_files <- attr(doc, "temp_files") %||% temp_files
   doc <- officer::body_add_par(
     doc,
-    "Figure 2. Chlorophyll fluorescence at AlgAware stations.",
+    paste0("Figure ", fig_num,
+           ". Chlorophyll fluorescence at AlgAware stations."),
     style = "Normal"
   )
   doc <- officer::body_add_par(doc, "")
+  fig_num <- fig_num + 1L
 
   # Heatmaps and stacked bars
-  fig_num <- 3L
   result <- add_heatmap_section(doc, baltic_wide, taxa_lookup, "Baltic Sea",
                                 fig_num, temp_files)
   doc <- result$doc

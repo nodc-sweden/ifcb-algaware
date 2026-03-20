@@ -24,12 +24,12 @@ get_settings_path <- function() {
 #' @keywords internal
 default_settings <- function() {
   list(
-    dashboard_url = "https://ifcb-dashboard-utv.smhi.se",
-    dashboard_dataset = "RV_Svea",
+    dashboard_url = "",
+    dashboard_dataset = "",
     classification_path = "",
     raw_data_path = "",
     ferrybox_path = "",
-    local_storage_path = file.path(tools::R_user_dir("algaware", "data"), "storage"),
+    local_storage_path = file.path(getwd(), "algaware_data"),
     db_folder = "",
     non_biological_classes = "detritus,Debris,Air_bubbles,Beads,mix",
     annotator = "",

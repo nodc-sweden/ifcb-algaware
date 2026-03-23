@@ -1,0 +1,285 @@
+# AlgAware-IFCB
+
+An interactive R/Shiny application for processing, validating, and
+reporting phytoplankton data from Imaging FlowCytobot (IFCB)
+instruments. Developed for Swedish coastal monitoring at SMHI.
+
+AlgAware-IFCB integrates with the IFCB Dashboard for automated data
+retrieval, provides an interactive image gallery for reviewing and
+correcting AI classifier predictions, and generates Word reports with
+biomass maps, heatmaps, and image mosaics.
+
+## Installation
+
+Install from GitHub:
+
+``` r
+# install.packages("remotes")
+remotes::install_github("anderstorstensson/algaware")
+```
+
+## Usage
+
+``` r
+library(algaware)
+launch_app()
+```
+
+The application opens in your default browser.
+
+## Features
+
+### Data Loading
+
+- Fetch metadata from any IFCB Dashboard instance
+- Filter by cruise number or date range
+- Automatic spatial matching of IFCB bins to monitoring stations in the
+  Baltic Area
+- Download raw data, features, and HDF5 classification files
+- FerryBox chlorophyll integration (optional)
+
+### Image Gallery and Validation
+
+- Browse classified images by taxon and region (Baltic Sea / West Coast)
+- Searchable class dropdown for quick navigation across 100+ classes
+- Visual tags for HAB species and non-biological classes
+- Select individual images or entire pages
+- Relabel selected images or entire classes
+- Invalidate misclassified taxa
+- Store manual annotations to SQLite (compatible with ClassiPyR)
+- Measurement tool for on-screen size estimation
+
+### Visualizations
+
+- **Maps**: Biomass and chlorophyll distribution across stations
+- **Heatmaps**: Biovolume by taxon and station visit
+- **Stacked bar charts**: Relative biovolume composition (top 10 taxa)
+- **Summary table**: Interactive, sortable station-level data
+
+### Report Generation
+
+- Automated Word document (.docx) with all plots and station sections
+- Image mosaics for top taxa per region (adaptive layout for chains vs.
+  compact organisms)
+- HAB species annotations throughout
+- Classifier model attribution
+- Corrections log export (CSV)
+
+## Configuration
+
+Settings are persisted in `~/.config/R/algaware/settings.json` and can
+be edited through the in-app Settings panel:
+
+| Setting                | Description                                            | Default                                 |
+|------------------------|--------------------------------------------------------|-----------------------------------------|
+| Dashboard URL          | IFCB Dashboard base URL                                | –                                       |
+| Dashboard Dataset      | Dataset name                                           | –                                       |
+| Classification Path    | Directory with HDF5 classifier output                  | –                                       |
+| FerryBox Data Path     | Directory with FerryBox CSV files                      | –                                       |
+| Local Storage Path     | Where downloaded data is cached                        | `./algaware_data`                       |
+| Database Folder        | Directory for annotations.sqlite                       | –                                       |
+| Non-biological Classes | Comma-separated list of classes excluded from analysis | `detritus,Debris,Air_bubbles,Beads,mix` |
+| Pixels per Micron      | IFCB camera calibration factor                         | `2.77`                                  |
+
+Extra monitoring stations can be added from the SHARK station register
+through the Settings panel.
+
+## Bundled Data
+
+- **Taxa lookup** (`inst/extdata/taxa_lookup.csv`): Phytoplankton taxa
+  with WoRMS AphiaID references and HAB status flags
+- **Station definitions** (`inst/stations/algaware_stations.tsv`): 12
+  AlgAware monitoring stations (6 Baltic Sea, 6 West Coast)
+- **Report template** (`inst/templates/report_template.docx`): Word
+  document template for generated reports
+
+## Project Structure
+
+    algaware/
+    ├── R/
+    │   ├── run_app.R              # launch_app() entry point
+    │   ├── mod_settings.R         # Settings module
+    │   ├── mod_data_loader.R      # Data loading pipeline
+    │   ├── mod_gallery.R          # Image gallery browser
+    │   ├── mod_validation.R       # Annotation and relabeling
+    │   ├── mod_report.R           # Report generation module
+    │   ├── data_download.R        # Dashboard API integration
+    │   ├── data_processing.R      # Biovolume and aggregation
+    │   ├── database.R             # SQLite operations
+    │   ├── plots.R                # Maps, heatmaps, bar charts
+    │   ├── mosaics.R              # Adaptive image mosaics
+    │   ├── stations.R             # Station matching
+    │   ├── report.R               # Word document builder
+    │   └── utils.R                # Settings and utilities
+    ├── inst/
+    │   ├── app/                   # Shiny app (ui.R, server.R)
+    │   ├── extdata/               # Taxa lookup
+    │   ├── stations/              # Station definitions
+    │   └── templates/             # Report template
+    └── tests/testthat/            # Test suite
+
+## Testing
+
+``` r
+devtools::test()
+```
+
+## License
+
+MIT
+
+# Package index
+
+## Launch Application
+
+Start the AlgAware Shiny app
+
+- [`launch_app()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/launch_app.md)
+  : Launch the AlgAware Shiny Application
+
+## Data Download
+
+Fetch data from IFCB Dashboard
+
+- [`fetch_dashboard_metadata()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/fetch_dashboard_metadata.md)
+  : Fetch metadata from the IFCB Dashboard
+- [`fetch_image_counts()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/fetch_image_counts.md)
+  : Fetch image count metadata from the IFCB Dashboard
+- [`filter_metadata()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/filter_metadata.md)
+  : Filter metadata by cruise number or date range
+- [`download_raw_data()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/download_raw_data.md)
+  : Download raw IFCB files for selected bins
+- [`download_features()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/download_features.md)
+  : Download feature files for selected bins
+
+## Data Processing
+
+Process and aggregate IFCB data
+
+- [`aggregate_station_data()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/aggregate_station_data.md)
+  : Aggregate biovolume data per station visit
+- [`summarize_biovolumes()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/summarize_biovolumes.md)
+  : Summarize biovolumes for classified bins
+- [`create_wide_summary()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/create_wide_summary.md)
+  : Create wide-format summary for a region
+- [`match_bins_to_stations()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/match_bins_to_stations.md)
+  : Match dashboard metadata to AlgAware stations using spatial join
+- [`collect_ferrybox_data()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/collect_ferrybox_data.md)
+  : Collect ferrybox data for station visits
+
+## Classification
+
+Read and resolve classifier data
+
+- [`read_h5_classifications()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/read_h5_classifications.md)
+  : Read classifications from H5 files
+- [`read_classifier_name()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/read_classifier_name.md)
+  : Read classifier name from an H5 classification file
+- [`resolve_class_list()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/resolve_class_list.md)
+  : Resolve the active class list
+- [`copy_classification_files()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/copy_classification_files.md)
+  : Copy classification H5 files for selected bins
+
+## Visualization
+
+Create plots and maps
+
+- [`create_biomass_maps()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/create_biomass_maps.md)
+  : Create biomass and chlorophyll maps
+- [`create_heatmap()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/create_heatmap.md)
+  : Create a heatmap of biovolume by species and station
+- [`create_stacked_bar()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/create_stacked_bar.md)
+  : Create a stacked bar chart of relative biovolume
+- [`create_image_count_map()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/create_image_count_map.md)
+  : Create an image count map from cruise metadata
+
+## Reports
+
+Generate Word reports
+
+- [`generate_report()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/generate_report.md)
+  : Generate the AlgAware Word report
+- [`generate_english_summary()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/generate_english_summary.md)
+  : Generate the English summary text
+- [`generate_swedish_summary()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/generate_swedish_summary.md)
+  : Generate the Swedish summary text
+- [`generate_station_description()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/generate_station_description.md)
+  : Generate a station description
+
+## Database
+
+SQLite database operations
+
+- [`load_annotations_db()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/load_annotations_db.md)
+  : Load annotations from SQLite
+- [`save_annotations_db()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/save_annotations_db.md)
+  : Save selected annotations to SQLite
+- [`load_global_class_list_db()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/load_global_class_list_db.md)
+  : Load global class list from SQLite
+- [`save_global_class_list_db()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/save_global_class_list_db.md)
+  : Save global class list to SQLite
+- [`load_algaware_stations()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/load_algaware_stations.md)
+  : Load AlgAware station definitions
+- [`load_taxa_lookup()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/load_taxa_lookup.md)
+  : Load the bundled taxa lookup table
+- [`get_db_path()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/get_db_path.md)
+  : Get path to the annotations SQLite database
+
+## Mosaics
+
+Image mosaic generation
+
+- [`create_mosaic()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/create_mosaic.md)
+  : Create an adaptive image mosaic for a taxon
+- [`create_region_mosaics()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/create_region_mosaics.md)
+  : Create mosaics for top taxa in a region
+
+## LLM Support
+
+AI-powered report text generation
+
+- [`llm`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/llm.md)
+  : LLM Text Generation for AlgAware Reports
+- [`llm_available()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/llm_available.md)
+  : Check if LLM text generation is available
+- [`llm_provider()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/llm_provider.md)
+  : Detect the default LLM provider
+- [`llm_providers()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/llm_providers.md)
+  : List available LLM providers
+- [`llm_model_name()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/llm_model_name.md)
+  : Get the model name for a provider
+
+## Shiny Modules
+
+UI and server module functions
+
+- [`mod_data_loader_server()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/mod_data_loader_server.md)
+  : Data Loader Module Server
+- [`mod_data_loader_ui()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/mod_data_loader_ui.md)
+  : Data Loader Module UI
+- [`mod_gallery_server()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/mod_gallery_server.md)
+  : Gallery Module Server
+- [`mod_gallery_ui()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/mod_gallery_ui.md)
+  : Gallery Module UI
+- [`mod_report_server()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/mod_report_server.md)
+  : Report Module Server
+- [`mod_report_ui()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/mod_report_ui.md)
+  : Report Module UI
+- [`mod_settings_server()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/mod_settings_server.md)
+  : Settings Module Server
+- [`mod_settings_ui()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/mod_settings_ui.md)
+  : Settings Module UI
+- [`mod_validation_server()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/mod_validation_server.md)
+  : Validation Module Server
+- [`mod_validation_ui()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/mod_validation_ui.md)
+  : Validation Module UI
+
+## Utilities
+
+Settings and helper functions
+
+- [`load_settings()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/load_settings.md)
+  : Load persistent settings
+- [`save_settings()`](https://anderstorstensson.github.io/shiny-ifcb-algaware/reference/save_settings.md)
+  : Save settings to disk
+

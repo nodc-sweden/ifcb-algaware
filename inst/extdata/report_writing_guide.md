@@ -43,11 +43,13 @@ Each station description follows a consistent pattern:
 2. **Dominant groups**: State which groups dominate (diatoms, dinoflagellates, cyanobacteria, etc.).
    - Example: "Diatoms dominated among the larger cells."
 
-3. **Key species**: Name the most abundant species with their scientific names. After first mention, abbreviate genus to initial.
-   - Example: "The diatom Dactyliosolen fragilissimus was the most abundant species, followed by Cerataulina pelagica."
+3. **Key species by group**: Describe the most abundant species organized by four taxonomic groups: **diatoms**, **dinoflagellates**, **cyanobacteria**, and **others** (any taxa that do not belong to the first three groups, e.g. coccolithophores, silicoflagellates, euglenophytes). Present the groups in order of their abundance at the station -- mention the most dominant group first. Only mention groups that are actually present in the data; do not mention absent groups. When describing the "others" group, name the taxa by their specific identity rather than calling them "others". After first mention of a species, abbreviate genus to initial.
+   - Example: "Among the diatoms, Dactyliosolen fragilissimus was the most abundant species, followed by Cerataulina pelagica. Heterocapsa rotundata was the most common dinoflagellate."
+   - Example: "The cyanobacterium Aphanizomenon flosaquae* dominated the community. Among the diatoms, Skeletonema marinoi and Chaetoceros spp. were found in lower numbers."
+   - Example with others: "Diatoms dominated the community, with Skeletonema marinoi as the most abundant species. The coccolithophore Emiliania huxleyi and the silicoflagellate Dictyocha speculum were also present."
    - Subsequent mention: "D. fragilissimus", "C. pelagica"
 
-4. **Small cells**: Mention the smaller fraction separately if notable.
+4. **Small cells**: Mention the smaller fraction separately if notable (cryptomonads, small flagellates, coccolithophores when in the small size fraction).
    - Example: "The smaller cells were dominated by the coccolithophore Emiliania huxleyi."
    - Example: "The smaller cells were represented by different cryptomonads."
 
@@ -100,13 +102,13 @@ When writing in Swedish, use the correct Swedish terms:
 ## Example station descriptions
 
 ### West Coast station example
-"The species diversity was high but the total cell counts were low. The diatom genus Pseudo-nitzschia was found in highest cell counts among the larger cells. Only a few cells of dinoflagellates were noted. The coccolithophorid Emiliania huxleyi was rather numerous among the smaller cells."
+"The species diversity was high but the total cell counts were low. Among the diatoms, the genus Pseudo-nitzschia was found in highest cell counts. Only a few cells of dinoflagellates were noted. The smaller cells were dominated by the coccolithophore Emiliania huxleyi."
 
 ### Baltic station example
-"The phytoplankton diversity was low, but total cell numbers were relatively high. The diatom Dactyliosolen fragilissimus was the most abundant species, followed by Cerataulina pelagica and smaller taxa, including cells from the order Gymnodiniales."
+"The phytoplankton diversity was low, but total cell numbers were relatively high. Among the diatoms, Dactyliosolen fragilissimus was the most abundant species, followed by Cerataulina pelagica. The smaller cells were represented by cells from the order Gymnodiniales."
 
 ### Baltic station with potentially harmful taxon
-"Phytoplankton diversity and total cell numbers were low. Aphanizomenon flosaquae* and small taxa, including cells from the order Cryptomonadales, were relatively abundant."
+"Phytoplankton diversity and total cell numbers were low. The cyanobacterium Aphanizomenon flosaquae* was relatively abundant. The smaller cells were dominated by cryptomonads."
 
 ### Station with chlorophyll comparison
-"The total cell numbers and biodiversity were both high, and diatoms dominated the community. Dactyliosolen fragilissimus was the most abundant species, followed by Skeletonema marinoi. Chlorophyll fluorescence was the highest among all stations visited, consistent with the elevated biovolume detected by the IFCB."
+"The total cell numbers and biodiversity were both high. Among the diatoms, Dactyliosolen fragilissimus was the most abundant species, followed by Skeletonema marinoi. Heterocapsa rotundata was the most common dinoflagellate. Chlorophyll fluorescence was the highest among all stations visited, consistent with the elevated biovolume detected by the IFCB."

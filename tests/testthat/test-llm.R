@@ -208,6 +208,100 @@ test_that("format_station_data_for_prompt includes chl when present", {
   expect_true(grepl("3.14", result))
 })
 
+test_that("format_station_data_for_prompt includes unclassified note when >80%", {
+  station_data <- data.frame(
+    STATION_NAME_SHORT = "BY5",
+    STATION_NAME = "BY5 Bornholmsdjupet",
+    COAST = "EAST",
+    visit_date = as.Date("2024-03-15"),
+    name = "Taxon A",
+    biovolume_mm3_per_liter = 0.5,
+    carbon_ug_per_liter = 10,
+    counts_per_liter = 1000,
+    stringsAsFactors = FALSE
+  )
+  result <- algaware:::format_station_data_for_prompt(
+    station_data, unclassified_pct = 85
+  )
+  expect_true(grepl("85%", result))
+  expect_true(grepl("unclassified", result))
+})
+
+test_that("format_station_data_for_prompt omits unclassified note when <=80%", {
+  station_data <- data.frame(
+    STATION_NAME_SHORT = "BY5",
+    STATION_NAME = "BY5 Bornholmsdjupet",
+    COAST = "EAST",
+    visit_date = as.Date("2024-03-15"),
+    name = "Taxon A",
+    biovolume_mm3_per_liter = 0.5,
+    carbon_ug_per_liter = 10,
+    counts_per_liter = 1000,
+    stringsAsFactors = FALSE
+  )
+  result <- algaware:::format_station_data_for_prompt(
+    station_data, unclassified_pct = 50
+  )
+  expect_false(grepl("unclassified", result))
+})
+
+test_that("format_station_data_for_prompt omits note when pct is NULL", {
+  station_data <- data.frame(
+    STATION_NAME_SHORT = "BY5",
+    STATION_NAME = "BY5 Bornholmsdjupet",
+    COAST = "EAST",
+    visit_date = as.Date("2024-03-15"),
+    name = "Taxon A",
+    biovolume_mm3_per_liter = 0.5,
+    carbon_ug_per_liter = 10,
+    counts_per_liter = 1000,
+    stringsAsFactors = FALSE
+  )
+  result <- algaware:::format_station_data_for_prompt(
+    station_data, unclassified_pct = NULL
+  )
+  expect_false(grepl("unclassified", result))
+})
+
+test_that("format_cruise_summary_for_prompt includes unclassified tag when >80%", {
+  station_summary <- data.frame(
+    STATION_NAME_SHORT = c("BY5", "ANHOLT"),
+    COAST = c("EAST", "WEST"),
+    visit_date = as.Date(c("2024-03-15", "2024-03-16")),
+    visit_id = c("BY5_visit1", "ANHOLT_visit1"),
+    name = c("Taxon A", "Taxon B"),
+    biovolume_mm3_per_liter = c(0.5, 0.3),
+    carbon_ug_per_liter = c(10, 6),
+    counts_per_liter = c(1000, 500),
+    stringsAsFactors = FALSE
+  )
+  fractions <- list(BY5_visit1 = 90, ANHOLT_visit1 = 40)
+  result <- algaware:::format_cruise_summary_for_prompt(
+    station_summary, unclassified_fractions = fractions
+  )
+  # BY5 has 90% -> should show UNCLASSIFIED tag
+  expect_true(grepl("UNCLASSIFIED: 90%", result))
+  # ANHOLT has 40% -> should NOT show tag
+  expect_false(grepl("UNCLASSIFIED: 40%", result))
+})
+
+test_that("format_cruise_summary_for_prompt works without unclassified_fractions", {
+  station_summary <- data.frame(
+    STATION_NAME_SHORT = "BY5",
+    COAST = "EAST",
+    visit_date = as.Date("2024-03-15"),
+    visit_id = "BY5_visit1",
+    name = "Taxon A",
+    biovolume_mm3_per_liter = 0.5,
+    carbon_ug_per_liter = 10,
+    counts_per_liter = 1000,
+    stringsAsFactors = FALSE
+  )
+  result <- algaware:::format_cruise_summary_for_prompt(station_summary)
+  expect_type(result, "character")
+  expect_false(grepl("UNCLASSIFIED", result))
+})
+
 test_that("call_openai errors without API key", {
   withr::with_envvar(c(OPENAI_API_KEY = ""), {
     expect_error(

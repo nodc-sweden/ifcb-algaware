@@ -72,6 +72,7 @@ reference:
       - aggregate_station_data
       - summarize_biovolumes
       - create_wide_summary
+      - compute_unclassified_fractions
       - match_bins_to_stations
       - collect_ferrybox_data
 
@@ -115,6 +116,9 @@ reference:
     contents:
       - create_mosaic
       - create_region_mosaics
+      - get_top_taxa
+      - get_taxon_rois
+      - extract_random_taxon_image
 
   - title: LLM Support
     desc: AI-powered report text generation

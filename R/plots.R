@@ -1,3 +1,24 @@
+#' Create a base map of Swedish waters
+#'
+#' @return A ggplot object with coastline, coordinate system, and theme.
+#' @keywords internal
+base_sweden_map <- function() {
+  world <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf")
+  ggplot2::ggplot() +
+    ggplot2::geom_sf(data = world, fill = "gray95", color = "gray70") +
+    ggplot2::coord_sf(xlim = c(10, 22), ylim = c(54, 60), expand = FALSE) +
+    ggplot2::theme_minimal(base_size = 12) +
+    ggplot2::theme(
+      panel.background = ggplot2::element_rect(fill = "aliceblue"),
+      axis.title = ggplot2::element_blank(),
+      legend.position = "right",
+      legend.direction = "vertical",
+      legend.key.height = ggplot2::unit(1.8, "cm"),
+      legend.title.position = "top",
+      legend.title = ggplot2::element_text(hjust = 0.5)
+    )
+}
+
 #' Create biomass and chlorophyll maps
 #'
 #' @param station_summary Aggregated station data from
@@ -29,21 +50,7 @@ create_biomass_maps <- function(station_summary) {
     station_biomass$chl_mean <- NA_real_
   }
 
-  world <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf")
-
-  base_map <- ggplot2::ggplot() +
-    ggplot2::geom_sf(data = world, fill = "gray95", color = "gray70") +
-    ggplot2::coord_sf(xlim = c(10, 22), ylim = c(54, 60), expand = FALSE) +
-    ggplot2::theme_minimal(base_size = 12) +
-    ggplot2::theme(
-      panel.background = ggplot2::element_rect(fill = "aliceblue"),
-      axis.title = ggplot2::element_blank(),
-      legend.position = "right",
-      legend.direction = "vertical",
-      legend.key.height = ggplot2::unit(1.8, "cm"),
-      legend.title.position = "top",
-      legend.title = ggplot2::element_text(hjust = 0.5)
-    )
+  base_map <- base_sweden_map()
 
   biomass_map <- base_map +
     ggplot2::geom_point(
@@ -73,25 +80,45 @@ create_biomass_maps <- function(station_summary) {
     ) +
     ggplot2::ggtitle("Total carbon biomass")
 
-  chl_map <- base_map +
+  chl_data <- data.frame(
+    station_short = station_biomass$STATION_NAME_SHORT,
+    latitude = station_biomass$LATITUDE_WGS84_SWEREF99_DD,
+    longitude = station_biomass$LONGITUDE_WGS84_SWEREF99_DD,
+    chl_mean = station_biomass$chl_mean,
+    stringsAsFactors = FALSE
+  )
+  chl_map <- create_chl_map(chl_data, title = "FerryBox chlorophyll fluorescence")
+
+  list(biomass_map = biomass_map, chl_map = chl_map)
+}
+
+#' Create a standalone chlorophyll map
+#'
+#' @param chl_summary Data frame with columns: station_short, latitude,
+#'   longitude, chl_mean.
+#' @param title Plot title string.
+#' @return A ggplot object.
+#' @export
+create_chl_map <- function(chl_summary, title = "Chlorophyll") {
+  base_map <- base_sweden_map()
+
+  base_map +
     ggplot2::geom_point(
-      data = station_biomass,
-      ggplot2::aes(x = .data$LONGITUDE_WGS84_SWEREF99_DD,
-                   y = .data$LATITUDE_WGS84_SWEREF99_DD,
+      data = chl_summary,
+      ggplot2::aes(x = .data$longitude, y = .data$latitude,
                    color = .data$chl_mean),
       size = 5
     ) +
     ggrepel::geom_text_repel(
-      data = station_biomass,
-      ggplot2::aes(x = .data$LONGITUDE_WGS84_SWEREF99_DD,
-                   y = .data$LATITUDE_WGS84_SWEREF99_DD,
-                   label = .data$STATION_NAME_SHORT),
+      data = chl_summary,
+      ggplot2::aes(x = .data$longitude, y = .data$latitude,
+                   label = .data$station_short),
       size = 3, min.segment.length = 0, segment.color = "gray50",
       box.padding = 0.5
     ) +
     ggplot2::scale_color_viridis_c(
       option = "cividis",
-      name = expression(paste("Chl fluorescence (", mu, "g/L)"))
+      name = expression(paste("Chl (", mu, "g/L)"))
     ) +
     ggplot2::guides(
       color = ggplot2::guide_colorbar(
@@ -99,9 +126,7 @@ create_biomass_maps <- function(station_summary) {
         title.position = "top"
       )
     ) +
-    ggplot2::ggtitle("FerryBox chlorophyll fluorescence")
-
-  list(biomass_map = biomass_map, chl_map = chl_map)
+    ggplot2::ggtitle(title)
 }
 
 #' Create an image concentration map from cruise metadata
@@ -223,22 +248,17 @@ create_heatmap <- function(wide_summary, taxa_lookup = NULL, title = "",
 
   # Identify HAB species
   hab_species <- get_hab_species(taxa_lookup)
-
-  # Build y-axis labels: append red asterisk for HAB taxa
-  y_labels <- species_order
-  names(y_labels) <- species_order
   hab_in_plot <- intersect(species_order, hab_species)
 
-  # Color y-axis labels: red for HAB, black for others
-  label_colors <- ifelse(species_order %in% hab_species, "red", "black")
-
-  # Add asterisk to label text for HAB species
+  # Build y-axis labels: plain text with sflag, asterisk suffix for HAB
+  base_labels <- format_taxon_labels(species_order, taxa_lookup, format = "plain")
   display_labels <- ifelse(
     species_order %in% hab_species,
-    paste0(species_order, "*"),
-    species_order
+    paste0(base_labels, "*"),
+    base_labels
   )
   names(display_labels) <- species_order
+  label_colors <- ifelse(species_order %in% hab_species, "red", "black")
 
   p <- ggplot2::ggplot(long_data, ggplot2::aes(
     x = .data$station_date,
@@ -270,10 +290,7 @@ create_heatmap <- function(wide_summary, taxa_lookup = NULL, title = "",
       axis.text.x = ggplot2::element_text(
         angle = 45, hjust = 1, vjust = 1, lineheight = 0.9, size = 9
       ),
-      axis.text.y = ggplot2::element_text(
-        size = 10,
-        color = label_colors
-      ),
+      axis.text.y = ggplot2::element_text(size = 10, color = label_colors),
       panel.grid = ggplot2::element_blank(),
       plot.caption = ggtext::element_markdown()
     )
@@ -318,10 +335,10 @@ create_stacked_bar <- function(wide_summary, taxa_lookup = NULL,
   taxa_totals <- taxa_totals[order(taxa_totals$biovolume, decreasing = TRUE), ]
   top_taxa <- utils::head(taxa_totals$scientific_name, n_top)
 
-  # Group remainder as "Other"
+  # Group remainder as "Other taxa"
   long_data$scientific_name <- ifelse(
     long_data$scientific_name %in% top_taxa,
-    long_data$scientific_name, "Other"
+    long_data$scientific_name, "Other taxa"
   )
   long_data$station_date <- factor(long_data$station_date,
                                    levels = station_date_order)
@@ -349,7 +366,7 @@ create_stacked_bar <- function(wide_summary, taxa_lookup = NULL,
   )
   plot_data$scientific_name <- factor(
     plot_data$scientific_name,
-    levels = c(top_taxa, "Other")
+    levels = c(top_taxa, "Other taxa")
   )
 
   # Labels: station on first line, date on second
@@ -359,13 +376,14 @@ create_stacked_bar <- function(wide_summary, taxa_lookup = NULL,
 
   fill_colors <- c(viridis::viridis(length(top_taxa)), "grey70")
 
-  # Annotate HAB species in legend labels with red HTML markup
+  # Annotate legend with HTML italic and red asterisk for HAB
   hab_species <- get_hab_species(taxa_lookup)
-  legend_labels <- c(top_taxa, "Other")
+  legend_labels <- c(top_taxa, "Other taxa")
+  base_legend <- format_taxon_labels(legend_labels, taxa_lookup)
   display_legend <- ifelse(
     legend_labels %in% hab_species,
-    paste0("<span style='color:red'>", legend_labels, "*</span>"),
-    legend_labels
+    paste0("<span style='color:red'>", base_legend, "*</span>"),
+    base_legend
   )
   names(fill_colors) <- legend_labels
   names(display_legend) <- legend_labels
@@ -415,5 +433,8 @@ get_hab_species <- function(taxa_lookup) {
   if (is.null(taxa_lookup) || !"HAB" %in% names(taxa_lookup)) {
     return(character(0))
   }
-  unique(taxa_lookup$name[taxa_lookup$HAB == TRUE])
+  is_hab <- taxa_lookup$HAB == TRUE & !is.na(taxa_lookup$HAB)
+  sflag <- if ("sflag" %in% names(taxa_lookup)) taxa_lookup$sflag else rep("", nrow(taxa_lookup))
+  sflag[is.na(sflag)] <- ""
+  unique(trimws(paste(taxa_lookup$name[is_hab], sflag[is_hab])))
 }

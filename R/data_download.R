@@ -122,6 +122,10 @@ filter_metadata <- function(metadata, cruise = NULL, date_from = NULL, date_to =
 #' @export
 fetch_image_counts <- function(dashboard_url, dataset_name,
                                start_date, end_date) {
+  if (!requireNamespace("httr2", quietly = TRUE)) {
+    stop("Package 'httr2' is required to fetch image counts. ",
+         "Install it with: install.packages(\"httr2\")", call. = FALSE)
+  }
   base_url <- paste0(
     sub("/$", "", dashboard_url),
     "/api/export_metadata/",

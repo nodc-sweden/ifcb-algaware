@@ -31,14 +31,16 @@ default_settings <- function() {
     ferrybox_path = "",
     local_storage_path = file.path(getwd(), "algaware_data"),
     db_folder = "",
-    non_biological_classes = "detritus,Debris,Air_bubbles,Beads,mix",
+    non_biological_classes = "detritus,Air_bubbles,Beads,Debris,mix,mixed",
     annotator = "",
     report_dnr = "",
     extra_stations = list(),
     pixels_per_micron = 2.77,  # IFCB optical calibration (pixels per micron)
     n_mosaic_taxa = 5L,       # Number of top taxa to show in report mosaics
     n_mosaic_images = 32L,    # Max images per mosaic panel
-    include_class_mosaics = FALSE  # Include per-class mosaics in report
+    include_class_mosaics = FALSE,  # Include per-class mosaics in report
+    ctd_cnv_folder = "",            # Path to folder with .cnv CTD files
+    ctd_lims_path = ""              # Path to LIMS data.txt file
   )
 }
 

@@ -50,6 +50,23 @@ navbar:
       icon: fa-github
       aria-label: GitHub
       href: https://github.com/anderstorstensson/shiny-ifcb-algaware/
+    articles:
+      text: User Guides
+      menu:
+        - text: Getting Started
+          href: articles/installation.html
+        - text: Standard AlgAware Workflow
+          href: articles/workflow.html
+        - text: Customising the Report
+          href: articles/report-customisation.html
+
+articles:
+  - title: Guides
+    navbar: ~
+    contents:
+      - installation
+      - workflow
+      - report-customisation
 
 reference:
   - title: Launch Application
@@ -85,10 +102,26 @@ reference:
       - resolve_class_list
       - copy_classification_files
 
+  - title: CTD & Chlorophyll Data
+    desc: Parse CTD profiles and LIMS chlorophyll data for the chlorophyll map
+    contents:
+      - load_chl_statistics
+      - load_station_mapper
+      - load_standard_stations
+      - read_cnv_folder
+      - read_cnv_folder_all
+      - read_lims_data
+      - read_lims_data_all
+      - compute_ctd_chl_avg
+      - compute_lims_chl_avg
+      - compute_lims_hose_avg
+
   - title: Visualization
     desc: Create plots and maps
     contents:
       - create_biomass_maps
+      - create_chl_map
+      - create_ctd_region_figure
       - create_heatmap
       - create_stacked_bar
       - create_image_count_map

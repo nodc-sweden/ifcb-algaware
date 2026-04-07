@@ -1,0 +1,25 @@
+standard_stations:
+    station_list: ["Å13", "Å15", "Å17", "SLÄGGÖ", "P2", "FLADEN", "ANHOLT E", "N14 FALKENBERG", "W LANDSKRONA",
+                   "BY1", "BY2 ARKONA", "BY4 CHRISTIANSÖ", "BY5 BORNHOLMSDJ", "BY39 ÖLANDS S UDDE",
+                   "BY32 NORRKÖPINGSDJ", "BY38 KARLSÖDJ", "BY10", "BY15 GOTLANDSDJ", "BY20 FÅRÖDJ", "BCS III-10"]
+    Å13: "The Skagerrak"
+    Å15: "The Skagerrak"
+    Å17: "The Skagerrak"
+    SLÄGGÖ: "The Skagerrak"
+    P2: "The Skagerrak"
+    FLADEN: "The Kattegat and The Sound"
+    ANHOLT E: "The Kattegat and The Sound"
+    N14 FALKENBERG: "The Kattegat and The Sound"
+    W LANDSKRONA: "The Kattegat and The Sound"
+    BY1: "The Southern Baltic"
+    BY2 ARKONA: "The Southern Baltic"
+    BY4 CHRISTIANSÖ: "The Southern Baltic"
+    BY5 BORNHOLMSDJ: "The Southern Baltic"
+#    REF M1V1: "The Western Baltic"
+    BY39 ÖLANDS S UDDE: "The Western Baltic"
+    BY32 NORRKÖPINGSDJ: "The Western Baltic"
+    BY38 KARLSÖDJ: "The Western Baltic"
+    BY10: "The Eastern Baltic"
+    BY15 GOTLANDSDJ: "The Eastern Baltic"
+    BY20 FÅRÖDJ: "The Eastern Baltic"
+    BCS III-10: "The Eastern Baltic"

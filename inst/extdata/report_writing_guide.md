@@ -71,6 +71,7 @@ Each station description follows a consistent pattern:
 - Group-level names are not italicized: "diatoms", "dinoflagellates", "cyanobacteria", "coccolithophores"
 - Higher taxonomic groups: "Cryptomonadales", "Gymnodiniales", "Dictyochales"
 - Mark potentially harmful taxa with an asterisk (*) after the name
+- Species-group qualifiers (sflag): some taxa in the data are recorded at genus or group level and carry a qualifier such as "spp.", "sp.", or "group" (e.g. "Chaetoceros spp.", "Dinophysis sp.", "Pseudo-nitzschia group"). Always include this qualifier when writing the name. The qualifier is plain text and not italicized; only the genus/species epithet is in italics.
 
 ## Terminology
 

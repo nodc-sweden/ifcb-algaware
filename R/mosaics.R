@@ -90,124 +90,6 @@ create_mosaic <- function(image_paths, n_images = 32L,
   target_row_width <- max_width_px
 
   if (isTRUE(allow_taller_rows)) {
-    if (!requireNamespace("rectpacker", quietly = TRUE)) {
-      # Fall back to the previous shelf packer so mixed mosaics still render
-      # when the new dependency has not yet been installed in the running app.
-      pack_shelves <- function(scale) {
-        scaled_w <- pmax(1L, as.integer(round(widths_raw * scale)))
-        scaled_h <- pmax(1L, as.integer(round(heights_raw * scale)))
-
-        shelves <- list()
-        for (i in seq_along(scaled_w)) {
-          placed <- FALSE
-
-          if (length(shelves) > 0) {
-            for (s in seq_along(shelves)) {
-              shelf <- shelves[[s]]
-              next_x <- if (length(shelf$items) == 0) 0L else shelf$x + gap_px
-              if (scaled_h[i] <= shelf$height &&
-                  next_x + scaled_w[i] <= max_width_px) {
-                shelves[[s]]$items[[length(shelf$items) + 1L]] <- list(
-                  idx = i, x = next_x, y = shelf$y, w = scaled_w[i], h = scaled_h[i]
-                )
-                shelves[[s]]$x <- next_x + scaled_w[i]
-                placed <- TRUE
-                break
-              }
-            }
-          }
-
-          if (!placed) {
-            new_y <- if (length(shelves) == 0) {
-              0L
-            } else {
-              last <- shelves[[length(shelves)]]
-              last$y + last$height + row_gap_px
-            }
-            if (new_y + scaled_h[i] > max_height_px) {
-              return(list(fits = FALSE))
-            }
-            shelves[[length(shelves) + 1L]] <- list(
-              y = new_y,
-              height = scaled_h[i],
-              x = scaled_w[i],
-              items = list(list(idx = i, x = 0L, y = new_y, w = scaled_w[i], h = scaled_h[i]))
-            )
-          }
-        }
-
-        used_width <- 0L
-        used_height <- 0L
-        for (shelf in shelves) {
-          used_width <- max(used_width, shelf$x)
-          used_height <- max(used_height, shelf$y + shelf$height)
-        }
-        list(
-          fits = TRUE,
-          shelves = shelves,
-          used_width = used_width,
-          used_height = used_height
-        )
-      }
-
-      scale_upper <- min(
-        max_width_px / max(widths_raw),
-        max_height_px / max(heights_raw)
-      )
-      low <- 0
-      high <- scale_upper
-      best <- NULL
-
-      for (iter in seq_len(24)) {
-        mid <- (low + high) / 2
-        packed <- pack_shelves(mid)
-        if (isTRUE(packed$fits)) {
-          best <- packed
-          low <- mid
-        } else {
-          high <- mid
-        }
-      }
-
-      if (is.null(best)) {
-        stop("Could not pack mosaic into the requested page size", call. = FALSE)
-      }
-
-      canvas <- magick::image_blank(
-        max(1L, best$used_width),
-        max(1L, best$used_height),
-        color = median_col
-      )
-      label_size <- NULL
-      if (!is.null(labels)) {
-        tile_heights <- unlist(lapply(best$shelves, function(shelf) {
-          vapply(shelf$items, function(item) item$h, numeric(1))
-        }), use.names = FALSE)
-        label_size <- max(14L, as.integer(stats::median(tile_heights) * 0.22))
-      }
-
-      for (shelf in best$shelves) {
-        for (item in shelf$items) {
-          img <- magick::image_resize(
-            img_list[[item$idx]],
-            paste0(item$w, "x", item$h, "!")
-          )
-          if (!is.null(labels)) {
-            img <- magick::image_annotate(
-              img, labels[item$idx], size = label_size, color = "black",
-              location = "+3+1", weight = 700
-            )
-          }
-          canvas <- magick::image_composite(
-            canvas, img,
-            offset = paste0("+", item$x, "+", item$y)
-          )
-        }
-      }
-
-      return(canvas)
-    }
-
     pack_hybrid <- function(scale) {
       scaled_w <- pmax(1L, as.integer(round(widths_raw * scale)))
       scaled_h <- pmax(1L, as.integer(round(heights_raw * scale)))
@@ -590,7 +472,10 @@ get_top_taxa <- function(wide_summary, n_taxa = 10L) {
 #' @export
 get_taxon_rois <- function(classifications, taxa_lookup, taxon_name,
                            sample_ids) {
-  matching_classes <- taxa_lookup$clean_names[taxa_lookup$name == taxon_name]
+  sflag_col <- if ("sflag" %in% names(taxa_lookup)) taxa_lookup$sflag else ""
+  sflag_col[is.na(sflag_col)] <- ""
+  display_names <- trimws(paste(taxa_lookup$name, sflag_col))
+  matching_classes <- taxa_lookup$clean_names[display_names == taxon_name]
   classifications[
     classifications$class_name %in% matching_classes &
       classifications$sample_name %in% sample_ids,
@@ -779,9 +664,14 @@ create_region_mosaics <- function(wide_summary, classifications, sample_ids,
   # Map scientific names back to class names
   mosaics <- list()
 
+  # Build display_name lookup once outside the loop
+  sflag_col <- if ("sflag" %in% names(taxa_lookup)) taxa_lookup$sflag else ""
+  sflag_col[is.na(sflag_col)] <- ""
+  taxa_display_names <- trimws(paste(taxa_lookup$name, sflag_col))
+
   for (taxon in top_taxa) {
-    # Find class names that map to this taxon
-    matching_classes <- taxa_lookup$clean_names[taxa_lookup$name == taxon]
+    # Find class names that map to this taxon (match on combined name+sflag)
+    matching_classes <- taxa_lookup$clean_names[taxa_display_names == taxon]
 
     # Get ROIs for this taxon from the region samples
     taxon_rois <- classifications[
@@ -861,9 +751,12 @@ generate_frontpage_mosaic <- function(classifications, taxa_lookup, samples,
     region_class <- classifications[classifications$sample_name %in% samples, ]
     region_class <- region_class[!region_class$class_name %in% non_bio, ]
 
-    name_map <- stats::setNames(taxa_lookup$name, taxa_lookup$clean_names)
+    sflag_col <- if ("sflag" %in% names(taxa_lookup)) taxa_lookup$sflag else ""
+    sflag_col[is.na(sflag_col)] <- ""
+    display_name_vec <- trimws(paste(taxa_lookup$name, sflag_col))
+    name_map <- stats::setNames(display_name_vec, taxa_lookup$clean_names)
     sci_names <- name_map[region_class$class_name]
-    sci_names <- sci_names[!is.na(sci_names)]
+    sci_names <- sci_names[!is.na(sci_names) & nzchar(sci_names)]
     if (length(sci_names) == 0) return(NULL)
 
     top_taxa <- utils::head(names(sort(table(sci_names), decreasing = TRUE)),

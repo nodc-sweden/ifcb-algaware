@@ -38,14 +38,31 @@ summarize_biovolumes <- function(feature_folder, hdr_folder, classifications,
     verbose = FALSE
   )
 
-  # Join with taxonomy
+  # Join with taxonomy (include sflag if present)
+  lookup_cols <- intersect(c("clean_names", "name", "sflag", "AphiaID"),
+                           names(taxa_lookup))
   biovolume_data <- merge(
     biovolume_data,
-    taxa_lookup[, c("clean_names", "name", "AphiaID")],
+    taxa_lookup[, lookup_cols],
     by.x = "class",
     by.y = "clean_names",
     all.x = TRUE
   )
+
+  # Ensure sflag column exists even if not in taxa_lookup
+  if (!"sflag" %in% names(biovolume_data)) biovolume_data$sflag <- ""
+
+  # Fall back to class name when taxa lookup has no entry or a blank name.
+  # This prevents NA/empty names from merging distinct classes in aggregation.
+  if ("name" %in% names(biovolume_data)) {
+    missing_name <- is.na(biovolume_data$name) | biovolume_data$name == ""
+    biovolume_data$name[missing_name] <- biovolume_data$class[missing_name]
+    biovolume_data$sflag[missing_name] <- ""
+  }
+  if ("AphiaID" %in% names(biovolume_data)) {
+    biovolume_data$AphiaID[biovolume_data$class == "unclassified"] <- NA_integer_
+  }
+  biovolume_data$sflag[is.na(biovolume_data$sflag)] <- ""
 
   # Remove non-biological classes
   if (length(non_bio_classes) > 0) {
@@ -224,16 +241,22 @@ aggregate_station_data <- function(biovolume_data, metadata) {
 
   sample_volume <- compute_sample_volumes(all_data)
 
+  # AphiaID is excluded from the formula because stats::aggregate drops rows
+  # where any grouping variable is NA (which is the case for "Unclassified").
+  # It is joined back afterwards from the unique name->AphiaID mapping.
   agg <- stats::aggregate(
     cbind(total_counts = counts,
           total_biovolume_mm3 = biovolume_mm3,
           total_carbon_ug = carbon_ug) ~
       visit_id + STATION_NAME + STATION_NAME_SHORT + COAST + visit_date +
-      name + AphiaID,
+      name + sflag,
     data = all_data,
     FUN = sum,
     na.rm = TRUE
   )
+
+  aphia_map <- unique(all_data[, c("name", "sflag", "AphiaID")])
+  agg <- merge(agg, aphia_map, by = c("name", "sflag"), all.x = TRUE)
 
   agg <- merge(agg, sample_volume, by = c("visit_id", "STATION_NAME"),
                all.x = TRUE)
@@ -311,12 +334,16 @@ create_wide_summary <- function(station_summary, coast) {
   region_data$station_date <- paste(region_data$STATION_NAME_SHORT,
                                     region_data$visit_date, sep = "_")
 
+  # Combine name + sflag into the display name used as row identifier
+  sflag <- if ("sflag" %in% names(region_data)) region_data$sflag else ""
+  sflag[is.na(sflag)] <- ""
+  region_data$scientific_name <- trimws(paste(region_data$name, sflag))
+
   wide <- tidyr::pivot_wider(
-    region_data[, c("name", "station_date", "biovolume_mm3_per_liter")],
+    region_data[, c("scientific_name", "station_date", "biovolume_mm3_per_liter")],
     names_from = "station_date",
     values_from = "biovolume_mm3_per_liter"
   )
-  names(wide)[1] <- "scientific_name"
 
   # Order columns by date then station
   data_cols <- names(wide)[-1]

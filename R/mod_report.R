@@ -7,8 +7,7 @@ mod_report_ui <- function(id) {
   ns <- shiny::NS(id)
   shiny::div(
     class = "report-section",
-    shiny::hr(),
-    shiny::h5("Report Generation"),
+    shiny::uiOutput(ns("report_readiness")),
     shiny::fluidRow(
       shiny::column(
         width = 6,
@@ -22,9 +21,15 @@ mod_report_ui <- function(id) {
       )
     ),
     shiny::uiOutput(ns("llm_status")),
-    shiny::actionButton(ns("make_report"), "Make Report",
-                        class = "btn-primary mb-1",
-                        icon = shiny::icon("file-word")),
+    bslib::tooltip(
+      bslib::input_task_button(
+        ns("make_report"), "Make Report",
+        icon = shiny::icon("file-word"),
+        label_busy = "Generating...",
+        class = "btn-primary mb-1 w-100"
+      ),
+      "Generates a Word report. CTD data and mosaics are included only if loaded/created first."
+    ),
     shiny::downloadButton(ns("download_report"), "Download Report",
                           class = "btn-outline-primary mt-1 mb-1"),
     shiny::downloadButton(ns("download_corrections"), "Download Corrections",
@@ -45,6 +50,32 @@ mod_report_server <- function(id, rv, config) {
     ns <- session$ns
     report_path <- shiny::reactiveVal(NULL)
     corrections_path <- shiny::reactiveVal(NULL)
+
+    output$report_readiness <- shiny::renderUI({
+      items <- list(
+        list(ok = isTRUE(rv$data_loaded),
+             label = "IFCB data loaded"),
+        list(ok = isTRUE(rv$ctd_loaded),
+             label = "CTD data (load in CTD tab)"),
+        list(ok = !is.null(rv$frontpage_baltic_mosaic),
+             label = "Baltic mosaic (Images tab)"),
+        list(ok = !is.null(rv$frontpage_westcoast_mosaic),
+             label = "West Coast mosaic (Images tab)")
+      )
+      shiny::tagList(
+        shiny::tags$p(class = "small fw-semibold mb-1", "Report contents:"),
+        lapply(items, function(x) {
+          shiny::div(
+            class = "d-flex align-items-center gap-1",
+            style = paste0("font-size: 12px; color: ",
+                           if (x$ok) "green" else "#aaa", ";"),
+            shiny::icon(if (x$ok) "circle-check" else "circle"),
+            x$label
+          )
+        }),
+        shiny::hr(style = "margin: 8px 0;")
+      )
+    })
 
     # Initialize Dnr field from persisted settings.
     shiny::observeEvent(config$report_dnr, {
@@ -268,7 +299,13 @@ mod_report_server <- function(id, rv, config) {
             frontpage_baltic_taxa = fp_baltic_taxa,
             frontpage_westcoast_taxa = fp_westcoast_taxa,
             report_number = input$report_number,
-            report_dnr = input$report_dnr
+            report_dnr = input$report_dnr,
+            ctd_data = rv$ctd_data,
+            ctd_data_full = rv$ctd_data_full,
+            lims_data = rv$lims_data,
+            lims_data_full = rv$lims_data_full,
+            chl_stats = rv$chl_stats,
+            chl_map_source = rv$chl_map_source %||% "ferrybox"
           )
 
           report_path(out_file)
@@ -276,7 +313,10 @@ mod_report_server <- function(id, rv, config) {
           # Export corrections log if any corrections were made
           if (nrow(rv$corrections) > 0) {
             csv_file <- sub("\\.docx$", "_corrections.csv", out_file)
-            utils::write.csv(rv$corrections, csv_file, row.names = FALSE)
+            corrections_export <- enrich_corrections_for_export(
+              rv$corrections, rv$custom_classes
+            )
+            utils::write.csv(corrections_export, csv_file, row.names = FALSE)
             corrections_path(csv_file)
           } else {
             corrections_path(NULL)

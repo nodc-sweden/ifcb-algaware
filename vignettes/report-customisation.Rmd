@@ -1,0 +1,204 @@
+---
+title: "Customising the Report"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Customising the Report}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, eval = FALSE)
+```
+
+<style>
+.btn-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.badge-primary          { background: #2c5f7c; color: #fff; }
+.badge-outline-primary  { background: #fff; color: #2c5f7c; border: 1.5px solid #2c5f7c; }
+.badge-success          { background: #18bc9c; color: #fff; }
+.badge-info             { background: #3498db; color: #fff; }
+.badge-outline-info     { background: #fff; color: #3498db; border: 1.5px solid #3498db; }
+.badge-warning          { background: #f39c12; color: #fff; }
+.badge-secondary        { background: #95a5a6; color: #fff; }
+.badge-outline-secondary { background: #fff; color: #7b8a8b; border: 1.5px solid #95a5a6; }
+</style>
+
+This guide covers how to adjust what goes into the Word report — editing
+AI-generated text, controlling which taxa and images appear, exporting
+corrections, and modifying the bundled configuration files that control
+long-term defaults.
+
+Before using this guide you should have completed a full cruise workflow as
+described in [Standard Cruise Workflow](workflow.html).
+
+---
+
+## 1. AI-generated report text
+
+When an OpenAI or Google Gemini API key is configured, AlgAware-IFCB generates
+Swedish and English summaries and individual station descriptions automatically
+when <span class="btn-badge badge-primary">Make Report</span> is clicked. The
+text is written directly into the Word document — there is no preview or editing
+step inside the app.
+
+After downloading the report, open the `.docx` file in Word and edit the text
+there. Species names are already italicised and HAB species are marked with a
+red asterisk — you do not need to add formatting manually.
+
+If no API key is set, placeholder text is inserted in the relevant sections of
+the Word document so you know where to fill in the summaries manually.
+
+> **Style guide:** The LLM system prompt is stored in
+> `inst/extdata/report_writing_guide.md`. A package maintainer can edit this
+> file to change tone, required content, species name conventions, or report
+> structure — see [Editing the LLM style guide](#editing-the-llm-style-guide)
+> below.
+
+---
+
+## 2. Controlling image mosaics
+
+The image mosaics (one for Baltic Sea, one for West Coast) are designed in the
+**Images** tab before generating the report. See
+[Design image mosaics](workflow.html#design-image-mosaics) in the workflow
+guide.
+
+If an image looks bad (blurry, double-exposure, edge artefact), click it in
+the mosaic preview to re-roll a new random image for that taxon — repeat until
+satisfied, then return to the Report panel.
+
+---
+
+## 3. Excluding samples from the report
+
+Samples can be excluded in the **Samples** tab (see
+[Review and exclude samples](workflow.html#review-and-exclude-samples-optional)
+in the workflow guide). Excluded samples are removed from summaries, maps,
+mosaics, and the report. They remain in memory and can be re-included at any
+time using <span class="btn-badge badge-outline-primary">Include Selected</span>
+or <span class="btn-badge badge-outline-success">Include All</span>.
+
+---
+
+## 4. Exporting the corrections log
+
+All manual relabellings and invalidations made during the session are held in
+memory. Export them before closing the app:
+
+1. In the **Report** panel, click <span class="btn-badge badge-outline-secondary">Download Corrections</span>.
+2. Choose a save location. The file is saved as a `.csv`.
+
+The corrections log serves two purposes. First, it is an archive record of all
+changes made to the classifier output for a given cruise. Second, it can be
+re-imported in a future session using
+<span class="btn-badge badge-secondary">Import corrections</span> in the
+**Validate** panel — all relabellings and invalidations will be replayed
+automatically on the freshly loaded data, so you can continue where you left
+off without repeating the validation work.
+
+---
+
+## 5. Re-running the report with updated data
+
+If you add more corrections after generating the first report, or if new
+classification files become available, simply click <span class="btn-badge badge-primary">Make Report</span> again.
+The existing file will be overwritten.
+
+There is no need to re-download data — all IFCB files are cached locally.
+
+---
+
+## Configuration files for maintainers
+
+The following files in the package control default behaviour. After editing
+them, rebuild and reinstall the package with `devtools::install()` for changes
+to take effect.
+
+### Editing the LLM style guide {#editing-the-llm-style-guide}
+
+`inst/extdata/report_writing_guide.md` is the system prompt sent to the LLM
+before every text generation request. It defines:
+
+- The expected structure of summaries and station descriptions
+- Species name conventions and HAB annotation rules
+- Stylistic tone (formal scientific Swedish/English)
+- What information must be included vs. omitted
+
+Edit this file to reflect updated SMHI publication guidelines, new HAB
+reporting requirements, or a change in the preferred language model's
+behaviour.
+
+### Adding taxa to the lookup table
+
+`inst/extdata/taxa_lookup.csv` controls how classifier class names are
+displayed and which taxa are treated as HAB species. Each row has:
+
+| Column | Description |
+|--------|-------------|
+| `name` | Classifier class name (must match the `.h5` file exactly) |
+| `display_name` | Name shown in plots and reports |
+| `aphia_id` | WoRMS AphiaID (for reference) |
+| `italic` | `TRUE` if the name should be italicised (species/genus) |
+| `HAB` | `TRUE` if the taxon is a harmful algae species |
+| `sflag` | Optional qualifier appended to the name (e.g. `cf.`) |
+
+After adding a new taxon row and rebuilding, the taxon will appear in the
+gallery dropdown, be included in biovolume calculations, and be correctly
+formatted in reports.
+
+### Adding stations permanently to the package
+
+Stations fetched from SHARK at runtime are only available on the computer where
+they were fetched. To bundle a station so it is available on all installations:
+
+**For AlgAware spatial bin-matching and the chlorophyll map:**
+
+Add a row to `inst/stations/algaware_stations.tsv`:
+
+```
+"NEW STATION"	"EAST"	"New Stn"
+```
+
+- `STATION_NAME` must match the canonical name used in SHARK.
+- `COAST` is `EAST` for Baltic Sea or `WEST` for West Coast.
+- `STATION_NAME_SHORT` is the label used in plots (keep it short).
+
+**For CTD profile and Chl-a time-series panels:**
+
+1. Add the station name to the `station_list` array in
+   `inst/extdata/standard_stations.yaml`.
+2. Add a `StationName: "Region name"` line in the same file. Use one of the
+   existing region names or add a new region (a new region will create a new
+   panel group in the CTD section of the report).
+
+**For raw station name synonym resolution:**
+
+If the station name as it appears in CNV file headers or LIMS exports differs
+from the canonical name, add a row to `inst/extdata/station_mapper.txt`:
+
+```
+NEW STATION RAW SYNONYM	NEW STATION
+```
+
+The synonym column is matched case-insensitively. Prefix matching is also
+applied, so `NEW STATION (EXTRA TEXT)` will resolve correctly without an
+explicit entry.
+
+### Updating the historical Chl-a climatology
+
+`inst/extdata/annual_1991-2020_statistics_chl20m.txt` contains monthly mean
+and standard deviation Chl-a values for each standard station, used as the
+grey ribbon in the CTD time-series panels. The file is tab-delimited with
+columns `STATN`, `STNCODE`, `MONTH`, `CHLA:mean`, `CHLA:std`,
+`CHLA:number_of_values`.
+
+When SMHI adopts a new climatological period (e.g. 1991–2020 → 2001–2030),
+replace this file with the updated statistics and update the filename and
+legend labels in `R/ctd_plots.R`.

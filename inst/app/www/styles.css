@@ -1,6 +1,73 @@
 /* AlgAware Shiny App Styles */
 
 /* ============================================================================
+   Plot recalculating spinner
+   Shiny adds .recalculating immediately when a plot is marked stale,
+   so this appears as soon as the user clicks the tab — no server code needed.
+   ============================================================================ */
+.shiny-plot-output.recalculating {
+  position: relative;
+}
+.shiny-plot-output.recalculating::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.75);
+  z-index: 10;
+}
+.shiny-plot-output.recalculating::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 36px;
+  height: 36px;
+  margin-top: -18px;
+  margin-left: -18px;
+  border: 4px solid rgba(44, 95, 124, 0.2);
+  border-top-color: #2c5f7c;
+  border-radius: 50%;
+  animation: aw-spin 0.8s linear infinite;
+  z-index: 11;
+}
+
+/* ============================================================================
+   App Loading Overlay
+   ============================================================================ */
+#app-loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #1b3a4b;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  transition: opacity 0.4s ease;
+}
+#app-loading-overlay.fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+.app-loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 5px solid rgba(255,255,255,0.2);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: aw-spin 0.8s linear infinite;
+}
+.app-loading-text {
+  color: rgba(255,255,255,0.85);
+  font-size: 15px;
+  letter-spacing: 0.03em;
+}
+@keyframes aw-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================================================
    CSS Custom Properties
    ============================================================================ */
 :root {
@@ -378,8 +445,19 @@
    Navbar
    ============================================================================ */
 .navbar .navbar-logo {
-  margin-left: auto;
   height: 30px;
+}
+
+.navbar .navbar-version-link {
+  margin-left: auto;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.navbar .navbar-version-link:hover {
+  color: #fff;
+  text-decoration: underline;
 }
 
 /* ============================================================================

@@ -407,9 +407,10 @@ mod_data_loader_server <- function(id, config, rv) {
           rv$matched_metadata <- matched
           rv$classifications_raw_all <- proc$classifications_raw
           rv$classifications_raw <- proc$classifications_raw
-          rv$classifications_all <- proc$classifications
-          rv$classifications <- proc$classifications
-          rv$invalidated_classes <- proc$non_bio_classes
+          rv$classifications_all      <- proc$classifications
+          rv$classifications          <- proc$classifications
+          rv$classifications_original <- proc$classifications
+          rv$invalidated_classes      <- proc$non_bio_classes
           rv$taxa_lookup <- proc$taxa_lookup
           rv$classifier_name <- proc$classifier_name
           rv$excluded_samples <- character(0)
@@ -465,22 +466,7 @@ mod_data_loader_server <- function(id, config, rv) {
             rv$class_list, rv$taxa_lookup, rv$custom_classes
           )
 
-          # Warn about unmatched classes
-          observed_classes <- unique(rv$classifications$class_name)
-          unmatched <- setdiff(observed_classes, rv$class_list)
-          if (length(unmatched) > 0) {
-            shiny::showNotification(
-              paste0(length(unmatched), " class(es) in classifications not ",
-                     "in class list: ",
-                     paste(utils::head(unmatched, 5), collapse = ", "),
-                     if (length(unmatched) > 5) "..."),
-              type = "warning", duration = 10
-            )
-          }
-
-          # Gallery classes
           gallery_classes <- sort(unique(rv$classifications$class_name))
-          gallery_classes <- gallery_classes[gallery_classes != "unclassified"]
           rv$current_class_idx <- 1L
           rv$current_region <- "EAST"
           rv$data_loaded <- TRUE

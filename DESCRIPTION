@@ -36,11 +36,17 @@ Imports:
     ggrepel,
     ggtext,
     viridis,
-    httr2,
-    rectpacker (>= 1.0.0)
+    rectpacker (>= 1.0.0),
+    httr2
 Suggests:
+    knitr,
     mockery,
+    oce,
+    patchwork (>= 1.3.0),
+    rmarkdown,
     rnaturalearthdata,
     testthat (>= 3.0.0),
-    withr
+    withr,
+    yaml
+VignetteBuilder: knitr
 Config/testthat/edition: 3

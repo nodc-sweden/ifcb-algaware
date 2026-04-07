@@ -263,6 +263,186 @@ test_that("copy_classification_files finds files in yearly subdirs", {
   ))
 })
 
+test_that("resolve_classification_path returns normalized existing dir", {
+  tmp <- tempdir()
+  result <- algaware:::resolve_classification_path(tmp)
+  expect_true(dir.exists(result))
+})
+
+test_that("resolve_classification_path returns input for non-existent path", {
+  result <- algaware:::resolve_classification_path("/nonexistent/path/xyz")
+  expect_type(result, "character")
+  expect_true(nzchar(result))
+})
+
+test_that("resolve_classification_path returns empty string for empty input", {
+  result <- algaware:::resolve_classification_path("")
+  expect_equal(result, "")
+})
+
+test_that("resolve_classification_path converts backslashes to forward slashes", {
+  tmp <- tempdir()
+  # Build a path with backslashes pointing to the same real dir
+  backslash_path <- gsub("/", "\\\\", tmp)
+  result <- algaware:::resolve_classification_path(backslash_path)
+  expect_false(grepl("\\\\", result))
+})
+
+test_that("resolve_classification_path strips trailing slash", {
+  tmp <- tempdir()
+  result <- algaware:::resolve_classification_path(paste0(tmp, "/"))
+  expect_false(endsWith(result, "/"))
+})
+
+test_that("resolve_classification_path strips leading/trailing whitespace", {
+  tmp <- tempdir()
+  result <- algaware:::resolve_classification_path(paste0("  ", tmp, "  "))
+  expect_true(dir.exists(result))
+})
+
+test_that("resolve_classification_path maps Windows drive letter on non-Windows", {
+  skip_if(.Platform$OS.type == "windows", "WSL mapping only applies on non-Windows")
+
+  # Find an existing /mnt/<drive> mount to use as target
+  mnt_dirs <- list.dirs("/mnt", recursive = FALSE, full.names = TRUE)
+  mnt_dirs <- mnt_dirs[grepl("^/mnt/[a-z]$", mnt_dirs) & dir.exists(mnt_dirs)]
+
+  if (length(mnt_dirs) == 0) {
+    skip("No /mnt/<drive> mounts available for WSL mapping test")
+  }
+
+  drive_letter <- toupper(basename(mnt_dirs[[1]]))
+  win_path <- paste0(drive_letter, ":/")
+  result <- algaware:::resolve_classification_path(win_path)
+  expect_true(dir.exists(result))
+  expect_false(grepl("^[A-Za-z]:/", result))
+})
+
+test_that("download_raw_data triggers progress callbacks for new download", {
+  tmp_dir <- file.path(tempdir(), paste0("raw_progress_", Sys.getpid()))
+  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+
+  msgs <- character(0)
+  callback <- function(current, total, msg) msgs <<- c(msgs, msg)
+
+  mockery::stub(download_raw_data, "iRfcb::ifcb_download_dashboard_data", NULL)
+
+  download_raw_data("https://example.com",
+                    c("D20220101T000000_IFCB134"), tmp_dir,
+                    progress_callback = callback)
+  expect_true(any(grepl("Downloading", msgs)))
+  expect_true(any(grepl("downloaded", msgs)))
+})
+
+test_that("download_features triggers progress callbacks for new download", {
+  tmp_dir <- file.path(tempdir(), paste0("feat_progress_", Sys.getpid()))
+  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+
+  msgs <- character(0)
+  callback <- function(current, total, msg) msgs <<- c(msgs, msg)
+
+  mockery::stub(download_features, "iRfcb::ifcb_download_dashboard_data", NULL)
+
+  download_features("https://example.com",
+                    c("D20220101T000000_IFCB134"), tmp_dir,
+                    progress_callback = callback)
+  expect_true(any(grepl("Downloading", msgs)))
+  expect_true(any(grepl("downloaded", msgs)))
+})
+
+test_that("copy_classification_files triggers progress callbacks when copying", {
+  tmp_src <- file.path(tempdir(), paste0("ccp_src_", Sys.getpid()))
+  tmp_dest <- file.path(tempdir(), paste0("ccp_dest_", Sys.getpid()))
+  year_dir <- file.path(tmp_src, "class2022_v3")
+  dir.create(year_dir, recursive = TRUE, showWarnings = FALSE)
+  dir.create(tmp_dest, recursive = TRUE, showWarnings = FALSE)
+  on.exit(unlink(c(tmp_src, tmp_dest), recursive = TRUE), add = TRUE)
+  writeLines("fake h5", file.path(year_dir, "D20220101T000000_IFCB134_class.h5"))
+
+  msgs <- character(0)
+  callback <- function(current, total, msg) msgs <<- c(msgs, msg)
+
+  copy_classification_files(
+    tmp_src, c("D20220101T000000_IFCB134"), tmp_dest,
+    progress_callback = callback
+  )
+  expect_true(any(grepl("Copying|ready", msgs)))
+})
+
+test_that("read_h5_classifications reads real H5 file correctly", {
+  h5_path <- testthat::test_path("test_data",
+                                  "D20250714T110535_IFCB134_class.h5")
+  skip_if_not(file.exists(h5_path), "Test H5 file not available")
+  skip_if_not_installed("hdf5r")
+
+  tmp_dir <- file.path(tempdir(), paste0("h5_real_", Sys.getpid()))
+  dir.create(tmp_dir, showWarnings = FALSE)
+  file.copy(h5_path, tmp_dir)
+  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+
+  result <- read_h5_classifications(tmp_dir)
+  expect_s3_class(result, "data.frame")
+  expect_true(nrow(result) > 0)
+  expect_equal(names(result), c("sample_name", "roi_number", "class_name", "score"))
+  expect_equal(unique(result$sample_name), "D20250714T110535_IFCB134")
+  expect_type(result$roi_number, "integer")
+  expect_type(result$score, "double")
+})
+
+test_that("read_h5_classifications filters by sample_ids", {
+  h5_path <- testthat::test_path("test_data",
+                                  "D20250714T110535_IFCB134_class.h5")
+  skip_if_not(file.exists(h5_path), "Test H5 file not available")
+  skip_if_not_installed("hdf5r")
+
+  tmp_dir <- file.path(tempdir(), paste0("h5_filter_", Sys.getpid()))
+  dir.create(tmp_dir, showWarnings = FALSE)
+  file.copy(h5_path, tmp_dir)
+  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+
+  result_all <- read_h5_classifications(tmp_dir)
+  result_filtered <- read_h5_classifications(tmp_dir,
+                                              sample_ids = "D20250714T110535_IFCB134")
+  result_none <- read_h5_classifications(tmp_dir,
+                                          sample_ids = "D99991231T999999_IFCB999")
+
+  expect_equal(nrow(result_all), nrow(result_filtered))
+  expect_equal(nrow(result_none), 0)
+})
+
+test_that("read_classifier_name reads classifier name from H5 file", {
+  h5_path <- testthat::test_path("test_data",
+                                  "D20250714T110535_IFCB134_class.h5")
+  skip_if_not(file.exists(h5_path), "Test H5 file not available")
+  skip_if_not_installed("hdf5r")
+
+  tmp_dir <- file.path(tempdir(), paste0("h5_clf_", Sys.getpid()))
+  dir.create(tmp_dir, showWarnings = FALSE)
+  file.copy(h5_path, tmp_dir)
+  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+
+  result <- read_classifier_name(tmp_dir)
+  expect_type(result, "character")
+  expect_true(nzchar(result))
+  expect_match(result, "ResNet50|SMHI", ignore.case = TRUE)
+})
+
+test_that("read_h5_classifications warns and skips invalid h5 files", {
+  tmp_dir <- file.path(tempdir(), paste0("h5_bad_", Sys.getpid()))
+  dir.create(tmp_dir, recursive = TRUE, showWarnings = FALSE)
+  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+
+  # Create a fake .h5 file that is not a valid HDF5 file
+  writeLines("not a real h5 file", file.path(tmp_dir, "D20220101T000000_IFCB134_class.h5"))
+
+  expect_warning(
+    result <- read_h5_classifications(tmp_dir),
+    "Failed to read H5"
+  )
+  expect_s3_class(result, "data.frame")
+  expect_equal(nrow(result), 0)
+})
+
 test_that("copy_classification_files works when root is already a year dir", {
   tmp_src <- file.path(tempdir(), paste0("class_src_yearroot_", Sys.getpid()))
   tmp_dest <- file.path(tempdir(), paste0("class_dest_yearroot_", Sys.getpid()))

@@ -25,6 +25,13 @@ mod_validation_ui <- function(id) {
                           icon = shiny::icon("plus"))
     ),
     shiny::hr(),
+    shiny::fileInput(ns("import_corrections_file"),
+      label = NULL,
+      buttonLabel = shiny::tagList(shiny::icon("upload"), " Import corrections"),
+      placeholder = "",
+      accept = ".csv",
+      width = "100%"
+    ),
     shiny::uiOutput(ns("validation_status"))
   )
 }
@@ -395,6 +402,8 @@ mod_validation_server <- function(id, rv, config) {
                          placeholder = "e.g. Genus_species"),
         shiny::textInput(ns("custom_sci_name"), "Scientific name (display)",
                          placeholder = "e.g. Genus species"),
+        shiny::textInput(ns("custom_sflag"), "Species flag (sflag)",
+                         placeholder = "e.g. spp. or sp. or group"),
         shiny::numericInput(ns("custom_aphia_id"), "AphiaID (WoRMS)", value = NA,
                             min = 1),
         shiny::checkboxInput(ns("custom_hab"), "Potentially harmful (HAB)", FALSE),
@@ -435,6 +444,7 @@ mod_validation_server <- function(id, rv, config) {
       new_row <- data.frame(
         clean_names = clean_name,
         name = sci_name,
+        sflag = trimws(input$custom_sflag %||% ""),
         AphiaID = if (is.na(aphia_id)) NA_integer_ else as.integer(aphia_id),
         HAB = isTRUE(input$custom_hab),
         italic = isTRUE(input$custom_italic),
@@ -453,6 +463,158 @@ mod_validation_server <- function(id, rv, config) {
         paste0("Added custom class '", clean_name, "'"),
         type = "message"
       )
+    })
+
+    # ---- 6. Import Corrections CSV ----
+    shiny::observeEvent(input$import_corrections_file, {
+      shiny::req(rv$data_loaded, input$import_corrections_file)
+
+      path <- input$import_corrections_file$datapath
+      df <- tryCatch(
+        utils::read.csv(path, stringsAsFactors = FALSE),
+        error = function(e) {
+          shiny::showNotification(
+            paste0("Could not read file: ", e$message),
+            type = "error", duration = 8
+          )
+          NULL
+        }
+      )
+      if (is.null(df)) return()
+
+      required <- c("sample_name", "roi_number", "original_class", "new_class")
+      missing_cols <- setdiff(required, names(df))
+      if (length(missing_cols) > 0) {
+        shiny::showNotification(
+          paste0("File is missing required columns: ",
+                 paste(missing_cols, collapse = ", ")),
+          type = "error", duration = 8
+        )
+        return()
+      }
+
+      df$roi_number <- as.integer(df$roi_number)
+      n_import <- nrow(df)
+      n_current <- nrow(rv$corrections)
+
+      # Preview what will change
+      relabels <- df[df$new_class != "unclassified", ]
+      invalidated <- unique(df$original_class[df$new_class == "unclassified"])
+
+      warning_text <- if (n_current > 0) {
+        shiny::p(
+          style = "color: #dc3545;",
+          shiny::icon("triangle-exclamation"),
+          paste0(" This will replace your ", n_current,
+                 " existing correction(s).")
+        )
+      }
+
+      shiny::showModal(shiny::modalDialog(
+        title = "Import Corrections",
+        shiny::p(paste0("Import ", n_import, " correction(s) from '",
+                        input$import_corrections_file$name, "'?")),
+        if (nrow(relabels) > 0) {
+          agg <- stats::aggregate(roi_number ~ original_class + new_class,
+                                  data = relabels, FUN = length)
+          shiny::p(
+            "Relabels: ",
+            shiny::tags$ul(lapply(seq_len(nrow(agg)), function(i) {
+              shiny::tags$li(paste0(agg$roi_number[i], "x ", agg$original_class[i],
+                                   " \u2192 ", agg$new_class[i]))
+            }))
+          )
+        },
+        if (length(invalidated) > 0) {
+          shiny::p(paste0("Invalidated: ", paste(invalidated, collapse = ", ")))
+        },
+        warning_text,
+        footer = shiny::tagList(
+          shiny::actionButton(ns("confirm_import_corrections"), "Apply",
+                              class = "btn-primary"),
+          shiny::modalButton("Cancel")
+        ),
+        # Store df for use in the confirm observer via a temp file to avoid
+        # closure issues with reactive invalidation
+        easyClose = FALSE
+      ))
+
+      # Cache parsed df for the confirm step
+      import_cache(df)
+    })
+
+    import_cache <- shiny::reactiveVal(NULL)
+
+    shiny::observeEvent(input$confirm_import_corrections, {
+      df <- import_cache()
+      shiny::req(df, rv$classifications_original)
+
+      orig <- rv$classifications_original
+
+      # Apply all corrections to a fresh copy of original
+      keys_orig <- paste0(orig$sample_name, "_", orig$roi_number)
+      keys_imp  <- paste0(df$sample_name,   "_", df$roi_number)
+      match_idx <- match(keys_imp, keys_orig)
+      valid     <- !is.na(match_idx)
+
+      result <- orig
+      result$class_name[match_idx[valid]] <- df$new_class[valid]
+
+      rv$classifications_all <- result
+      rv$classifications     <- result
+
+      # Rebuild corrections log (drop custom metadata columns)
+      rv$corrections <- df[, c("sample_name", "roi_number",
+                               "original_class", "new_class")]
+
+      # Reconstruct invalidated_classes from corrections that set new_class to "unclassified"
+      inv_rows <- df[df$new_class == "unclassified", ]
+      rv$invalidated_classes <- unique(inv_rows$original_class)
+
+      # Re-add any custom classes embedded in the export
+      custom_cols <- c("custom_sci_name", "custom_sflag",
+                       "custom_aphia_id", "custom_hab", "custom_italic")
+      if (all(custom_cols %in% names(df))) {
+        custom_rows <- df[!is.na(df$custom_sci_name), ]
+        custom_rows <- custom_rows[!duplicated(custom_rows$new_class), ]
+        if (nrow(custom_rows) > 0) {
+          all_known <- c(
+            rv$class_list,
+            if (!is.null(rv$taxa_lookup)) rv$taxa_lookup$clean_names,
+            rv$custom_classes$clean_names
+          )
+          new_custom <- custom_rows[!custom_rows$new_class %in% all_known, ]
+          if (nrow(new_custom) > 0) {
+            added <- data.frame(
+              clean_names = new_custom$new_class,
+              name        = new_custom$custom_sci_name,
+              sflag       = ifelse(is.na(new_custom$custom_sflag), "",
+                                   new_custom$custom_sflag),
+              AphiaID     = as.integer(new_custom$custom_aphia_id),
+              HAB         = as.logical(new_custom$custom_hab),
+              italic      = as.logical(new_custom$custom_italic),
+              is_diatom   = FALSE,
+              stringsAsFactors = FALSE
+            )
+            rv$custom_classes <- rbind(rv$custom_classes, added)
+            rv$relabel_choices <- build_relabel_choices(
+              rv$class_list, rv$taxa_lookup, rv$custom_classes
+            )
+          }
+        }
+      }
+
+      rv$summaries_stale <- TRUE
+      import_cache(NULL)
+      shiny::removeModal()
+
+      n_unmatched <- sum(!valid)
+      msg <- paste0("Applied ", sum(valid), " correction(s).")
+      if (n_unmatched > 0) {
+        msg <- paste0(msg, " ", n_unmatched,
+                      " row(s) did not match any image in this dataset.")
+      }
+      shiny::showNotification(msg, type = "message", duration = 6)
     })
 
     # ---- Status display (sidebar summary of corrections) ----

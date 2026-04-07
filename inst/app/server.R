@@ -21,8 +21,9 @@ server <- function(input, output, session) {
     matched_metadata    = NULL,          # Metadata filtered & matched to stations
     classifications_raw_all = NULL,      # Full original AI predictions
     classifications_raw = NULL,          # Original AI predictions (immutable)
-    classifications_all = NULL,          # Full working copy across all samples
-    classifications     = NULL,          # Working copy (mutated by validation)
+    classifications_all      = NULL,     # Full working copy across all samples
+    classifications          = NULL,     # Working copy (mutated by validation)
+    classifications_original = NULL,     # Immutable snapshot at load time (for import reset)
     invalidated_classes = character(0),  # Classes marked as non-biological
     taxa_lookup         = NULL,          # Mapping: class_name -> scientific name
     station_summary     = NULL,          # Aggregated biovolume per station/taxon
@@ -43,6 +44,7 @@ server <- function(input, output, session) {
     custom_classes = data.frame(          # User-added custom classes (session-only)
       clean_names = character(0),
       name        = character(0),
+      sflag       = character(0),
       AphiaID     = integer(0),
       HAB         = logical(0),
       italic      = logical(0),
@@ -65,6 +67,15 @@ server <- function(input, output, session) {
     # -- Front page mosaics (set by mod_frontpage) --
     frontpage_baltic_mosaic   = NULL,    # Magick image for front page Baltic mosaic
     frontpage_westcoast_mosaic = NULL,   # Magick image for front page West Coast mosaic
+
+    # -- CTD / LIMS state (set by mod_ctd) --
+    ctd_data            = NULL,          # AlgAware-matched CTD profiles (for chl map)
+    ctd_data_full       = NULL,          # All standard-station CTD profiles (for CTD tab)
+    lims_data           = NULL,          # AlgAware-matched LIMS Chl-a (for chl map)
+    lims_data_full      = NULL,          # All standard-station LIMS data (for CTD tab)
+    chl_stats           = NULL,          # Historical Chl-a statistics (bundled)
+    ctd_loaded          = FALSE,         # TRUE once CTD data loaded
+    chl_map_source      = "ferrybox",   # Active chl map source for report
 
     # -- App state flags --
     excluded_samples = character(0),     # Loaded samples excluded from analysis/report
@@ -103,6 +114,24 @@ server <- function(input, output, session) {
   mod_samples_server("samples", rv, config)
   mod_frontpage_server("frontpage", rv, config)
   mod_report_server("report", rv, config)
+  mod_ctd_server("ctd", config, rv)
+
+  # CTD tab title: show "loaded" badge once CTD data is available
+  output$ctd_tab_title <- shiny::renderUI({
+    if (isTRUE(rv$ctd_loaded)) {
+      shiny::tagList("CTD ", shiny::span(class = "badge bg-success ms-1", "loaded"))
+    } else {
+      "CTD"
+    }
+  })
+
+  # Auto-open the Validate accordion panel after data loads so buttons are
+  # immediately visible without the user having to manually expand the panel.
+  shiny::observeEvent(rv$data_loaded, {
+    shiny::req(isTRUE(rv$data_loaded))
+    bslib::accordion_panel_open("sidebar_accordion", values = "validate",
+                                session = session)
+  }, ignoreInit = TRUE)
 
   compute_ferrybox_summary <- function(matched_metadata, ferrybox_data) {
     if (is.null(matched_metadata) || nrow(matched_metadata) == 0 ||
@@ -251,22 +280,57 @@ server <- function(input, output, session) {
   })
 
   output$biomass_map <- renderPlot({
-    id <- showNotification("Generating maps...", type = "message",
-                           duration = NULL, closeButton = FALSE)
-    on.exit(removeNotification(id), add = TRUE)
-    biomass_maps()$biomass_map
+    biomaps <- biomass_maps()
+    biomaps$biomass_map
+  })
+
+  # Update chl map source choices when CTD/LIMS data becomes available.
+  # Priority: Hose > Bottle (0-20m) > CTD > FerryBox — auto-select best source.
+  observe({
+    choices <- c("FerryBox" = "ferrybox")
+    if (isTRUE(rv$ctd_loaded) && !is.null(rv$ctd_data)) {
+      choices <- c(choices, "CTD (0-20 m)" = "ctd")
+    }
+    if (!is.null(rv$lims_data) && nrow(rv$lims_data) > 0) {
+      choices <- c(choices, "LIMS bottle (0-20 m)" = "lims")
+      if ("SMPNO" %in% names(rv$lims_data) &&
+          any(grepl("-SLA_", rv$lims_data$SMPNO, fixed = TRUE), na.rm = TRUE)) {
+        choices <- c(choices, "LIMS hose (0-10 m)" = "lims_hose")
+      }
+    }
+    # Auto-select best available source
+    best <- if ("lims_hose" %in% choices) "lims_hose"
+            else if ("lims" %in% choices) "lims"
+            else if ("ctd" %in% choices) "ctd"
+            else "ferrybox"
+    updateSelectInput(session, "chl_map_source",
+                      choices = choices, selected = best)
+  })
+
+  # Sync the selector to rv for report access
+  observe({
+    rv$chl_map_source <- input$chl_map_source %||% "ferrybox"
   })
 
   output$chl_map <- renderPlot({
-    biomass_maps()$chl_map
+    source <- input$chl_map_source %||% "ferrybox"
+    if (source == "ctd" && !is.null(rv$ctd_data)) {
+      create_chl_map(compute_ctd_chl_avg(rv$ctd_data),
+                     title = "CTD chlorophyll fluorescence (0-20 m avg)")
+    } else if (source == "lims" && !is.null(rv$lims_data)) {
+      create_chl_map(compute_lims_chl_avg(rv$lims_data),
+                     title = "Bottle Chl-a (0-20 m avg)")
+    } else if (source == "lims_hose" && !is.null(rv$lims_data)) {
+      create_chl_map(compute_lims_hose_avg(rv$lims_data),
+                     title = "Hose Chl-a (0-10 m integrated)")
+    } else {
+      biomass_maps()$chl_map
+    }
   })
 
   # Heatmaps
   output$baltic_heatmap <- renderPlot({
     req(rv$baltic_wide, ncol(rv$baltic_wide) > 1)
-    id <- showNotification("Generating plots...", type = "message",
-                           duration = NULL, closeButton = FALSE)
-    on.exit(removeNotification(id), add = TRUE)
     create_heatmap(rv$baltic_wide, taxa_lookup = rv$taxa_lookup,
                    title = "Baltic Sea")
   })

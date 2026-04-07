@@ -28,7 +28,13 @@ generate_report(
   frontpage_baltic_taxa = NULL,
   frontpage_westcoast_taxa = NULL,
   report_number = NULL,
-  report_dnr = NULL
+  report_dnr = NULL,
+  ctd_data = NULL,
+  ctd_data_full = NULL,
+  lims_data = NULL,
+  lims_data_full = NULL,
+  chl_stats = NULL,
+  chl_map_source = "ferrybox"
 )
 }
 \arguments{
@@ -97,6 +103,26 @@ matching the numbered images in the West Coast mosaic.}
 
 \item{report_dnr}{Optional diarienummer string for the front page
 (e.g. \code{"2026-1234"}).}
+
+\item{ctd_data}{Optional CTD profile data from \code{read_cnv_folder()}
+(AlgAware-matched, used for the chlorophyll map).}
+
+\item{ctd_data_full}{Optional full CTD profile data from
+\code{read_cnv_folder_all()} (all standard stations, used for the CTD
+section with regional fluorescence profiles and time series).}
+
+\item{lims_data}{Optional LIMS discrete Chl-a data from
+\code{read_lims_data()} (AlgAware-matched, used for the chlorophyll map).}
+
+\item{lims_data_full}{Optional LIMS data from \code{read_lims_data_all()}
+(all standard stations, used for the CTD section time series).}
+
+\item{chl_stats}{Optional historical statistics from
+\code{load_chl_statistics()}.}
+
+\item{chl_map_source}{Character; active chlorophyll map source:
+\code{"ferrybox"}, \code{"ctd"}, \code{"lims"} (bottle, 0-20 m), or
+\code{"lims_hose"} (hose integrated, 0-10 m).}
 }
 \value{
 Invisible path to the created document.

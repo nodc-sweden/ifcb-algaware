@@ -2,7 +2,7 @@
 % Please edit documentation in R/report.R
 \name{add_mosaic_overview}
 \alias{add_mosaic_overview}
-\title{Add mosaic overview page to the report}
+\title{Add front page mosaic overview page to the report}
 \usage{
 add_mosaic_overview(
   doc,
@@ -17,9 +17,9 @@ add_mosaic_overview(
 \arguments{
 \item{doc}{An rdocx object.}
 
-\item{baltic_mosaic}{Optional magick image for Baltic Sea.}
+\item{baltic_mosaic}{Magick image for the Baltic Sea mosaic, or NULL.}
 
-\item{westcoast_mosaic}{Optional magick image for West Coast.}
+\item{westcoast_mosaic}{Magick image for the West Coast mosaic, or NULL.}
 
 \item{cleanup}{Environment with a \code{files} character vector.}
 
@@ -33,7 +33,6 @@ add_mosaic_overview(
 The modified rdocx object.
 }
 \description{
-Inserts Baltic Sea and West Coast summary mosaics with numbered taxa
-captions. Called after the front page section break.
+Add front page mosaic overview page to the report
 }
 \keyword{internal}

@@ -311,3 +311,84 @@ test_that("add_mosaic_overview works with only one mosaic", {
   print(doc, target = out)
   expect_true(file.exists(out))
 })
+
+# --- create_mosaic with allow_taller_rows = TRUE ----------------------------
+
+test_that("create_mosaic with allow_taller_rows = TRUE returns magick-image", {
+  skip_if_not_installed("rectpacker")
+
+  tmp_dir <- file.path(tempdir(), paste0("mosaic_taller_", Sys.getpid()))
+  dir.create(tmp_dir, recursive = TRUE, showWarnings = FALSE)
+  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+
+  dims <- list(c(50, 50), c(200, 40), c(60, 60), c(150, 50), c(80, 80))
+  paths <- character(0)
+  for (i in seq_along(dims)) {
+    path <- file.path(tmp_dir, paste0("img_", i, ".png"))
+    img <- magick::image_blank(dims[[i]][1], dims[[i]][2], color = "white")
+    magick::image_write(img, path)
+    paths <- c(paths, path)
+  }
+
+  result <- create_mosaic(paths, n_images = length(paths),
+                          allow_taller_rows = TRUE,
+                          max_width_px = 500L, max_height_px = 600L)
+  expect_s3_class(result, "magick-image")
+  info <- magick::image_info(result)
+  expect_true(info$width > 0)
+  expect_true(info$height > 0)
+})
+
+test_that("create_mosaic with allow_taller_rows = TRUE and labels", {
+  skip_if_not_installed("rectpacker")
+
+  tmp_dir <- file.path(tempdir(), paste0("mosaic_labels_", Sys.getpid()))
+  dir.create(tmp_dir, recursive = TRUE, showWarnings = FALSE)
+  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+
+  paths <- character(0)
+  for (i in 1:4) {
+    path <- file.path(tmp_dir, paste0("img_", i, ".png"))
+    img <- magick::image_blank(60, 60, color = "gray")
+    magick::image_write(img, path)
+    paths <- c(paths, path)
+  }
+
+  result <- create_mosaic(paths, n_images = 4L, allow_taller_rows = TRUE,
+                          labels = as.character(1:4))
+  expect_s3_class(result, "magick-image")
+})
+
+test_that("create_mosaic uses max_cols when provided", {
+  tmp_dir <- file.path(tempdir(), paste0("mosaic_maxcols_", Sys.getpid()))
+  dir.create(tmp_dir, recursive = TRUE, showWarnings = FALSE)
+  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+
+  paths <- character(0)
+  for (i in 1:6) {
+    path <- file.path(tmp_dir, paste0("img_", i, ".png"))
+    img <- magick::image_blank(100, 100, color = "white")
+    magick::image_write(img, path)
+    paths <- c(paths, path)
+  }
+
+  result <- create_mosaic(paths, n_images = 6L, max_cols = 2L)
+  expect_s3_class(result, "magick-image")
+})
+
+# --- is_valid_extracted_png ---------------------------------------------------
+
+test_that("is_valid_extracted_png returns FALSE for non-existent file", {
+  result <- algaware:::is_valid_extracted_png("/nonexistent/path/img.png")
+  expect_false(result)
+})
+
+test_that("is_valid_extracted_png returns TRUE for a valid PNG", {
+  tmp <- tempfile(fileext = ".png")
+  on.exit(unlink(tmp))
+  img <- magick::image_blank(20, 20, color = "white")
+  magick::image_write(img, tmp)
+
+  result <- algaware:::is_valid_extracted_png(tmp)
+  expect_true(result)
+})

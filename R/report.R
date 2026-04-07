@@ -44,9 +44,23 @@
 #' @param report_number Optional report issue number (e.g. \code{"1"}).
 #' @param report_dnr Optional diarienummer string for the front page
 #'   (e.g. \code{"2026-1234"}).
- #' @param unclassified_fractions Optional named list or data frame of
- #'   unclassified proportion estimates passed to the LLM prompts for context.
- #' @return Invisible path to the created document.
+#' @param unclassified_fractions Optional named list or data frame of
+#'   unclassified proportion estimates passed to the LLM prompts for context.
+#' @param ctd_data Optional CTD profile data from \code{read_cnv_folder()}
+#'   (AlgAware-matched, used for the chlorophyll map).
+#' @param ctd_data_full Optional full CTD profile data from
+#'   \code{read_cnv_folder_all()} (all standard stations, used for the CTD
+#'   section with regional fluorescence profiles and time series).
+#' @param lims_data Optional LIMS discrete Chl-a data from
+#'   \code{read_lims_data()} (AlgAware-matched, used for the chlorophyll map).
+#' @param lims_data_full Optional LIMS data from \code{read_lims_data_all()}
+#'   (all standard stations, used for the CTD section time series).
+#' @param chl_stats Optional historical statistics from
+#'   \code{load_chl_statistics()}.
+#' @param chl_map_source Character; active chlorophyll map source:
+#'   \code{"ferrybox"}, \code{"ctd"}, \code{"lims"} (bottle, 0-20 m), or
+#'   \code{"lims_hose"} (hose integrated, 0-10 m).
+#' @return Invisible path to the created document.
 #' @export
 generate_report <- function(output_path, station_summary,
                             baltic_wide, westcoast_wide,
@@ -69,12 +83,37 @@ generate_report <- function(output_path, station_summary,
                             frontpage_baltic_taxa = NULL,
                             frontpage_westcoast_taxa = NULL,
                             report_number = NULL,
-                            report_dnr = NULL) {
+                            report_dnr = NULL,
+                            ctd_data = NULL,
+                            ctd_data_full = NULL,
+                            lims_data = NULL,
+                            lims_data_full = NULL,
+                            chl_stats = NULL,
+                            chl_map_source = "ferrybox") {
   template <- system.file("templates", "report_template.docx",
                           package = "algaware")
   if (!nzchar(template)) {
     stop("Report template not found. Reinstall the algaware package.",
          call. = FALSE)
+  }
+
+  # Enrich station_summary with the active chlorophyll source so LLM prompts
+  # receive the same data used for the chl map and report figures.
+  # FerryBox chl is already merged upstream; for CTD/LIMS we replace it here.
+  chl_avg <- switch(chl_map_source,
+    ctd       = if (!is.null(ctd_data))  compute_ctd_chl_avg(ctd_data)   else NULL,
+    lims      = if (!is.null(lims_data)) compute_lims_chl_avg(lims_data)  else NULL,
+    lims_hose = if (!is.null(lims_data)) compute_lims_hose_avg(lims_data) else NULL,
+    NULL  # ferrybox: already present in station_summary
+  )
+  if (!is.null(chl_avg) && nrow(chl_avg) > 0) {
+    station_summary$chl_mean <- NULL
+    station_summary <- merge(
+      station_summary,
+      chl_avg[, c("station_short", "chl_mean")],
+      by.x = "STATION_NAME_SHORT", by.y = "station_short",
+      all.x = TRUE
+    )
   }
 
   # Track temp files for cleanup via environment (survives object copies)
@@ -303,12 +342,34 @@ generate_report <- function(output_path, station_summary,
 
   doc <- officer::body_add_par(doc, "")
   doc <- officer::body_add_par(doc, "")
-  doc <- add_centered_plot(doc, maps$chl_map, cleanup,
+
+  # Use the correct chl map based on active source
+  chl_map_plot <- if (chl_map_source == "ctd" && !is.null(ctd_data)) {
+    create_chl_map(compute_ctd_chl_avg(ctd_data),
+                   title = "CTD chlorophyll fluorescence (0-20 m avg)")
+  } else if (chl_map_source == "lims" && !is.null(lims_data)) {
+    create_chl_map(compute_lims_chl_avg(lims_data),
+                   title = "Bottle Chl-a (0-20 m avg)")
+  } else if (chl_map_source == "lims_hose" && !is.null(lims_data)) {
+    create_chl_map(compute_lims_hose_avg(lims_data),
+                   title = "Hose Chl-a (0-10 m integrated)")
+  } else {
+    maps$chl_map
+  }
+
+  chl_caption_source <- switch(chl_map_source,
+    ctd       = "CTD chlorophyll fluorescence (0-20 m average)",
+    lims      = "Bottle chlorophyll-a (0-20 m average)",
+    lims_hose = "Hose chlorophyll-a (0-10 m integrated)",
+    "FerryBox chlorophyll fluorescence"
+  )
+
+  doc <- add_centered_plot(doc, chl_map_plot, cleanup,
     width = 7, height = 4, display_width = 5.8, display_height = 3.2)
   doc <- officer::body_add_fpar(doc, officer::fpar(
     officer::ftext(
       paste0("Figure ", fig_num,
-             ". FerryBox chlorophyll fluorescence at AlgAware stations",
+             ". ", chl_caption_source, " at AlgAware stations",
              if (nzchar(month_year)) {
                paste0(" during the ", month_year, " cruise.")
              } else {
@@ -361,12 +422,31 @@ generate_report <- function(output_path, station_summary,
                                on_llm_progress = report_progress,
                                unclassified_fractions = unclassified_fractions)
 
+  # CTD regional figures (optional, if CTD data loaded)
+  ctd_full_for_report <- if (!is.null(ctd_data_full) && nrow(ctd_data_full) > 0) {
+    ctd_data_full
+  } else if (!is.null(ctd_data) && nrow(ctd_data) > 0) {
+    # Fallback: legacy AlgAware-matched data (no region column — skip)
+    NULL
+  } else {
+    NULL
+  }
+  if (!is.null(ctd_full_for_report)) {
+    result <- add_ctd_report_section(
+      doc, ctd_full_for_report,
+      if (!is.null(lims_data_full) && nrow(lims_data_full) > 0) lims_data_full else NULL,
+      chl_stats, fig_num, cleanup
+    )
+    doc <- result$doc
+    fig_num <- result$fig_num
+  }
+
   # Image mosaics (optional per-class mosaics)
   hab_species <- get_hab_species(taxa_lookup)
   doc <- add_mosaic_section(doc, baltic_mosaics, hab_species, "Baltic Sea",
-                            cleanup)
+                            cleanup, taxa_lookup)
   doc <- add_mosaic_section(doc, westcoast_mosaics, hab_species,
-                            "West Coast", cleanup)
+                            "West Coast", cleanup, taxa_lookup)
 
   # ---- End content section with page number footer ----
   page_footer <- officer::block_list(
@@ -567,7 +647,7 @@ add_station_sections <- function(doc, station_summary,
 #' Add mosaic section to the report
 #' @keywords internal
 add_mosaic_section <- function(doc, mosaics, hab_species, region_label,
-                               cleanup) {
+                               cleanup, taxa_lookup = NULL) {
   if (length(mosaics) == 0) return(doc)
 
   doc <- officer::body_add_break(doc)
@@ -594,22 +674,110 @@ add_mosaic_section <- function(doc, mosaics, hab_species, region_label,
                             height = display_height),
       fp_p = officer::fp_par(text.align = "center")
     ))
-    caption <- paste0("Mosaic ", mosaic_num, ". Example images of ", taxon,
-                      " from ", region_label, " stations. Black bars represent 5 ",
-                      "\u00b5m.")
-    if (taxon %in% hab_species) {
-      caption <- paste0(caption, " * Potentially harmful taxon.")
+    cap_prop <- officer::fp_text(font.size = 10,
+                                 font.family = "Adobe Garamond Pro")
+    cap_italic <- officer::fp_text(font.size = 10, italic = TRUE,
+                                   font.family = "Adobe Garamond Pro")
+    taxon_ftexts <- make_taxon_ftexts(taxon, taxa_lookup, cap_prop, cap_italic)
+    hab_ftext <- if (taxon %in% hab_species) {
+      list(officer::ftext(" * Potentially harmful taxon.", cap_prop))
+    } else {
+      list()
     }
-    doc <- officer::body_add_fpar(doc, officer::fpar(
-      officer::ftext(caption,
-        officer::fp_text(font.size = 10, font.family = "Adobe Garamond Pro")),
-      fp_p = officer::fp_par(text.align = "center")
-    ))
+    doc <- officer::body_add_fpar(doc, do.call(officer::fpar, c(
+      list(officer::ftext(paste0("Mosaic ", mosaic_num,
+                                 ". Example images of "), cap_prop)),
+      taxon_ftexts,
+      list(officer::ftext(paste0(" from ", region_label,
+                                 " stations. Black bars represent 5 \u00b5m."),
+                          cap_prop)),
+      hab_ftext,
+      list(fp_p = officer::fp_par(text.align = "center"))
+    )))
     doc <- officer::body_add_par(doc, "")
     mosaic_num <- mosaic_num + 1L
   }
 
   doc
+}
+
+#' Add CTD profile and time series figures to the report
+#' @keywords internal
+add_ctd_report_section <- function(doc, ctd_data_full, lims_data_full,
+                                   chl_stats, fig_num, cleanup) {
+  standard_stations <- load_standard_stations()
+
+  dates <- ctd_data_full$sample_date[!is.na(ctd_data_full$sample_date)]
+  current_year <- if (length(dates) > 0) {
+    as.integer(format(max(dates), "%Y"))
+  } else {
+    as.integer(format(Sys.Date(), "%Y"))
+  }
+
+  left_pp <- officer::fp_par(text.align = "left")
+  has_lims <- !is.null(lims_data_full) && nrow(lims_data_full) > 0
+
+  # Regions in YAML order
+  yaml_regions <- unique(standard_stations$region)
+  present_regions <- unique(ctd_data_full$region)
+  regions <- c(yaml_regions[yaml_regions %in% present_regions],
+               setdiff(present_regions, yaml_regions))
+
+  for (region in regions) {
+    region_ctd <- ctd_data_full[ctd_data_full$region == region, ]
+    if (nrow(region_ctd) == 0) next
+
+    fig <- create_ctd_region_figure(
+      ctd_data_full     = ctd_data_full,
+      lims_data_full    = lims_data_full,
+      chl_stats         = chl_stats,
+      standard_stations = standard_stations,
+      region            = region,
+      current_year      = current_year,
+      force_two_columns = TRUE   # keep profile width consistent
+    )
+    if (is.null(fig)) next
+
+    # Page break before each region figure; no Word heading (title is in plot)
+    doc <- officer::body_add_break(doc)
+
+    n_stations <- length(unique(region_ctd$canonical_name))
+    fig_height <- max(4, min(16, n_stations * 2.5 + 1))
+    fig_width  <- 11  # always full width (profiles in col 1/4, ts in 3/4)
+
+    fig_file <- tempfile(fileext = ".png")
+    ggplot2::ggsave(fig_file, fig, width = fig_width,
+                    height = fig_height, dpi = 300)
+    cleanup$files <- c(cleanup$files, fig_file)
+
+    display_w <- min(6.5, fig_width * 0.65)
+    display_h <- display_w * fig_height / fig_width
+
+    doc <- officer::body_add_fpar(doc, officer::fpar(
+      officer::external_img(fig_file, width = display_w,
+                            height = display_h),
+      fp_p = officer::fp_par(text.align = "center")
+    ))
+
+    caption_detail <- if (has_lims) {
+      " and Chl-a time series (with 1991-2020 monthly statistics)"
+    } else {
+      ""
+    }
+
+    doc <- officer::body_add_fpar(doc, officer::fpar(
+      officer::ftext(
+        paste0("Figure ", fig_num,
+               ". CTD fluorescence profiles", caption_detail,
+               " for ", region, " stations."),
+        officer::fp_text(font.size = 10, font.family = "Adobe Garamond Pro")
+      ), fp_p = left_pp
+    ))
+    doc <- officer::body_add_par(doc, "")
+    fig_num <- fig_num + 1L
+  }
+
+  list(doc = doc, fig_num = fig_num)
 }
 
 # Add a banner made from separate SMHI + ALGAWARE logos.
@@ -824,14 +992,36 @@ add_front_page <- function(doc, cleanup,
   doc
 }
 
-#' Add mosaic overview page to the report
-#'
-#' Inserts Baltic Sea and West Coast summary mosaics with numbered taxa
-#' captions. Called after the front page section break.
+#' @noRd
+make_taxon_ftexts <- function(display_name, taxa_lookup, normal_prop, italic_prop) {
+  if (is.null(taxa_lookup) || nrow(taxa_lookup) == 0) {
+    return(list(officer::ftext(display_name, normal_prop)))
+  }
+  sflag_col <- if ("sflag" %in% names(taxa_lookup)) taxa_lookup$sflag else ""
+  sflag_col[is.na(sflag_col)] <- ""
+  dn <- trimws(paste(taxa_lookup$name, sflag_col))
+  idx <- match(display_name, dn)
+  if (is.na(idx) || !isTRUE(taxa_lookup$italic[idx])) {
+    return(list(officer::ftext(display_name, normal_prop)))
+  }
+  name_part <- taxa_lookup$name[idx]
+  sflag_part <- taxa_lookup$sflag[idx]
+  if (is.na(sflag_part)) sflag_part <- ""
+  if (nzchar(sflag_part)) {
+    list(
+      officer::ftext(name_part, italic_prop),
+      officer::ftext(paste0(" ", sflag_part), normal_prop)
+    )
+  } else {
+    list(officer::ftext(name_part, italic_prop))
+  }
+}
+
+#' Add front page mosaic overview page to the report
 #'
 #' @param doc An rdocx object.
-#' @param baltic_mosaic Optional magick image for Baltic Sea.
-#' @param westcoast_mosaic Optional magick image for West Coast.
+#' @param baltic_mosaic Magick image for the Baltic Sea mosaic, or NULL.
+#' @param westcoast_mosaic Magick image for the West Coast mosaic, or NULL.
 #' @param cleanup Environment with a \code{files} character vector.
 #' @param baltic_taxa Optional character vector of taxa names for Baltic caption.
 #' @param westcoast_taxa Optional character vector of taxa names for West Coast.
@@ -897,10 +1087,12 @@ add_mosaic_overview <- function(doc, baltic_mosaic, westcoast_mosaic, cleanup,
       }
       parts <- lapply(seq_along(taxa), function(i) {
         sep <- if (i < length(taxa)) ", " else ""
-        prop <- if (taxa[i] %in% italic_names) caption_italic else caption_prop
-        list(
-          officer::ftext(paste0(i, ". "), caption_prop),
-          officer::ftext(paste0(taxa[i], sep), prop)
+        taxon_ft <- make_taxon_ftexts(taxa[i], taxa_lookup,
+                                      caption_prop, caption_italic)
+        c(
+          list(officer::ftext(paste0(i, ". "), caption_prop)),
+          taxon_ft,
+          list(officer::ftext(sep, caption_prop))
         )
       })
       fp <- do.call(

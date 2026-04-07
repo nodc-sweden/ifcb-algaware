@@ -93,9 +93,12 @@ mod_frontpage_server <- function(id, rv, config) {
       non_bio <- parse_non_bio_classes(config$non_biological_classes)
       region_class <- region_class[!region_class$class_name %in% non_bio, ]
 
-      name_map <- stats::setNames(taxa_lookup$name, taxa_lookup$clean_names)
+      sflag_col <- if ("sflag" %in% names(taxa_lookup)) taxa_lookup$sflag else ""
+      sflag_col[is.na(sflag_col)] <- ""
+      display_name_vec <- trimws(paste(taxa_lookup$name, sflag_col))
+      name_map <- stats::setNames(display_name_vec, taxa_lookup$clean_names)
       sci_names <- name_map[region_class$class_name]
-      sci_names <- sci_names[!is.na(sci_names)]
+      sci_names <- sci_names[!is.na(sci_names) & nzchar(sci_names)]
       if (length(sci_names) == 0) return(character(0))
       names(sort(table(sci_names), decreasing = TRUE))
     })
@@ -333,8 +336,8 @@ mod_frontpage_server <- function(id, rv, config) {
             class = "btn btn-outline-secondary btn-sm mt-1",
             onclick = paste0(
               "Shiny.setInputValue('", ns("reroll_taxon"),
-              "', '", gsub("'", "\\\\'", taxon),
-              "', {priority: 'event'});"
+              "', ", jsonlite::toJSON(taxon, auto_unbox = TRUE),
+              ", {priority: 'event'});"
             ),
             shiny::icon("arrows-rotate"),
             " Re-roll"

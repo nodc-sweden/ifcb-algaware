@@ -381,3 +381,80 @@ test_that("llm_model_name respects env var override", {
     expect_equal(llm_model_name("gemini"), "gemini-3.0-flash")
   })
 })
+
+test_that("llm_model_name returns 'none' for unknown provider", {
+  result <- llm_model_name("unknown_provider")
+  expect_equal(result, "none")
+})
+
+test_that("format_report_paragraph handles text before species name", {
+  taxa <- data.frame(
+    name = "Skeletonema marinoi",
+    italic = TRUE,
+    stringsAsFactors = FALSE
+  )
+  result <- algaware:::format_report_paragraph(
+    "During the cruise, Skeletonema marinoi dominated.", taxa
+  )
+  expect_s3_class(result, "fpar")
+})
+
+test_that("format_station_data_for_prompt handles zero total biovolume", {
+  station_data <- data.frame(
+    STATION_NAME_SHORT = "BY5",
+    STATION_NAME = "BY5 Bornholmsdjupet",
+    COAST = "EAST",
+    visit_date = as.Date("2024-03-15"),
+    name = "Taxon A",
+    biovolume_mm3_per_liter = 0,
+    carbon_ug_per_liter = 0,
+    counts_per_liter = 0,
+    stringsAsFactors = FALSE
+  )
+  result <- algaware:::format_station_data_for_prompt(station_data)
+  expect_type(result, "character")
+  expect_true(grepl("0%", result))
+})
+
+test_that("format_station_data_for_prompt lists HAB species at lower abundance", {
+  # Need 16+ taxa so a HAB species at rank 16 is outside the top-15 cut-off
+  n_other <- 15
+  other_names <- paste0("Taxon_", seq_len(n_other))
+  station_data <- data.frame(
+    STATION_NAME_SHORT = "BY5",
+    STATION_NAME = "BY5 Bornholmsdjupet",
+    COAST = "EAST",
+    visit_date = as.Date("2024-03-15"),
+    name = c(other_names, "Alexandrium catenella"),
+    biovolume_mm3_per_liter = c(seq(1.0, 0.1, length.out = n_other), 0.001),
+    carbon_ug_per_liter = c(seq(10, 1, length.out = n_other), 0.01),
+    counts_per_liter = c(seq(1000, 100, length.out = n_other), 5),
+    stringsAsFactors = FALSE
+  )
+  taxa <- data.frame(
+    name = "Alexandrium catenella",
+    HAB = TRUE,
+    stringsAsFactors = FALSE
+  )
+  result <- algaware:::format_station_data_for_prompt(station_data, taxa)
+  expect_true(grepl("Other HAB species", result))
+  expect_true(grepl("Alexandrium catenella", result))
+})
+
+test_that("format_cruise_summary_for_prompt includes chl when present", {
+  station_summary <- data.frame(
+    STATION_NAME_SHORT = "BY5",
+    COAST = "EAST",
+    visit_date = as.Date("2024-03-15"),
+    visit_id = "BY5_visit1",
+    name = "Taxon A",
+    biovolume_mm3_per_liter = 0.5,
+    carbon_ug_per_liter = 10,
+    counts_per_liter = 1000,
+    chl_mean = 2.75,
+    stringsAsFactors = FALSE
+  )
+  result <- algaware:::format_cruise_summary_for_prompt(station_summary)
+  expect_true(grepl("Chl", result))
+  expect_true(grepl("2.75", result))
+})

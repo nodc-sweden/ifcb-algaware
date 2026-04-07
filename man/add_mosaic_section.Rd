@@ -4,7 +4,14 @@
 \alias{add_mosaic_section}
 \title{Add mosaic section to the report}
 \usage{
-add_mosaic_section(doc, mosaics, hab_species, region_label, cleanup)
+add_mosaic_section(
+  doc,
+  mosaics,
+  hab_species,
+  region_label,
+  cleanup,
+  taxa_lookup = NULL
+)
 }
 \description{
 Add mosaic section to the report

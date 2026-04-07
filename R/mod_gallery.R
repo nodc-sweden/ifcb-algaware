@@ -155,8 +155,7 @@ mod_gallery_server <- function(id, rv, config) {
 
       region_samples <- if (region == "EAST") rv$baltic_samples else rv$westcoast_samples
       region_data <- rv$classifications[
-        rv$classifications$sample_name %in% region_samples &
-        rv$classifications$class_name != "unclassified",
+        rv$classifications$sample_name %in% region_samples,
       ]
       sort(unique(region_data$class_name))
     })
@@ -215,12 +214,6 @@ mod_gallery_server <- function(id, rv, config) {
     })
 
     # ---- Class dropdown synchronization ----
-    # Problem: when we programmatically update the selectize dropdown (e.g. on
-    # region change), it fires an input$class_select event. Without this flag,
-    # that event would be mistaken for a user selection and cause unwanted jumps.
-    # Solution: set updating_select = TRUE before programmatic updates, then
-    # reset it in the observer that handles user selections.
-    updating_select <- shiny::reactiveVal(FALSE)
 
     # Keep the selectize dropdown in sync with the current class index
     shiny::observe({
@@ -229,7 +222,6 @@ mod_gallery_server <- function(id, rv, config) {
       current_idx <- rv$current_class_idx
       idx <- min(current_idx, max(1L, length(classes)))
       selected <- if (length(classes) > 0) classes[idx] else NULL
-      updating_select(TRUE)
       shiny::updateSelectizeInput(session, "class_select",
                                   choices = classes,
                                   selected = selected)
@@ -240,12 +232,11 @@ mod_gallery_server <- function(id, rv, config) {
       session$sendCustomMessage("toggle-toolbar-height", has_data)
     })
 
-    # Jump to class when user picks from selectize
+    # Jump to class when user picks from selectize.
+    # The new_idx != rv$current_class_idx guard prevents acting on programmatic
+    # updateSelectizeInput() calls that echo back as change events — if the
+    # selectize value is already the current class, indices match and we no-op.
     shiny::observeEvent(input$class_select, {
-      if (updating_select()) {
-        updating_select(FALSE)
-        return()
-      }
       classes <- region_classes()
       if (length(classes) == 0) return()
       new_idx <- match(input$class_select, classes)
@@ -268,15 +259,19 @@ mod_gallery_server <- function(id, rv, config) {
       non_bio <- parse_non_bio_classes(config$non_biological_classes)
       is_non_bio <- current_class %in% non_bio
 
-      # Map class_name to scientific name
+      # Map class_name to scientific display name (name + sflag)
       taxa <- rv$taxa_lookup
       sci_name <- current_class
       if (!is.null(taxa)) {
         match_idx <- match(current_class, taxa$clean_names)
-        if (!is.na(match_idx)) sci_name <- taxa$name[match_idx]
+        if (!is.na(match_idx)) {
+          sflag_val <- if ("sflag" %in% names(taxa)) taxa$sflag[match_idx] else ""
+          if (is.na(sflag_val)) sflag_val <- ""
+          sci_name <- trimws(paste(taxa$name[match_idx], sflag_val))
+        }
       }
 
-      # Check HAB status
+      # Check HAB status (hab_species returns display names)
       hab_species <- get_hab_species(rv$taxa_lookup)
       is_hab <- !is_non_bio && sci_name %in% hab_species
 

@@ -234,31 +234,42 @@ format_station_data_for_prompt <- function(station_data, taxa_lookup = NULL,
   top_n <- min(15, nrow(station_data))
   top_taxa <- station_data[seq_len(top_n), ]
 
-  # Identify HAB species
+  # Compute display names (name + sflag) for each row
+  make_display <- function(df) {
+    sflag <- if ("sflag" %in% names(df)) df$sflag else ""
+    sflag[is.na(sflag)] <- ""
+    trimws(paste(df$name, sflag))
+  }
+  station_data$display_name <- make_display(station_data)
+  top_taxa$display_name <- station_data$display_name[seq_len(nrow(top_taxa))]
+
+  # Identify HAB species (using display names)
   hab_species <- character(0)
   if (!is.null(taxa_lookup) && "HAB" %in% names(taxa_lookup)) {
-    hab_names <- taxa_lookup$name[taxa_lookup$HAB == TRUE]
-    hab_species <- intersect(station_data$name, hab_names)
+    sflag_lu <- if ("sflag" %in% names(taxa_lookup)) taxa_lookup$sflag else ""
+    sflag_lu[is.na(sflag_lu)] <- ""
+    hab_display <- trimws(paste(taxa_lookup$name, sflag_lu))[taxa_lookup$HAB == TRUE]
+    hab_species <- intersect(station_data$display_name, hab_display)
   }
 
   # Build taxa table
   taxa_lines <- vapply(seq_len(nrow(top_taxa)), function(i) {
     row <- top_taxa[i, ]
-    hab_flag <- if (row$name %in% hab_species) " [HAB]" else ""
+    hab_flag <- if (row$display_name %in% hab_species) " [HAB]" else ""
     pct <- if (total_biovolume > 0) {
       sprintf("%.1f%%", row$biovolume_mm3_per_liter / total_biovolume * 100)
     } else {
       "0%"
     }
     sprintf("  %s%s: %.3f mm3/L (%s of total), %.0f counts/L",
-            row$name, hab_flag,
+            row$display_name, hab_flag,
             row$biovolume_mm3_per_liter, pct,
             row$counts_per_liter)
   }, character(1))
 
   # Additional HAB species in lower abundances
-  hab_in_sample <- station_data$name[station_data$name %in% hab_species]
-  hab_not_in_top <- setdiff(hab_in_sample, top_taxa$name)
+  hab_in_sample <- station_data$display_name[station_data$display_name %in% hab_species]
+  hab_not_in_top <- setdiff(hab_in_sample, top_taxa$display_name)
   hab_extra <- ""
   if (length(hab_not_in_top) > 0) {
     hab_extra <- paste0(
@@ -309,10 +320,19 @@ format_cruise_summary_for_prompt <- function(station_summary, taxa_lookup = NULL
                                         "visit_date", "visit_id")])
   visits <- visits[order(visits$COAST, visits$visit_date), ]
 
-  # HAB species lookup
+  # HAB species lookup (using display names)
   hab_species <- character(0)
   if (!is.null(taxa_lookup) && "HAB" %in% names(taxa_lookup)) {
-    hab_species <- taxa_lookup$name[taxa_lookup$HAB == TRUE]
+    sflag_lu <- if ("sflag" %in% names(taxa_lookup)) taxa_lookup$sflag else ""
+    sflag_lu[is.na(sflag_lu)] <- ""
+    hab_species <- trimws(paste(taxa_lookup$name, sflag_lu))[taxa_lookup$HAB == TRUE]
+  }
+
+  # Helper to compute display names for a data frame
+  make_display <- function(df) {
+    sflag <- if ("sflag" %in% names(df)) df$sflag else ""
+    sflag[is.na(sflag)] <- ""
+    trimws(paste(df$name, sflag))
   }
 
   # Per-station summaries
@@ -320,6 +340,7 @@ format_cruise_summary_for_prompt <- function(station_summary, taxa_lookup = NULL
     v <- visits[i, ]
     sdata <- station_summary[station_summary$visit_id == v$visit_id, ]
     sdata <- sdata[order(-sdata$biovolume_mm3_per_liter), ]
+    sdata$display_name <- make_display(sdata)
 
     total_bv <- sum(sdata$biovolume_mm3_per_liter, na.rm = TRUE)
     total_carbon <- sum(sdata$carbon_ug_per_liter, na.rm = TRUE)
@@ -329,12 +350,12 @@ format_cruise_summary_for_prompt <- function(station_summary, taxa_lookup = NULL
     # Top 5 species
     top5 <- head(sdata, 5)
     top_names <- vapply(seq_len(nrow(top5)), function(j) {
-      hab_flag <- if (top5$name[j] %in% hab_species) "*" else ""
-      paste0(top5$name[j], hab_flag)
+      hab_flag <- if (top5$display_name[j] %in% hab_species) "*" else ""
+      paste0(top5$display_name[j], hab_flag)
     }, character(1))
 
     # HAB present
-    hab_found <- intersect(sdata$name, hab_species)
+    hab_found <- intersect(sdata$display_name, hab_species)
     hab_note <- if (length(hab_found) > 0) {
       paste0(" | HAB: ", paste(hab_found, collapse = ", "))
     } else {
@@ -384,6 +405,10 @@ format_cruise_summary_for_prompt <- function(station_summary, taxa_lookup = NULL
 call_openai <- function(system_prompt, user_prompt,
                         model = llm_model_name("openai"),
                         temperature = 0.3) {
+  if (!requireNamespace("httr2", quietly = TRUE)) {
+    stop("Package 'httr2' is required for LLM API calls. ",
+         "Install it with: install.packages(\"httr2\")", call. = FALSE)
+  }
   api_key <- Sys.getenv("OPENAI_API_KEY", "")
   if (!nzchar(api_key)) {
     stop("OPENAI_API_KEY environment variable is not set.", call. = FALSE)
@@ -431,6 +456,10 @@ call_openai <- function(system_prompt, user_prompt,
 call_gemini <- function(system_prompt, user_prompt,
                         model = llm_model_name("gemini"),
                         temperature = 0.3) {
+  if (!requireNamespace("httr2", quietly = TRUE)) {
+    stop("Package 'httr2' is required for LLM API calls. ",
+         "Install it with: install.packages(\"httr2\")", call. = FALSE)
+  }
   api_key <- Sys.getenv("GEMINI_API_KEY", "")
   if (!nzchar(api_key)) {
     stop("GEMINI_API_KEY environment variable is not set.", call. = FALSE)
@@ -586,8 +615,8 @@ generate_swedish_summary <- function(station_summary, taxa_lookup = NULL,
 #' @param cruise_info Cruise info string.
 #' @param provider LLM provider (\code{"openai"} or \code{"gemini"}).
 #'   NULL auto-detects.
- #' @param unclassified_fractions Optional per-sample unclassified percentages
- #'   for contextualizing the summary.
+#' @param unclassified_fractions Optional per-sample unclassified percentages
+#'   for contextualizing the summary.
 #' @return Character string with English summary.
 #' @export
 generate_english_summary <- function(station_summary, taxa_lookup = NULL,
@@ -625,7 +654,7 @@ generate_english_summary <- function(station_summary, taxa_lookup = NULL,
 #' @param all_stations_summary Optional full station_summary for context.
 #' @param provider LLM provider (\code{"openai"} or \code{"gemini"}).
 #'   NULL auto-detects.
- #' @param unclassified_pct Optional per-class unclassified percentage info used for context.
+#' @param unclassified_pct Optional per-class unclassified percentage info used for context.
 #' @return Character string with station description in English.
 #' @export
 generate_station_description <- function(station_data, taxa_lookup = NULL,

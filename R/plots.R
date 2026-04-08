@@ -113,7 +113,7 @@ create_chl_map <- function(chl_summary, title = "Chlorophyll") {
       data = chl_summary,
       ggplot2::aes(x = .data$longitude, y = .data$latitude,
                    label = .data$station_short),
-      size = 3, min.segment.length = 0, segment.color = "gray50",
+      size = 3, min.segment.length = Inf, segment.color = NA,
       box.padding = 0.5
     ) +
     cmocean::scale_color_cmocean(
@@ -437,6 +437,45 @@ create_stacked_bar <- function(wide_summary, taxa_lookup = NULL,
 #' so that visual distance on a \code{coord_sf} map corresponds to Euclidean
 #' distance here.
 #'
+#' @noRd
+clamp_pie_centers <- function(wide,
+                              map_xlim = c(10.5, 21.5),
+                              map_ylim = c(54.2, 59.8)) {
+  if (nrow(wide) == 0) return(wide)
+
+  clamp_axis <- function(value, radius, lo, hi) {
+    if (!is.finite(radius) || radius <= 0) {
+      return(min(max(value, lo), hi))
+    }
+    inner_lo <- lo + radius
+    inner_hi <- hi - radius
+    if (inner_lo > inner_hi) {
+      return((lo + hi) / 2)
+    }
+    min(max(value, inner_lo), inner_hi)
+  }
+
+  r_lat <- if ("r_pie" %in% names(wide)) wide$r_pie else rep(0, nrow(wide))
+  r_lon <- r_lat / cos(wide$lat * pi / 180)
+
+  wide$lon <- vapply(seq_len(nrow(wide)), function(i) {
+    clamp_axis(wide$lon[i], r_lon[i], map_xlim[1], map_xlim[2])
+  }, numeric(1L))
+  wide$lat <- vapply(seq_len(nrow(wide)), function(i) {
+    clamp_axis(wide$lat[i], r_lat[i], map_ylim[1], map_ylim[2])
+  }, numeric(1L))
+  wide
+}
+
+#' Displace pie chart centres away from each other
+#'
+#' Sequential, asymmetric placement so that pie charts never overlap and any
+#' pie that \emph{does} get displaced is pushed far enough that its anchor (true
+#' station location) lands outside the pie boundary, so the leader line and
+#' anchor dot remain visible. Geometry is computed in an isotropic coordinate
+#' system \eqn{(lon \cdot \cos(\bar{lat}), lat)} so that visual distance on a
+#' \code{coord_sf} map corresponds approximately to Euclidean distance here.
+#'
 #' @param wide Data frame with columns \code{lon}, \code{lat} and \code{r_pie}
 #'   (the per-station pie radius in latitude degrees). True (anchor)
 #'   coordinates are read from \code{lon}/\code{lat}.
@@ -491,8 +530,25 @@ repel_pie_centers <- function(wide,
   x <- rep(NA_real_, n)
   y <- rep(NA_real_, n)
 
-  clamp_xy <- function(xi, yi) {
-    c(min(max(xi, x_lo), x_hi), min(max(yi, map_ylim[1]), map_ylim[2]))
+  clamp_xy <- function(i, xi, yi) {
+    r_x <- r_pie[i] * cos_ref / cos(anchor_lat[i] * pi / 180)
+    r_y <- r_pie[i]
+    x_min <- x_lo + r_x
+    x_max <- x_hi - r_x
+    y_min <- map_ylim[1] + r_y
+    y_max <- map_ylim[2] - r_y
+
+    if (x_min > x_max) {
+      xi <- (x_lo + x_hi) / 2
+    } else {
+      xi <- min(max(xi, x_min), x_max)
+    }
+    if (y_min > y_max) {
+      yi <- mean(map_ylim)
+    } else {
+      yi <- min(max(yi, y_min), y_max)
+    }
+    c(xi, yi)
   }
 
   enforce_min_disp <- function(xi, yi, axi, ayi, min_disp_d) {
@@ -565,7 +621,7 @@ repel_pie_centers <- function(wide,
           moved <- TRUE
         }
       }
-      xy <- clamp_xy(xi, yi)
+      xy <- clamp_xy(i, xi, yi)
       xi <- xy[1L]; yi <- xy[2L]
       if (!moved) break
     }
@@ -602,7 +658,9 @@ place_pie_labels <- function(wide,
                              map_ylim = c(54.4, 59.6),
                              n_angles = 48,
                              char_w   = 0.055,
-                             char_h   = 0.055) {
+                             char_h   = 0.055,
+                             radius_mults = c(1.08, 1.25, 1.55, 1.9,
+                                              2.4, 3.0, 3.8, 4.8)) {
   angles <- seq(0, 2 * pi, length.out = n_angles + 1L)[-(n_angles + 1L)]
   lons   <- wide$lon
   lats   <- wide$lat
@@ -610,6 +668,10 @@ place_pie_labels <- function(wide,
   r_lons <- wide$r_lon
   labels <- wide$label
   n      <- nrow(wide)
+  anchor_lon <- if ("anchor_lon" %in% names(wide)) wide$anchor_lon else lons
+  anchor_lat <- if ("anchor_lat" %in% names(wide)) wide$anchor_lat else lats
+  leader_x <- if ("leader_x" %in% names(wide)) wide$leader_x else lons
+  leader_y <- if ("leader_y" %in% names(wide)) wide$leader_y else lats
 
   # Process most-constrained (most close neighbours) first
   neighbour_count <- vapply(seq_len(n), function(i) {
@@ -627,20 +689,76 @@ place_pie_labels <- function(wide,
   # Stored bounding boxes of placed labels: list of c(cx, cy, hw, hh)
   placed   <- vector("list", n)
 
+  point_in_rect <- function(px, py, left, right, bottom, top) {
+    px >= left && px <= right && py >= bottom && py <= top
+  }
+
+  segments_intersect <- function(x1, y1, x2, y2, x3, y3, x4, y4) {
+    orient <- function(ax, ay, bx, by, cx, cy) {
+      (bx - ax) * (cy - ay) - (by - ay) * (cx - ax)
+    }
+    on_segment <- function(ax, ay, bx, by, cx, cy) {
+      min(ax, bx) <= cx && cx <= max(ax, bx) &&
+        min(ay, by) <= cy && cy <= max(ay, by)
+    }
+
+    o1 <- orient(x1, y1, x2, y2, x3, y3)
+    o2 <- orient(x1, y1, x2, y2, x4, y4)
+    o3 <- orient(x3, y3, x4, y4, x1, y1)
+    o4 <- orient(x3, y3, x4, y4, x2, y2)
+
+    if (((o1 > 0 && o2 < 0) || (o1 < 0 && o2 > 0)) &&
+        ((o3 > 0 && o4 < 0) || (o3 < 0 && o4 > 0))) {
+      return(TRUE)
+    }
+
+    tol <- 1e-10
+    if (abs(o1) <= tol && on_segment(x1, y1, x2, y2, x3, y3)) return(TRUE)
+    if (abs(o2) <= tol && on_segment(x1, y1, x2, y2, x4, y4)) return(TRUE)
+    if (abs(o3) <= tol && on_segment(x3, y3, x4, y4, x1, y1)) return(TRUE)
+    if (abs(o4) <= tol && on_segment(x3, y3, x4, y4, x2, y2)) return(TRUE)
+    FALSE
+  }
+
+  segment_hits_rect <- function(x1, y1, x2, y2, left, right, bottom, top) {
+    if (point_in_rect(x1, y1, left, right, bottom, top) ||
+        point_in_rect(x2, y2, left, right, bottom, top)) {
+      return(TRUE)
+    }
+    if (max(x1, x2) < left || min(x1, x2) > right ||
+        max(y1, y2) < bottom || min(y1, y2) > top) {
+      return(FALSE)
+    }
+    edges <- rbind(
+      c(left, bottom, right, bottom),
+      c(right, bottom, right, top),
+      c(right, top, left, top),
+      c(left, top, left, bottom)
+    )
+    any(vapply(seq_len(nrow(edges)), function(k) {
+      segments_intersect(x1, y1, x2, y2,
+                         edges[k, 1], edges[k, 2], edges[k, 3], edges[k, 4])
+    }, logical(1L)))
+  }
+
   for (rank in seq_along(order_idx)) {
     i      <- order_idx[rank]
     hw_lon <- nchar(labels[i]) * char_w / 2   # half label width (lon degrees)
 
     best_score <- -Inf
-    best_lx    <- lons[i] + r_lons[i] * 1.15
-    best_ly    <- lats[i]
+    best_lx    <- NA_real_
+    best_ly    <- NA_real_
 
-    for (theta in angles) { for (radius_mult in c(1.08, 1.25, 1.55, 1.9)) {
+    for (theta in angles) { for (radius_mult in radius_mults) {
       lx <- lons[i] + r_lons[i] * sin(theta) * radius_mult
       ly <- lats[i] + r_lats[i] * cos(theta) * radius_mult
+      left <- lx - hw_lon
+      right <- lx + hw_lon
+      bottom <- ly - char_h
+      top <- ly + char_h
 
-      if (lx < map_xlim[1] || lx > map_xlim[2] ||
-          ly < map_ylim[1] || ly > map_ylim[2]) next
+      if (left < map_xlim[1] || right > map_xlim[2] ||
+          bottom < map_ylim[1] || top > map_ylim[2]) next
 
       # Pie clearance: minimum distance from any pie EDGE to the CLOSEST
       # point on the label bounding box. Checking the full bbox (not just
@@ -669,11 +787,27 @@ place_pie_labels <- function(wide,
 
       # Two-tier scoring so the label hugs the pie when possible:
       #   * If the candidate is fully clear (no pie intrusion, no label
-      #     overlap), score by -radius_mult so the closest ring wins.
+      #     overlap), score primarily by closeness, but break ties using
+      #     actual clearance and a mild preference for side placements.
       #   * Otherwise, fall back to maximising clearance.
       is_clear <- pie_score > 0.02 && label_score >= 0
+      segment_penalty <- 0
+      if (is_clear) {
+        anchor_ok <- !any(vapply(seq_len(n), function(j) {
+          point_in_rect(anchor_lon[j], anchor_lat[j], left, right, bottom, top)
+        }, logical(1L)))
+        segment_penalty <- sum(vapply(seq_len(n), function(j) {
+          as.integer(segment_hits_rect(anchor_lon[j], anchor_lat[j],
+                                       leader_x[j], leader_y[j],
+                                       left, right, bottom, top))
+        }, integer(1L)))
+        is_clear <- anchor_ok
+      }
+      if (!is_clear) next
       score <- if (is_clear) {
-        10 - radius_mult
+        side_pref <- abs(sin(theta))
+        100 - radius_mult * 10 + pmin(pie_score, 3) +
+          side_pref * 0.25 - segment_penalty * 1.5
       } else {
         pie_score + label_score * 3 - radius_mult * 0.1
       }
@@ -687,7 +821,9 @@ place_pie_labels <- function(wide,
 
     label_x[i] <- best_lx
     label_y[i] <- best_ly
-    placed[[i]] <- c(best_lx, best_ly, hw_lon, char_h)
+    if (is.finite(best_lx) && is.finite(best_ly)) {
+      placed[[i]] <- c(best_lx, best_ly, hw_lon, char_h)
+    }
   }
 
   wide$label_x <- label_x
@@ -771,6 +907,14 @@ create_group_map <- function(station_summary, phyto_groups, r_lat = 0.28) {
     `Mesodinium spp.`= "#F1C40F",
     Other            = "#95A5A6"
   )
+  group_labels <- c(
+    Diatoms = "Diatoms",
+    Dinoflagellates = "Dinoflagellates",
+    Cyanobacteria = "Cyanobacteria",
+    Cryptophytes = "Cryptophytes",
+    `Mesodinium spp.` = "<i>Mesodinium</i> spp.",
+    Other = "Other"
+  )
 
   # Merge group assignments; unmatched taxa fall into "Other".
   merged <- merge(
@@ -801,6 +945,7 @@ create_group_map <- function(station_summary, phyto_groups, r_lat = 0.28) {
     lat_col      = "lat",
     group_levels = group_levels,
     group_colors = group_colors,
+    group_labels = group_labels,
     radius       = r_lat,
     size_by      = "total",
     xlim         = c(10, 22),

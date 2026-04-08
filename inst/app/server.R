@@ -320,11 +320,6 @@ server <- function(input, output, session) {
     create_image_count_map(rv$image_counts)
   })
 
-  output$biomass_map <- renderPlot({
-    biomaps <- biomass_maps()
-    biomaps$biomass_map
-  })
-
   # Update chl map source choices when CTD/LIMS data becomes available.
   # Priority: Hose > Bottle (0-20m) > CTD > FerryBox — auto-select best source.
   observe({

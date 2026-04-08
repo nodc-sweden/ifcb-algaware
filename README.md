@@ -11,8 +11,9 @@ Swedish marine monitoring at SMHI.
 
 AlgAware-IFCB integrates with the IFCB Dashboard for automated data retrieval,
 provides an interactive image gallery for reviewing and correcting AI classifier
-predictions, and generates Word reports with biomass maps, chlorophyll maps,
-heatmaps, image mosaics, and CTD fluorescence profiles.
+predictions, and generates Word reports with phytoplankton group composition
+maps, image-count maps, chlorophyll maps, heatmaps, image mosaics, and CTD
+fluorescence profiles.
 
 > **Intended use:** This application is developed for internal use at SMHI as
 > part of the Swedish national marine monitoring programme. It may be adapted
@@ -85,7 +86,7 @@ The application opens in your default browser.
 
 ### Visualizations
 
-- **Maps**: Biomass, image count, and chlorophyll (CTD fluorescence + LIMS bottle) distribution across stations
+- **Maps**: Phytoplankton group composition pies, image count, and chlorophyll (CTD fluorescence + LIMS bottle) distribution across stations
 - **Heatmaps**: Biovolume by taxon and station visit
 - **Stacked bar charts**: Relative biovolume composition (top 15 taxa)
 - **Summary table**: Interactive, sortable station-level data
@@ -94,6 +95,7 @@ The application opens in your default browser.
 
 - Automated Word document (`.docx`) with all plots and station sections
 - AI-generated summaries and station descriptions via OpenAI or Google Gemini
+- Front page with phytoplankton group composition pie map and narrative caption
 - Front-page mosaic designer with interactive taxon and image selection
 - Image mosaics for top taxa per region (adaptive layout for chains vs. compact organisms)
 - CTD regional figures with fluorescence profiles and Chl-a time series

@@ -46,7 +46,7 @@ First release.
 
 ## Maps and plots
 
-- Station maps: image count, pie chart, biomass, and chlorophyll maps.
+- Station maps: image count, phytoplankton group composition pie chart, and chlorophyll maps.
 - Chlorophyll source selector: FerryBox, CTD fluorescence, LIMS bottle
   (0–20 m), or LIMS hose-integrated (0–10 m).
 - Regional heatmaps and stacked bar charts for Baltic Sea and West Coast.
@@ -61,11 +61,11 @@ First release.
 ## Word report generation
 
 - Generates a Word `.docx` report from an `officer` template with:
-  - Front page with logo, diarienummer, image count map and report number.
+  - Front page with logo, diarienummer, phytoplankton group composition pie map, and report number.
   - Swedish summary (Sammanfattning) and English summary (Abstract).
   - Cruise metadata table.
   - Image mosaic overview with numbered captions and italic species formatting.
-  - Biomass maps, heatmaps, and stacked bar charts.
+  - Image count map, chlorophyll map, heatmaps, and stacked bar charts.
   - Per-station sections with image mosaics.
   - CTD fluorescence profiles and Chl-a time-series.
 - Species names are italicised in Word output; HAB taxa are marked with a red

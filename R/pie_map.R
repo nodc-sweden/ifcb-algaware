@@ -1,3 +1,14 @@
+scale_pie_radii <- function(raw, size_range = c(0.15, 0.40)) {
+  raw <- as.numeric(raw)
+  if (all(!is.finite(raw)) || max(raw, na.rm = TRUE) <= 0) {
+    return(rep(mean(size_range), length(raw)))
+  }
+  s <- sqrt(pmax(raw, 0))
+  s <- (s - min(s, na.rm = TRUE)) /
+    max(diff(range(s, na.rm = TRUE)), .Machine$double.eps)
+  size_range[1] + s * (size_range[2] - size_range[1])
+}
+
 #' Pie chart map with displacement and leader lines
 #'
 #' Draws a pie chart at each station on a map. When pies would overlap in
@@ -22,12 +33,16 @@
 #'   slice ordering. Groups not present in \code{data} are dropped.
 #' @param group_colors Optional named character vector of colours, keyed by
 #'   group name. If \code{NULL}, ggplot's default discrete palette is used.
+#' @param group_labels Optional named character vector of legend labels,
+#'   keyed by group name. Labels may include HTML markup.
 #' @param radius Pie radius in latitude degrees. Default \code{0.28}.
 #' @param size_by Optional. \code{NULL} (default) draws all pies at
 #'   \code{radius}. \code{"total"} scales each pie's radius by the square
 #'   root of the station's total value. Any other character value is
 #'   interpreted as the name of a numeric column on the wide-format station
 #'   table; pass that to scale by an external metric (e.g. chlorophyll).
+#'   Scaled pie sizes are relative within the current plot only; no size
+#'   legend is drawn.
 #' @param size_range Numeric length-2: minimum and maximum radius (in
 #'   latitude degrees) when \code{size_by} is set. Default
 #'   \code{c(0.15, 0.40)}.
@@ -93,7 +108,8 @@
 #'   legend_title = "Taxon group"
 #' )
 #'
-#' # 3. Pie size proportional to total value at each station
+#' # 3. Pie size proportional to total value at each station.
+#' #    Sizes are relative within the figure; no size legend is shown.
 #' df_variable <- data.frame(
 #'   station_name        = rep(c("S1", "S2", "S3", "S4", "S5"), each = 4),
 #'   sample_longitude_dd = rep(c(11.4, 11.6, 12.5, 14.0, 18.0), each = 4),
@@ -135,6 +151,7 @@ create_pie_map <- function(data,
                            label_col     = station_col,
                            group_levels  = NULL,
                            group_colors  = NULL,
+                           group_labels  = NULL,
                            radius        = 0.28,
                            size_by       = NULL,
                            size_range    = c(0.15, 0.40),
@@ -227,20 +244,13 @@ create_pie_map <- function(data,
            "wide station table.", call. = FALSE)
     }
     raw <- as.numeric(raw)
-    if (all(!is.finite(raw)) || max(raw, na.rm = TRUE) <= 0) {
-      wide$r_pie <- mean(size_range)
-    } else {
-      # sqrt scaling so visual area is roughly proportional to value
-      s <- sqrt(pmax(raw, 0))
-      s <- (s - min(s, na.rm = TRUE)) /
-        max(diff(range(s, na.rm = TRUE)), .Machine$double.eps)
-      wide$r_pie <- size_range[1] + s * (size_range[2] - size_range[1])
-    }
+    wide$r_pie <- scale_pie_radii(raw, size_range = size_range)
   }
 
   # 5. Determine map extent.
   if (is.null(xlim)) xlim <- range(wide$lon) + c(-pad, pad)
   if (is.null(ylim)) ylim <- range(wide$lat) + c(-pad, pad)
+  wide <- clamp_pie_centers(wide, map_xlim = xlim, map_ylim = ylim)
 
   # 6. Displace pie centres so they don't overlap (or skip if repel=FALSE).
   if (isTRUE(repel) && nrow(wide) > 1) {
@@ -253,6 +263,7 @@ create_pie_map <- function(data,
     wide$anchor_lon <- wide$lon
     wide$anchor_lat <- wide$lat
   }
+  wide <- clamp_pie_centers(wide, map_xlim = xlim, map_ylim = ylim)
 
   # 7. Mark which pies actually moved, and compute leader endpoints at the
   #    pie edge facing the anchor.
@@ -275,10 +286,14 @@ create_pie_map <- function(data,
 
   wide$r_lon <- wide$r_pie / cos(wide$lat * pi / 180)
   if (isTRUE(show_labels)) {
+    label_char_w <- min(max(diff(xlim) * 0.0046, 0.014), 0.055)
+    label_char_h <- min(max(diff(ylim) * 0.0092, 0.024), 0.055)
     wide <- place_pie_labels(
       wide,
-      map_xlim = xlim + c( 0.3, -0.3),
-      map_ylim = ylim + c( 0.2, -0.2)
+      map_xlim = xlim,
+      map_ylim = ylim,
+      char_w = label_char_w,
+      char_h = label_char_h
     )
   }
   displaced <- wide[wide$is_displaced, , drop = FALSE]
@@ -319,11 +334,25 @@ create_pie_map <- function(data,
     )
 
   if (!is.null(group_colors)) {
-    p <- p + ggplot2::scale_fill_manual(values = group_colors,
-                                        name = legend_title, drop = TRUE)
+    if (is.null(group_labels)) {
+      p <- p + ggplot2::scale_fill_manual(values = group_colors,
+                                          name = legend_title, drop = TRUE)
+    } else {
+      p <- p + ggplot2::scale_fill_manual(values = group_colors,
+                                          labels = group_labels,
+                                          name = legend_title, drop = TRUE)
+    }
   } else {
-    p <- p + ggplot2::scale_fill_discrete(name = legend_title, drop = TRUE)
+    if (is.null(group_labels)) {
+      p <- p + ggplot2::scale_fill_discrete(name = legend_title, drop = TRUE)
+    } else {
+      p <- p + ggplot2::scale_fill_discrete(labels = group_labels,
+                                            name = legend_title, drop = TRUE)
+    }
   }
+
+  uses_markdown_labels <- !is.null(group_labels) &&
+    any(grepl("<[^>]+>", unname(group_labels)))
 
   if (isTRUE(show_labels)) {
     p <- p + ggplot2::geom_text(
@@ -331,7 +360,8 @@ create_pie_map <- function(data,
       ggplot2::aes(x = .data$label_x, y = .data$label_y,
                    label = .data$label,
                    hjust = .data$hjust, vjust = .data$vjust),
-      size = label_size
+      size = label_size,
+      na.rm = TRUE
     )
   }
 
@@ -343,7 +373,10 @@ create_pie_map <- function(data,
       axis.title = ggplot2::element_blank(),
       legend.position = "right",
       legend.key.size = ggplot2::unit(0.6, "cm"),
-      legend.title = ggplot2::element_text(hjust = 0.5)
+      legend.key.height = ggplot2::unit(0.9, "cm"),
+      legend.title = ggplot2::element_text(hjust = 0.5),
+      legend.text = if (uses_markdown_labels) ggtext::element_markdown()
+                    else ggplot2::element_text()
     )
 
   if (!is.null(title)) p <- p + ggplot2::ggtitle(title)

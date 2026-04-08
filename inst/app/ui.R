@@ -11,7 +11,7 @@
 #     Validate  -- mod_gallery_ui  (image browsing and class navigation)
 #     Samples   -- mod_samples_ui  (sample exclusion table)
 #     Images    -- mod_frontpage_ui (front-page mosaic designer)
-#     Maps      -- image_count_map, biomass_map, chl_map (rendered in server.R)
+#     Maps      -- image_count_map, chl_map, group_map (rendered in server.R)
 #     Plots     -- heatmaps + stacked bar charts (rendered in server.R)
 #     CTD       -- mod_ctd_ui (CTD profile + Chl-a time-series plots)
 #     Summary   -- DT summary table (rendered in server.R)
@@ -194,8 +194,6 @@ ui <- bslib::page_sidebar(
       conditionalPanel(
         condition = "output.data_loaded",
         div(class = "plot-card", plotOutput("image_count_map",
-                                            height = "400px")),
-        div(class = "plot-card", plotOutput("biomass_map",
                                             height = "400px")),
         div(class = "plot-card", plotOutput("chl_map", height = "400px")),
         div(class = "plot-card", plotOutput("group_map", height = "400px"))

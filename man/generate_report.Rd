@@ -135,7 +135,8 @@ the assignments are computed on demand via SHARK4R when available.}
 Invisible path to the created document.
 }
 \description{
-Creates a Word document with biomass maps, heatmaps, stacked bar charts,
+Creates a Word document with overview maps, heatmaps, stacked bar charts,
 station sections, and image mosaics. Optionally includes a front page with
-logo, diary number placeholder, and two summary mosaics.
+logo, diary number placeholder, a phytoplankton pie map, and two summary
+mosaics.
 }

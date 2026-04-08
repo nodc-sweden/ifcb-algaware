@@ -11,7 +11,8 @@ add_front_page(
   cruise_info = "",
   report_number = NULL,
   report_dnr = NULL,
-  image_counts = NULL
+  image_counts = NULL,
+  group_map_plot = NULL
 )
 }
 \arguments{
@@ -29,6 +30,9 @@ add_front_page(
 \item{report_dnr}{Optional diarienummer string (e.g. "2026-1234").}
 
 \item{image_counts}{Optional image counts data for the cruise track map.}
+
+\item{group_map_plot}{Optional phytoplankton group composition pie map for
+the front page.}
 }
 \value{
 The modified rdocx object.
@@ -36,7 +40,7 @@ The modified rdocx object.
 \description{
 Inserts a professional cover page with the AlgAware logo, report title,
 issue number, diary number placeholder, cruise information, and cruise
-track map. Mosaics are placed on the following page via
+phytoplankton group-composition map. Mosaics are placed on the following page via
 \code{add_mosaic_overview()}.
 }
 \keyword{internal}

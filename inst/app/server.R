@@ -285,10 +285,18 @@ server <- function(input, output, session) {
     req(rv$station_summary)
     taxa <- unique(rv$station_summary[, c("name", "AphiaID")])
     taxa <- taxa[!is.na(taxa$name), ]
+    
+    # Assign plankton groups using additional custom grouping
+    custom_groups <- list(
+      Cryptophytes = list(phylum = "Cryptophyta"),
+      `Mesodinium spp.` = list(genus = "Mesodinium")
+    )
+    
     groups <- tryCatch(
       SHARK4R::assign_phytoplankton_group(
         scientific_names = taxa$name,
         aphia_ids        = taxa$AphiaID,
+        custom_groups    = custom_groups,
         verbose          = FALSE
       ),
       error = function(e) rep("Other", nrow(taxa))

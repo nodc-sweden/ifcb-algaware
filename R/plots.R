@@ -761,12 +761,15 @@ build_pie_polygons <- function(wide_data, group_cols, n_arc = 80) {
 #' @return A ggplot object.
 #' @export
 create_group_map <- function(station_summary, phyto_groups, r_lat = 0.28) {
-  group_levels <- c("Diatoms", "Dinoflagellates", "Cyanobacteria", "Other")
+  group_levels <- c("Diatoms", "Dinoflagellates", "Cyanobacteria", 
+                    "Cryptophytes", "Mesodinium spp.", "Other")
   group_colors <- c(
-    Diatoms         = "#4A90D9",
-    Dinoflagellates = "#E74C3C",
-    Cyanobacteria   = "#27AE60",
-    Other           = "#95A5A6"
+    Diatoms          = "#4A90D9",
+    Dinoflagellates  = "#E74C3C",
+    Cyanobacteria    = "#27AE60",
+    Cryptophytes     = "#9B59B6",
+    `Mesodinium spp.`= "#F1C40F",
+    Other            = "#95A5A6"
   )
 
   # Merge group assignments; unmatched taxa fall into "Other".
@@ -799,6 +802,7 @@ create_group_map <- function(station_summary, phyto_groups, r_lat = 0.28) {
     group_levels = group_levels,
     group_colors = group_colors,
     radius       = r_lat,
+    size_by      = "total",
     xlim         = c(10, 22),
     ylim         = c(54, 60),
     title        = "Phytoplankton group composition (carbon biomass)"

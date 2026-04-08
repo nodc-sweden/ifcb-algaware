@@ -150,12 +150,17 @@ compute_sample_volumes <- function(all_data) {
     FUN = length
   )
   names(n_samples)[3] <- "n_samples"
+  tz <- attr(sample_meta$sample_time, "tzone")
+  if (is.null(tz) || !nzchar(tz)) tz <- "UTC"
   median_time <- stats::aggregate(
     sample_time ~ visit_id + STATION_NAME,
     data = sample_meta,
-    FUN = stats::median
+    FUN = function(x) stats::median(as.numeric(x))
   )
   names(median_time)[3] <- "median_time"
+  median_time$median_time <- as.POSIXct(median_time$median_time,
+                                        origin = "1970-01-01",
+                                        tz = tz)
   result <- merge(sample_volume, n_samples, by = c("visit_id", "STATION_NAME"))
   merge(result, median_time, by = c("visit_id", "STATION_NAME"))
 }

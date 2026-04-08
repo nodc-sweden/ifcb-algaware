@@ -24,5 +24,8 @@ launch_app <- function(launch.browser = TRUE, reset_settings = FALSE, ...) {
     stop("Could not find app directory. Try re-installing `algaware`.",
          call. = FALSE)
   }
+  if (!"algaware" %in% .packages()) {
+    attachNamespace("algaware")
+  }
   shiny::runApp(app_dir, launch.browser = launch.browser, ...)
 }

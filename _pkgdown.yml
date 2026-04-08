@@ -125,6 +125,8 @@ reference:
   - title: Visualization
     desc: Create plots and maps
     contents:
+      - create_pie_map
+      - create_group_map
       - create_biomass_maps
       - create_chl_map
       - create_ctd_region_figure

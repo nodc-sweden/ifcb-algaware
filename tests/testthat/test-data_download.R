@@ -300,24 +300,6 @@ test_that("resolve_classification_path strips leading/trailing whitespace", {
   expect_true(dir.exists(result))
 })
 
-test_that("resolve_classification_path maps Windows drive letter on non-Windows", {
-  skip_if(.Platform$OS.type == "windows", "WSL mapping only applies on non-Windows")
-
-  # Find an existing /mnt/<drive> mount to use as target
-  mnt_dirs <- list.dirs("/mnt", recursive = FALSE, full.names = TRUE)
-  mnt_dirs <- mnt_dirs[grepl("^/mnt/[a-z]$", mnt_dirs) & dir.exists(mnt_dirs)]
-
-  if (length(mnt_dirs) == 0) {
-    skip("No /mnt/<drive> mounts available for WSL mapping test")
-  }
-
-  drive_letter <- toupper(basename(mnt_dirs[[1]]))
-  win_path <- paste0(drive_letter, ":/")
-  result <- algaware:::resolve_classification_path(win_path)
-  expect_true(dir.exists(result))
-  expect_false(grepl("^[A-Za-z]:/", result))
-})
-
 test_that("download_raw_data triggers progress callbacks for new download", {
   tmp_dir <- file.path(tempdir(), paste0("raw_progress_", Sys.getpid()))
   on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)

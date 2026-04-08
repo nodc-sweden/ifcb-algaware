@@ -60,6 +60,11 @@
 #' @param chl_map_source Character; active chlorophyll map source:
 #'   \code{"ferrybox"}, \code{"ctd"}, \code{"lims"} (bottle, 0-20 m), or
 #'   \code{"lims_hose"} (hose integrated, 0-10 m).
+#' @param phyto_groups Optional data frame with columns \code{name},
+#'   \code{AphiaID}, and \code{phyto_group} (typically from
+#'   \code{SHARK4R::assign_phytoplankton_group()}). Used to render the
+#'   per-station phytoplankton group composition pie map. If \code{NULL},
+#'   the assignments are computed on demand via SHARK4R when available.
 #' @return Invisible path to the created document.
 #' @export
 generate_report <- function(output_path, station_summary,
@@ -89,7 +94,8 @@ generate_report <- function(output_path, station_summary,
                             lims_data = NULL,
                             lims_data_full = NULL,
                             chl_stats = NULL,
-                            chl_map_source = "ferrybox") {
+                            chl_map_source = "ferrybox",
+                            phyto_groups = NULL) {
   template <- system.file("templates", "report_template.docx",
                           package = "algaware")
   if (!nzchar(template)) {
@@ -343,6 +349,59 @@ generate_report <- function(output_path, station_summary,
   if (has_cover_page || is.null(image_counts) || nrow(image_counts) == 0) {
     doc <- officer::body_add_par(doc, "Spatial biomass distribution", style = "heading 2")
     doc <- officer::body_add_par(doc, "")
+  }
+
+  # Phytoplankton group composition pie map (one per station).
+  # Compute group assignments on demand if the caller didn't provide them.
+  if (is.null(phyto_groups) &&
+      requireNamespace("SHARK4R", quietly = TRUE) &&
+      !is.null(station_summary) && nrow(station_summary) > 0) {
+    taxa <- unique(station_summary[, c("name", "AphiaID")])
+    taxa <- taxa[!is.na(taxa$name), ]
+    if (nrow(taxa) > 0) {
+      groups <- tryCatch(
+        SHARK4R::assign_phytoplankton_group(
+          scientific_names = taxa$name,
+          aphia_ids        = taxa$AphiaID,
+          verbose          = FALSE
+        ),
+        error = function(e) NULL
+      )
+      if (!is.null(groups)) {
+        phyto_groups <- data.frame(
+          name        = taxa$name,
+          AphiaID     = taxa$AphiaID,
+          phyto_group = groups,
+          stringsAsFactors = FALSE
+        )
+      }
+    }
+  }
+
+  if (!is.null(phyto_groups) && nrow(phyto_groups) > 0) {
+    group_map_plot <- tryCatch(
+      create_group_map(station_summary, phyto_groups),
+      error = function(e) NULL
+    )
+    if (!is.null(group_map_plot)) {
+      doc <- add_centered_plot(doc, group_map_plot, cleanup,
+        width = 8, height = 6, display_width = 6.2, display_height = 4.6)
+      doc <- officer::body_add_fpar(doc, officer::fpar(
+        officer::ftext(
+          paste0("Figure ", fig_num,
+                 ". Phytoplankton group composition (carbon biomass) ",
+                 "at AlgAware stations",
+                 if (nzchar(month_year)) {
+                   paste0(" during the ", month_year, " cruise.")
+                 } else {
+                   "."
+                 }),
+          officer::fp_text(font.size = 10, font.family = "Adobe Garamond Pro")
+        ), fp_p = left_pp
+      ))
+      fig_num <- fig_num + 1L
+      doc <- officer::body_add_break(doc)
+    }
   }
 
   doc <- add_centered_plot(doc, maps$biomass_map, cleanup,

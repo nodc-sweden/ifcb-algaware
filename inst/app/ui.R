@@ -197,7 +197,8 @@ ui <- bslib::page_sidebar(
                                             height = "400px")),
         div(class = "plot-card", plotOutput("biomass_map",
                                             height = "400px")),
-        div(class = "plot-card", plotOutput("chl_map", height = "400px"))
+        div(class = "plot-card", plotOutput("chl_map", height = "400px")),
+        div(class = "plot-card", plotOutput("group_map", height = "400px"))
       )
     ),
 

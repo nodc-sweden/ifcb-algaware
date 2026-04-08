@@ -4,7 +4,7 @@
 \alias{mod_report_server}
 \title{Report Module Server}
 \usage{
-mod_report_server(id, rv, config)
+mod_report_server(id, rv, config, phyto_groups_reactive = NULL)
 }
 \arguments{
 \item{id}{Module namespace ID.}
@@ -12,6 +12,11 @@ mod_report_server(id, rv, config)
 \item{rv}{Reactive values for app state.}
 
 \item{config}{Reactive values with settings.}
+
+\item{phyto_groups_reactive}{Optional reactive returning a data frame of
+phytoplankton group assignments (\code{name}, \code{AphiaID},
+\code{phyto_group}). When supplied, the cached value is forwarded to
+\code{generate_report()} so the WoRMS lookup is not repeated.}
 }
 \value{
 NULL (side effects only).

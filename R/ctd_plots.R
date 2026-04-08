@@ -55,14 +55,27 @@ deduplicate_casts <- function(ctd_data) {
 #' @param xlim Numeric length-2 vector for a shared x-axis limit, or NULL.
 #' @param date_label Character subtitle (sample dates), or NULL.
 #' @param show_x_axis Logical; show x-axis tick labels and title on this panel.
+#' @param lims_points Optional data frame with columns \code{DEPH} and
+#'   \code{CPHL} for discrete bottle chlorophyll measurements from the current
+#'   cruise (depth \eqn{\le 50}{<= 50} m).  Points are overlaid on the profile.
 #' @return A ggplot object.
 #' @keywords internal
 create_fluorescence_profile <- function(station_ctd, station_label,
                                         xlim = NULL, date_label = NULL,
-                                        show_x_axis = TRUE) {
+                                        show_x_axis = TRUE,
+                                        lims_points = NULL) {
   # Clamp depth to 0-50 m
   station_ctd <- station_ctd[
     !is.na(station_ctd$pressure_dbar) & station_ctd$pressure_dbar <= 50, ]
+
+  has_lims <- !is.null(lims_points) && nrow(lims_points) > 0 &&
+    any(!is.na(lims_points$CPHL))
+
+  color_values <- c("CTD fluorescence\n(nominally \u00b5g/L)" = "#2ca02c")
+  if (has_lims) {
+    color_values <- c(color_values,
+                      "Chl-a bottle\n(0\u201350 m)" = "#d62728")
+  }
 
   p <- ggplot2::ggplot(station_ctd,
                        ggplot2::aes(x = .data$chl_fluorescence,
@@ -73,10 +86,10 @@ create_fluorescence_profile <- function(station_ctd, station_label,
     ggplot2::scale_y_reverse(limits = c(50, 0)) +
     ggplot2::scale_color_manual(
       name = NULL,
-      values = c("CTD fluorescence\n(nominally \u00b5g/L)" = "#2ca02c")
+      values = color_values
     ) +
     ggplot2::labs(
-      x = "Chl fluorescence (\u00b5g/L)",
+      x = "Chl fluorescence / Chl-a (\u00b5g/L)",
       y = "Depth (m)",
       title = station_label,
       subtitle = date_label
@@ -88,6 +101,17 @@ create_fluorescence_profile <- function(station_ctd, station_label,
       panel.grid.minor = ggplot2::element_blank(),
       legend.title  = ggplot2::element_blank()
     )
+
+  if (has_lims) {
+    pts <- lims_points[!is.na(lims_points$CPHL) & !is.na(lims_points$DEPH), ]
+    p <- p +
+      ggplot2::geom_point(
+        data = pts,
+        ggplot2::aes(x = .data$CPHL, y = .data$DEPH,
+                     color = "Chl-a bottle\n(0\u201350 m)"),
+        size = 2, inherit.aes = FALSE
+      )
+  }
 
   if (!is.null(xlim)) {
     p <- p + ggplot2::scale_x_continuous(limits = xlim)
@@ -231,6 +255,10 @@ create_chl_timeseries <- function(station_lims, station_stats,
   # expand=c(0,0) removes default padding so the y-axis sits exactly at Jan 1.
   month_breaks <- as.Date(paste0(current_year, "-",
                                  sprintf("%02d", 1:12), "-15"))
+  # Grid lines at month boundaries (1st of each month) so each month column is
+  # clearly delimited. major.x is suppressed so mid-month ticks carry no grid.
+  month_boundary_breaks <- as.Date(paste0(current_year, "-",
+                                          sprintf("%02d", 1:12), "-01"))
   x_labels <- if (show_x_axis) .MONTH_ABBR_EN else rep("", 12L)
 
   # Register identical color legend keys in every panel so patchwork can
@@ -270,6 +298,7 @@ create_chl_timeseries <- function(station_lims, station_stats,
     ) +
     ggplot2::scale_x_date(
       breaks = month_breaks,
+      minor_breaks = month_boundary_breaks,
       labels = x_labels,
       limits = as.Date(c(paste0(current_year, "-01-01"),
                          paste0(current_year, "-12-31"))),
@@ -278,11 +307,14 @@ create_chl_timeseries <- function(station_lims, station_stats,
     ggplot2::labs(x = "", y = "Chl-a (\u00b5g/L)", title = station_label) +
     ggplot2::theme_minimal(base_size = 10) +
     ggplot2::theme(
-      plot.title       = ggplot2::element_text(size = 10, face = "bold"),
-      panel.grid.minor = ggplot2::element_blank(),
-      legend.title     = ggplot2::element_blank(),
-      panel.border     = ggplot2::element_rect(color = "black", fill = NA,
-                                               linewidth = 0.5)
+      plot.title          = ggplot2::element_text(size = 10, face = "bold"),
+      panel.grid.major.x  = ggplot2::element_blank(),
+      panel.grid.minor.x  = ggplot2::element_line(color = "grey85",
+                                                   linewidth = 0.3),
+      panel.grid.minor.y  = ggplot2::element_blank(),
+      legend.title        = ggplot2::element_blank(),
+      panel.border        = ggplot2::element_rect(color = "black", fill = NA,
+                                                  linewidth = 0.5)
     )
 
   # All panels must have an identical fill guide so patchwork's
@@ -370,14 +402,33 @@ create_ctd_region_figure <- function(ctd_data_full, lims_data_full = NULL,
   }
   stations <- c(ordered_std, extra)
 
-  # Shared x-limit for profiles across all stations in region
-  max_chl <- max(region_ctd$chl_fluorescence[
-    region_ctd$pressure_dbar <= 50], na.rm = TRUE)
-  if (!is.finite(max_chl) || max_chl <= 0) max_chl <- 10
-  xlim_profile <- c(0, max_chl * 1.05)
-
   has_lims     <- !is.null(lims_data_full) && nrow(lims_data_full) > 0
   two_col      <- has_lims || force_two_columns
+
+  # Profile overlay: only bottle data from the same cruise as the CTD casts.
+  # The LIMS export may span multiple cruises; filtering to CTD dates ensures
+  # only same-cruise points are shown on the profile.
+  cruise_dates <- unique(region_ctd$sample_date[!is.na(region_ctd$sample_date)])
+  region_lims_profile <- if (has_lims) {
+    lims_data_full[
+      lims_data_full$region == region &
+        lims_data_full$DEPH <= 50 &
+        lims_data_full$sample_date %in% cruise_dates, ]
+  } else {
+    NULL
+  }
+
+  # Shared x-limit for profiles: span both CTD fluorescence and bottle CPHL
+  # so both data series are visible on a common axis.
+  max_chl <- max(region_ctd$chl_fluorescence[
+    region_ctd$pressure_dbar <= 50], na.rm = TRUE)
+  if (has_lims && !is.null(region_lims_profile) &&
+      nrow(region_lims_profile) > 0) {
+    max_cphl <- max(region_lims_profile$CPHL, na.rm = TRUE)
+    if (is.finite(max_cphl)) max_chl <- max(max_chl, max_cphl)
+  }
+  if (!is.finite(max_chl) || max_chl <= 0) max_chl <- 10
+  xlim_profile <- c(0, max_chl * 1.05)
 
   plots <- list()
 
@@ -397,11 +448,20 @@ create_ctd_region_figure <- function(ctd_data_full, lims_data_full = NULL,
       paste(format(profile_dates, "%Y-%m-%d"), collapse = ", ")
     } else NULL
 
+    stn_lims_profile <- if (!is.null(region_lims_profile) &&
+                             nrow(region_lims_profile) > 0) {
+      pts <- region_lims_profile[region_lims_profile$canonical_name == stn, ]
+      if (nrow(pts) > 0L) pts else NULL
+    } else {
+      NULL
+    }
+
     profile_p <- create_fluorescence_profile(
       stn_ctd, stn,
       xlim        = xlim_profile,
       date_label  = date_label,
-      show_x_axis = is_last
+      show_x_axis = is_last,
+      lims_points = stn_lims_profile
     )
     plots <- c(plots, list(profile_p))
 

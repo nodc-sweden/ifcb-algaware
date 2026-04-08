@@ -9,7 +9,8 @@ create_fluorescence_profile(
   station_label,
   xlim = NULL,
   date_label = NULL,
-  show_x_axis = TRUE
+  show_x_axis = TRUE,
+  lims_points = NULL
 )
 }
 \arguments{
@@ -23,6 +24,10 @@ create_fluorescence_profile(
 \item{date_label}{Character subtitle (sample dates), or NULL.}
 
 \item{show_x_axis}{Logical; show x-axis tick labels and title on this panel.}
+
+\item{lims_points}{Optional data frame with columns \code{DEPH} and
+\code{CPHL} for discrete bottle chlorophyll measurements from the current
+cruise (depth \eqn{\le 50}{<= 50} m).  Points are overlaid on the profile.}
 }
 \value{
 A ggplot object.

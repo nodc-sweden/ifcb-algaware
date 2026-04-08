@@ -34,7 +34,8 @@ generate_report(
   lims_data = NULL,
   lims_data_full = NULL,
   chl_stats = NULL,
-  chl_map_source = "ferrybox"
+  chl_map_source = "ferrybox",
+  phyto_groups = NULL
 )
 }
 \arguments{
@@ -123,6 +124,12 @@ section with regional fluorescence profiles and time series).}
 \item{chl_map_source}{Character; active chlorophyll map source:
 \code{"ferrybox"}, \code{"ctd"}, \code{"lims"} (bottle, 0-20 m), or
 \code{"lims_hose"} (hose integrated, 0-10 m).}
+
+\item{phyto_groups}{Optional data frame with columns \code{name},
+\code{AphiaID}, and \code{phyto_group} (typically from
+\code{SHARK4R::assign_phytoplankton_group()}). Used to render the
+per-station phytoplankton group composition pie map. If \code{NULL},
+the assignments are computed on demand via SHARK4R when available.}
 }
 \value{
 Invisible path to the created document.

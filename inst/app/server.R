@@ -113,7 +113,10 @@ server <- function(input, output, session) {
   mod_validation_server("validation", rv, config)
   mod_samples_server("samples", rv, config)
   mod_frontpage_server("frontpage", rv, config)
-  mod_report_server("report", rv, config)
+  # `phyto_group_assignments` is defined further down; wrap in a closure so the
+  # lookup happens at call time, not when the module is initialised.
+  mod_report_server("report", rv, config,
+                    phyto_groups_reactive = function() phyto_group_assignments())
   mod_ctd_server("ctd", config, rv)
 
   # CTD tab title: show "loaded" badge once CTD data is available
@@ -273,6 +276,36 @@ server <- function(input, output, session) {
     create_biomass_maps(rv$station_summary)
   })
 
+  # Phytoplankton group assignments (queries WoRMS via SHARK4R).
+  # bindCache() keys on the sorted unique set of name+AphiaID pairs, so the
+  # API call only reruns when the actual species list changes — not when
+  # biovolume values change (e.g. after sample exclusions or corrections).
+  # The cache is shared across sessions in the same R process.
+  phyto_group_assignments <- reactive({
+    req(rv$station_summary)
+    taxa <- unique(rv$station_summary[, c("name", "AphiaID")])
+    taxa <- taxa[!is.na(taxa$name), ]
+    groups <- tryCatch(
+      SHARK4R::assign_phytoplankton_group(
+        scientific_names = taxa$name,
+        aphia_ids        = taxa$AphiaID,
+        verbose          = FALSE
+      ),
+      error = function(e) rep("Other", nrow(taxa))
+    )
+    data.frame(
+      name        = taxa$name,
+      AphiaID     = taxa$AphiaID,
+      phyto_group = groups,
+      stringsAsFactors = FALSE
+    )
+  }) |> bindCache({
+    req(rv$station_summary)
+    taxa <- rv$station_summary[!is.na(rv$station_summary$name),
+                               c("name", "AphiaID")]
+    sort(unique(paste0(taxa$name, "_", taxa$AphiaID)))
+  })
+
   # Maps
   output$image_count_map <- renderPlot({
     req(rv$image_counts, nrow(rv$image_counts) > 0)
@@ -326,6 +359,11 @@ server <- function(input, output, session) {
     } else {
       biomass_maps()$chl_map
     }
+  })
+
+  output$group_map <- renderPlot({
+    req(rv$station_summary)
+    create_group_map(rv$station_summary, phyto_group_assignments())
   })
 
   # Heatmaps

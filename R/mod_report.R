@@ -61,9 +61,13 @@ build_readiness_items <- function(data_loaded, ctd_loaded,
 #' @param id Module namespace ID.
 #' @param rv Reactive values for app state.
 #' @param config Reactive values with settings.
+#' @param phyto_groups_reactive Optional reactive returning a data frame of
+#'   phytoplankton group assignments (\code{name}, \code{AphiaID},
+#'   \code{phyto_group}). When supplied, the cached value is forwarded to
+#'   \code{generate_report()} so the WoRMS lookup is not repeated.
 #' @return NULL (side effects only).
 #' @export
-mod_report_server <- function(id, rv, config) {
+mod_report_server <- function(id, rv, config, phyto_groups_reactive = NULL) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
     report_path <- shiny::reactiveVal(NULL)
@@ -317,7 +321,12 @@ mod_report_server <- function(id, rv, config) {
             lims_data = rv$lims_data,
             lims_data_full = rv$lims_data_full,
             chl_stats = rv$chl_stats,
-            chl_map_source = rv$chl_map_source %||% "ferrybox"
+            chl_map_source = rv$chl_map_source %||% "ferrybox",
+            phyto_groups = if (!is.null(phyto_groups_reactive)) {
+              tryCatch(phyto_groups_reactive(), error = function(e) NULL)
+            } else {
+              NULL
+            }
           )
 
           report_path(out_file)

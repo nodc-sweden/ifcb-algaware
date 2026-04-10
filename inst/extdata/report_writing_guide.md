@@ -26,7 +26,7 @@ The station descriptions are organized under regional headings:
 ### Summaries (Sammanfattning / Abstract)
 - Write one paragraph per region (West Coast and Baltic Sea), clearly separated.
 - Cover all sea areas visited during the cruise.
-- Mention dominant taxonomic groups (diatoms, dinoflagellates, cyanobacteria, coccolithophores).
+- Mention dominant taxonomic groups based on the group information provided in the prompt data.
 - Highlight notable or unusual findings.
 - Always mention potentially harmful taxa if they were found, mark them with an asterisk (*).
 - Compare chlorophyll fluorescence between stations and how it relates to the biovolume measured by the IFCB, when data is available.
@@ -40,10 +40,10 @@ Each station description follows a consistent pattern:
    - Example: "The species diversity was high but the total cell counts were low."
    - Example: "Phytoplankton diversity and total cell numbers were both low."
 
-2. **Dominant groups**: State which groups dominate (diatoms, dinoflagellates, cyanobacteria, etc.).
+2. **Dominant groups**: State which groups dominate using the explicit detailed group assignments provided in the prompt data. Use the exact grouping supplied there, including groups such as cryptomonads and Mesodinium when present. Do not infer group membership from scientific names.
    - Example: "Diatoms dominated among the larger cells."
 
-3. **Key species by group**: Describe the most abundant species organized by four taxonomic groups: **diatoms**, **dinoflagellates**, **cyanobacteria**, and **others** (any taxa that do not belong to the first three groups, e.g. coccolithophores, silicoflagellates, euglenophytes). Present the groups in order of their abundance at the station -- mention the most dominant group first. Only mention groups that are actually present in the data; do not mention absent groups. When describing the "others" group, name the taxa by their specific identity rather than calling them "others". After first mention of a species, abbreviate genus to initial.
+3. **Key species by group**: Describe the most abundant species organized by the collapsed four-group assignments provided in the prompt data: **diatoms**, **dinoflagellates**, **cyanobacteria**, and **others**. The "others" group includes all taxa outside the first three groups, for example coccolithophores, silicoflagellates, euglenophytes, cryptomonads, and Mesodinium. Present the groups in order of their abundance at the station -- mention the most dominant group first. Only mention groups that are actually present in the data; do not mention absent groups. When describing the "others" group, name the taxa by their specific identity rather than calling them "others". After first mention of a species, abbreviate genus to initial.
    - Example: "Among the diatoms, Dactyliosolen fragilissimus was the most abundant species, followed by Cerataulina pelagica. Heterocapsa rotundata was the most common dinoflagellate."
    - Example: "The cyanobacterium Aphanizomenon flosaquae* dominated the community. Among the diatoms, Skeletonema marinoi and Chaetoceros spp. were found in lower numbers."
    - Example with others: "Diatoms dominated the community, with Skeletonema marinoi as the most abundant species. The coccolithophore Emiliania huxleyi and the silicoflagellate Dictyocha speculum were also present."
@@ -54,6 +54,7 @@ Each station description follows a consistent pattern:
    - Example: "The smaller cells were represented by different cryptomonads."
 
 5. **Potentially harmful taxa**: Always mention if potentially harmful taxa are present, especially if common. Mark with asterisk.
+   - If a potentially harmful taxon is one of the dominant taxa by biovolume or cell counts, it MUST be named as dominant in the community description (steps 2–3) as well as mentioned in this section. Do not relegate a dominant taxon to this section only because it carries a HAB flag.
    - Example: "The toxin producing Dinophysis acuminata* was found in high cell numbers."
    - Example: "Low occurrences of the filamentous cyanobacterium Aphanizomenon flosaquae* were observed."
 
@@ -69,6 +70,7 @@ Each station description follows a consistent pattern:
 - Use full scientific name on first mention: "Pseudosolenia calcar-avis"
 - Abbreviate genus on subsequent mentions: "P. calcar-avis"
 - Group-level names are not italicized: "diatoms", "dinoflagellates", "cyanobacteria", "coccolithophores"
+- The classifier categories "unclassified" and "unicells" are always written in lower case, even mid-sentence. Never write "Unclassified" or "Unicells" unless one of these words opens a sentence.
 - Higher taxonomic groups: "Cryptomonadales", "Gymnodiniales", "Dictyochales"
 - Mark potentially harmful taxa with an asterisk (*) after the name
 - Species-group qualifiers (sflag): some taxa in the data are recorded at genus or group level and carry a qualifier such as "spp.", "sp.", or "group" (e.g. "Chaetoceros spp.", "Dinophysis sp.", "Pseudo-nitzschia group"). Always include this qualifier when writing the name. The qualifier is plain text and not italicized; only the genus/species epithet is in italics.

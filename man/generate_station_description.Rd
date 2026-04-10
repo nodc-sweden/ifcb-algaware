@@ -8,6 +8,7 @@ generate_station_description(
   station_data,
   taxa_lookup = NULL,
   all_stations_summary = NULL,
+  phyto_groups = NULL,
   provider = NULL,
   unclassified_pct = NULL
 )
@@ -18,6 +19,9 @@ generate_station_description(
 \item{taxa_lookup}{Optional taxa lookup table.}
 
 \item{all_stations_summary}{Optional full station_summary for context.}
+
+\item{phyto_groups}{Optional phytoplankton group table used to provide
+explicit group assignments in the prompt text.}
 
 \item{provider}{LLM provider (\code{"openai"} or \code{"gemini"}).
 NULL auto-detects.}

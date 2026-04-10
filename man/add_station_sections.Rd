@@ -9,6 +9,7 @@ add_station_sections(
   station_summary,
   taxa_lookup = NULL,
   use_llm = FALSE,
+  phyto_groups = NULL,
   llm_provider = NULL,
   on_llm_progress = NULL,
   unclassified_fractions = NULL

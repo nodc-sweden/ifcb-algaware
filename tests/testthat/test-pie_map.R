@@ -194,6 +194,23 @@ test_that("create_pie_map works with a single station", {
   expect_equal(seg_rows, 0L)
 })
 
+test_that("create_pie_map keeps pies fully within map bounds", {
+  skip_if_not_installed("rnaturalearthdata")
+  df <- data.frame(
+    station_name = rep(c("EDGE_W", "EDGE_E"), each = 3),
+    sample_longitude_dd = rep(c(10.02, 21.98), each = 3),
+    sample_latitude_dd = rep(c(54.05, 59.95), each = 3),
+    group = rep(c("A", "B", "C"), 2),
+    value = c(90, 5, 5, 5, 5, 90),
+    stringsAsFactors = FALSE
+  )
+  p <- create_pie_map(df, size_by = "total", xlim = c(10, 22), ylim = c(54, 60))
+  poly_layer <- Filter(function(l) inherits(l$geom, "GeomPolygon"),
+                       p$layers)[[1]]
+  expect_true(all(poly_layer$data$x >= 10 - 1e-8 & poly_layer$data$x <= 22 + 1e-8))
+  expect_true(all(poly_layer$data$y >= 54 - 1e-8 & poly_layer$data$y <= 60 + 1e-8))
+})
+
 # ── repel_pie_centers (internal) ───────────────────────────────────────────
 
 test_that("repel_pie_centers returns wide unchanged when n = 1", {
@@ -296,6 +313,208 @@ test_that("place_pie_labels places labels within map bounds", {
   out <- algaware:::place_pie_labels(wide,
                                      map_xlim = c(10, 22),
                                      map_ylim = c(54, 60))
-  expect_true(all(out$label_x >= 10 & out$label_x <= 22))
-  expect_true(all(out$label_y >= 54 & out$label_y <= 60))
+  char_w <- 0.055
+  char_h <- 0.055
+  for (i in seq_len(nrow(out))) {
+    if (!is.finite(out$label_x[i])) next
+    hw <- nchar(out$label[i]) * char_w / 2
+    lx <- out$label_x[i]
+    text_left  <- if (isTRUE(all.equal(out$hjust[i], 0))) lx
+                  else if (isTRUE(all.equal(out$hjust[i], 1))) lx - 2 * hw
+                  else lx - hw
+    text_right <- if (isTRUE(all.equal(out$hjust[i], 0))) lx + 2 * hw
+                  else if (isTRUE(all.equal(out$hjust[i], 1))) lx
+                  else lx + hw
+    expect_true(text_left  >= 10 - 1e-8, info = paste("label", i, "left edge"))
+    expect_true(text_right <= 22 + 1e-8, info = paste("label", i, "right edge"))
+    expect_true(out$label_y[i] - char_h >= 54 - 1e-8)
+    expect_true(out$label_y[i] + char_h <= 60 + 1e-8)
+  }
+})
+
+test_that("place_pie_labels only returns clear labels", {
+  wide <- data.frame(
+    lon   = c(15.00, 15.12, 15.24),
+    lat   = c(57.00, 57.00, 57.00),
+    r_pie = rep(0.28, 3),
+    r_lon = rep(0.28 / cos(57 * pi / 180), 3),
+    label = c("Long label A", "Long label B", "Long label C"),
+    stringsAsFactors = FALSE
+  )
+  out <- algaware:::place_pie_labels(
+    wide,
+    map_xlim = c(13.0, 17.5),
+    map_ylim = c(55.5, 58.5)
+  )
+
+  keep <- which(is.finite(out$label_x) & is.finite(out$label_y))
+  expect_gt(length(keep), 0L)
+
+  # Helper: compute actual text bounding box from label_x + hjust.
+  # hjust = 0  → left-aligned  → text runs label_x to label_x + 2*hw
+  # hjust = 1  → right-aligned → text runs label_x - 2*hw to label_x
+  # hjust = 0.5 → centred      → text runs label_x - hw to label_x + hw
+  text_bbox <- function(lx, hw, hjust) {
+    if (isTRUE(all.equal(hjust, 0))) {
+      c(lx, lx + 2 * hw)
+    } else if (isTRUE(all.equal(hjust, 1))) {
+      c(lx - 2 * hw, lx)
+    } else {
+      c(lx - hw, lx + hw)
+    }
+  }
+
+  for (i in keep) {
+    hw <- nchar(out$label[i]) * 0.055 / 2
+    hh <- 0.055
+    bb <- text_bbox(out$label_x[i], hw, out$hjust[i])
+    for (j in seq_len(nrow(out))) {
+      cx <- min(max(out$lon[j], bb[1]), bb[2])
+      cy <- min(max(out$lat[j], out$label_y[i] - hh), out$label_y[i] + hh)
+      dx <- (cx - out$lon[j]) / out$r_lon[j]
+      dy <- (cy - out$lat[j]) / out$r_pie[j]
+      expect_gt(sqrt(dx^2 + dy^2), 1)
+    }
+  }
+
+  if (length(keep) > 1) {
+    pairs <- utils::combn(keep, 2L)
+    for (k in seq_len(ncol(pairs))) {
+      i <- pairs[1L, k]
+      j <- pairs[2L, k]
+      hw_i <- nchar(out$label[i]) * 0.055 / 2
+      hw_j <- nchar(out$label[j]) * 0.055 / 2
+      bb_i <- text_bbox(out$label_x[i], hw_i, out$hjust[i])
+      bb_j <- text_bbox(out$label_x[j], hw_j, out$hjust[j])
+      # Gap between actual rendered extents (negative = overlap)
+      gap_x <- bb_i[1] - bb_j[2]
+      if (bb_j[1] - bb_i[2] > gap_x) gap_x <- bb_j[1] - bb_i[2]
+      gap_y <- abs(out$label_y[i] - out$label_y[j]) - (0.055 + 0.055)
+      expect_true(gap_x >= 0 || gap_y >= 0)
+    }
+  }
+})
+
+test_that("place_pie_labels avoids anchors and leader segments", {
+  wide <- data.frame(
+    lon = c(12.4, 10.5),
+    lat = c(58.2, 58.25),
+    r_pie = c(0.55, 0.25),
+    r_lon = c(0.55 / cos(58.2 * pi / 180), 0.25 / cos(58.25 * pi / 180)),
+    label = c("SLÄGGÖ", "Å17"),
+    anchor_lon = c(11.55, 10.5),
+    anchor_lat = c(58.25, 58.25),
+    leader_x = c(11.85, 10.5),
+    leader_y = c(58.24, 58.25),
+    stringsAsFactors = FALSE
+  )
+  out <- algaware:::place_pie_labels(
+    wide,
+    map_xlim = c(10, 13.2),
+    map_ylim = c(57.8, 58.8)
+  )
+
+  keep <- which(is.finite(out$label_x) & is.finite(out$label_y))
+  for (i in keep) {
+    hw <- nchar(out$label[i]) * 0.055 / 2
+    hh <- 0.055
+    left <- out$label_x[i] - hw
+    right <- out$label_x[i] + hw
+    bottom <- out$label_y[i] - hh
+    top <- out$label_y[i] + hh
+    expect_false(out$anchor_lon[1] >= left && out$anchor_lon[1] <= right &&
+                   out$anchor_lat[1] >= bottom && out$anchor_lat[1] <= top)
+  }
+})
+
+test_that("create_group_map formats Mesodinium legend label with partial italics", {
+  skip_if_not_installed("rnaturalearthdata")
+  station_summary <- data.frame(
+    name = c("Mesodinium", "Skeletonema marinoi"),
+    AphiaID = c(179320L, 149142L),
+    carbon_ug_per_liter = c(10, 20),
+    STATION_NAME_SHORT = c("BY5", "BY31"),
+    LATITUDE_WGS84_SWEREF99_DD = c(55.25, 58.59),
+    LONGITUDE_WGS84_SWEREF99_DD = c(15.98, 18.23),
+    stringsAsFactors = FALSE
+  )
+  phyto_groups <- data.frame(
+    name = c("Mesodinium", "Skeletonema marinoi"),
+    AphiaID = c(179320L, 149142L),
+    phyto_group.plankton_group = c("Mesodinium spp.", "Diatoms"),
+    stringsAsFactors = FALSE
+  )
+  p <- create_group_map(station_summary, phyto_groups)
+  fill_scale <- p$scales$get_scales("fill")
+  expect_match(unname(fill_scale$labels["Mesodinium spp."]),
+               "<i>Mesodinium</i> spp.", fixed = TRUE)
+  expect_s3_class(p$theme$legend.text, "element_markdown")
+})
+
+test_that("create_pie_map uses plain legend text for plain labels", {
+  skip_if_not_installed("rnaturalearthdata")
+  df <- data.frame(
+    station_name = rep(c("S1", "S2"), each = 4),
+    sample_longitude_dd = rep(c(12, 18), each = 4),
+    sample_latitude_dd = rep(c(58, 57.5), each = 4),
+    group = rep(c("Diatoms", "Dinoflagellates", "Cyanobacteria", "Other"), 2),
+    value = c(50, 30, 15, 5, 40, 35, 20, 5),
+    stringsAsFactors = FALSE
+  )
+  p <- create_pie_map(
+    df,
+    group_labels = c(
+      Diatoms = "Diatoms",
+      Dinoflagellates = "Dinoflagellates",
+      Cyanobacteria = "Cyanobacteria",
+      Other = "Other"
+    )
+  )
+  expect_s3_class(p$theme$legend.text, "element_text")
+})
+
+test_that("create_pie_map keeps default legend labels when group_labels is NULL", {
+  skip_if_not_installed("rnaturalearthdata")
+  df <- data.frame(
+    station_name = rep(c("S1", "S2"), each = 4),
+    sample_longitude_dd = rep(c(12, 18), each = 4),
+    sample_latitude_dd = rep(c(58, 57.5), each = 4),
+    group = rep(c("Diatoms", "Dinoflagellates", "Cyanobacteria", "Other"), 2),
+    value = c(50, 30, 15, 5, 40, 35, 20, 5),
+    stringsAsFactors = FALSE
+  )
+  p <- create_pie_map(
+    df,
+    group_levels = c("Diatoms", "Dinoflagellates", "Cyanobacteria", "Other"),
+    group_colors = c(
+      Diatoms = "#1f77b4",
+      Dinoflagellates = "#d62728",
+      Cyanobacteria = "#2ca02c",
+      Other = "#7f7f7f"
+    )
+  )
+  fill_scale <- p$scales$get_scales("fill")
+  expect_s3_class(fill_scale$labels, "waiver")
+})
+
+test_that("create_group_map omits the biomass size legend", {
+  skip_if_not_installed("rnaturalearthdata")
+  station_summary <- data.frame(
+    name = c("Mesodinium", "Skeletonema marinoi"),
+    AphiaID = c(179320L, 149142L),
+    carbon_ug_per_liter = c(10, 20),
+    STATION_NAME_SHORT = c("BY5", "BY31"),
+    LATITUDE_WGS84_SWEREF99_DD = c(55.25, 58.59),
+    LONGITUDE_WGS84_SWEREF99_DD = c(15.98, 18.23),
+    stringsAsFactors = FALSE
+  )
+  phyto_groups <- data.frame(
+    name = c("Mesodinium", "Skeletonema marinoi"),
+    AphiaID = c(179320L, 149142L),
+    phyto_group.plankton_group = c("Mesodinium spp.", "Diatoms"),
+    stringsAsFactors = FALSE
+  )
+  p <- create_group_map(station_summary, phyto_groups)
+  size_scale <- p$scales$get_scales("size")
+  expect_null(size_scale)
 })

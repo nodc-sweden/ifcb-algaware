@@ -301,7 +301,7 @@ panel shows them as ready.
 The **Maps** and **Plots** tabs in the main panel update automatically as data
 loads and corrections are applied.
 
-- **Maps tab**: image count map, biomass map, and chlorophyll map.
+- **Maps tab**: image count map, phytoplankton group composition pie map, and chlorophyll map.
 - **Plots tab**: heatmap and stacked bar chart for Baltic Sea and West Coast.
 - **Summary tab**: interactive, sortable table of biovolume per station and taxon.
 

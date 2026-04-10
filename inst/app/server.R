@@ -286,18 +286,10 @@ server <- function(input, output, session) {
     taxa <- unique(rv$station_summary[, c("name", "AphiaID")])
     taxa <- taxa[!is.na(taxa$name), ]
     
-    # Assign plankton groups using additional custom grouping
-    custom_groups <- list(
-      Cryptophytes = list(phylum = "Cryptophyta"),
-      `Mesodinium spp.` = list(genus = "Mesodinium")
-    )
-    
     groups <- tryCatch(
-      SHARK4R::assign_phytoplankton_group(
+      algaware::assign_phyto_groups(
         scientific_names = taxa$name,
-        aphia_ids        = taxa$AphiaID,
-        custom_groups    = custom_groups,
-        verbose          = FALSE
+        aphia_ids        = taxa$AphiaID
       ),
       error = function(e) rep("Other", nrow(taxa))
     )
@@ -318,11 +310,6 @@ server <- function(input, output, session) {
   output$image_count_map <- renderPlot({
     req(rv$image_counts, nrow(rv$image_counts) > 0)
     create_image_count_map(rv$image_counts)
-  })
-
-  output$biomass_map <- renderPlot({
-    biomaps <- biomass_maps()
-    biomaps$biomass_map
   })
 
   # Update chl map source choices when CTD/LIMS data becomes available.

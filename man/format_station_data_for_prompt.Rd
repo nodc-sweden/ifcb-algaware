@@ -7,7 +7,8 @@
 format_station_data_for_prompt(
   station_data,
   taxa_lookup = NULL,
-  unclassified_pct = NULL
+  unclassified_pct = NULL,
+  phyto_groups = NULL
 )
 }
 \arguments{
@@ -15,6 +16,9 @@ format_station_data_for_prompt(
 
 \item{taxa_lookup}{Optional taxa lookup with \code{HAB} and
 \code{warning_level} columns.}
+
+\item{phyto_groups}{Optional phytoplankton group table used to provide
+explicit group assignments in the prompt text.}
 }
 \value{
 Character string describing the station data.

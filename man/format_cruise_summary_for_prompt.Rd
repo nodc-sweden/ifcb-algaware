@@ -7,7 +7,8 @@
 format_cruise_summary_for_prompt(
   station_summary,
   taxa_lookup = NULL,
-  unclassified_fractions = NULL
+  unclassified_fractions = NULL,
+  phyto_groups = NULL
 )
 }
 \arguments{
@@ -15,6 +16,9 @@ format_cruise_summary_for_prompt(
 
 \item{taxa_lookup}{Optional taxa lookup with \code{HAB} and
 \code{warning_level} columns.}
+
+\item{phyto_groups}{Optional phytoplankton group table used to provide
+explicit group assignments in the prompt text.}
 }
 \value{
 Character string with cruise-level overview.

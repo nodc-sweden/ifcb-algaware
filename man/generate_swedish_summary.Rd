@@ -8,6 +8,7 @@ generate_swedish_summary(
   station_summary,
   taxa_lookup = NULL,
   cruise_info = "",
+  phyto_groups = NULL,
   provider = NULL,
   unclassified_fractions = NULL
 )
@@ -18,6 +19,9 @@ generate_swedish_summary(
 \item{taxa_lookup}{Optional taxa lookup table.}
 
 \item{cruise_info}{Cruise info string.}
+
+\item{phyto_groups}{Optional phytoplankton group table used to provide
+explicit group assignments in the prompt text.}
 
 \item{provider}{LLM provider (\code{"openai"} or \code{"gemini"}).
 NULL auto-detects.}

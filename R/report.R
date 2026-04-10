@@ -1,8 +1,9 @@
 #' Generate the AlgAware Word report
 #'
-#' Creates a Word document with biomass maps, heatmaps, stacked bar charts,
+#' Creates a Word document with overview maps, heatmaps, stacked bar charts,
 #' station sections, and image mosaics. Optionally includes a front page with
-#' logo, diary number placeholder, and two summary mosaics.
+#' logo, diary number placeholder, a phytoplankton pie map, and two summary
+#' mosaics.
 #'
 #' @param output_path Path for the output .docx file.
 #' @param station_summary Aggregated station data.
@@ -131,6 +132,40 @@ generate_report <- function(output_path, station_summary,
   center_pp <- officer::fp_par(text.align = "center")
   left_pp <- officer::fp_par(text.align = "left")
 
+  # Compute phytoplankton group assignments on demand if the caller didn't
+  # provide them, so the same pie map can be reused on the front page.
+  if (is.null(phyto_groups) &&
+      requireNamespace("SHARK4R", quietly = TRUE) &&
+      !is.null(station_summary) && nrow(station_summary) > 0) {
+    taxa <- unique(station_summary[, c("name", "AphiaID")])
+    taxa <- taxa[!is.na(taxa$name), ]
+    if (nrow(taxa) > 0) {
+      groups <- tryCatch(
+        assign_phyto_groups(
+          scientific_names = taxa$name,
+          aphia_ids        = taxa$AphiaID
+        ),
+        error = function(e) NULL
+      )
+      if (!is.null(groups)) {
+        phyto_groups <- data.frame(
+          name        = taxa$name,
+          AphiaID     = taxa$AphiaID,
+          phyto_group = groups,
+          stringsAsFactors = FALSE
+        )
+      }
+    }
+  }
+
+  group_map_plot <- NULL
+  if (!is.null(phyto_groups) && nrow(phyto_groups) > 0) {
+    group_map_plot <- tryCatch(
+      create_group_map(station_summary, phyto_groups),
+      error = function(e) NULL
+    )
+  }
+
   doc <- officer::read_docx(template)
 
   # The cover page is always generated. The separate mosaic overview page is
@@ -144,7 +179,8 @@ generate_report <- function(output_path, station_summary,
                         cruise_info = cruise_info,
                         report_number = report_number,
                         report_dnr = report_dnr,
-                        image_counts = image_counts)
+                        image_counts = image_counts,
+                        group_map_plot = group_map_plot)
 
   # End front page section (no header/footer, no page number)
   doc <- officer::body_end_block_section(doc, officer::block_section(
@@ -164,19 +200,14 @@ generate_report <- function(output_path, station_summary,
     "heterotrophic organisms and other non-chlorophyll-containing cells ",
     "may be underrepresented. In this report we summarize the findings ",
     "from selected monitoring stations. ",
-    "Phytoplankton identification is based on ",
-    "automated image classification by an AI model, validated by ",
-    if (nzchar(annotator)) paste0(annotator, ", SMHI") else "SMHI",
-    "."
+    paste0(c(
+      "Phytoplankton identification is based on ",
+      "automated image classification by an AI model, validated by ",
+      if (nzchar(annotator)) paste0(annotator, ", SMHI") else "SMHI",
+      ".",
+      if (use_llm) " Report text was drafted with the assistance of a large language model." else NULL
+    ), collapse = "")
   )
-  if (use_llm) {
-    intro <- paste0(
-      intro,
-      " Report text was drafted with the assistance of a large language model ",
-      "and reviewed by ",
-      if (nzchar(annotator)) paste0(annotator, ".") else "the analyst."
-    )
-  }
   has_hab <- !is.null(taxa_lookup) &&
     "HAB" %in% names(taxa_lookup) &&
     any(taxa_lookup$HAB == TRUE, na.rm = TRUE)
@@ -212,31 +243,13 @@ generate_report <- function(output_path, station_summary,
     }
   }
 
-  # Swedish summary
-  doc <- officer::body_add_par(doc, "Sammanfattning", style = "heading 2")
-  swedish_text <- "[Skriv sammanfattning pa svenska har.]"
-  if (use_llm) {
-    report_progress("Swedish summary")
-    swedish_text <- tryCatch(
-      generate_swedish_summary(station_summary, taxa_lookup, cruise_info,
-                               provider = llm_provider,
-                               unclassified_fractions = unclassified_fractions),
-      error = function(e) {
-        warning("LLM Swedish summary failed: ", e$message, call. = FALSE)
-        "[Skriv sammanfattning pa svenska har. (LLM generation failed)]"
-      }
-    )
-  }
-  doc <- add_formatted_par(doc, swedish_text, taxa_lookup, style = "Normal")
-  doc <- officer::body_add_par(doc, "")
-
-  # English summary
-  doc <- officer::body_add_par(doc, "Summary", style = "heading 2")
+  # English summary (generated first; Swedish is a translation of this)
   english_text <- "[Write English summary here.]"
   if (use_llm) {
     report_progress("English summary")
     english_text <- tryCatch(
       generate_english_summary(station_summary, taxa_lookup, cruise_info,
+                               phyto_groups = phyto_groups,
                                provider = llm_provider,
                                unclassified_fractions = unclassified_fractions),
       error = function(e) {
@@ -245,6 +258,24 @@ generate_report <- function(output_path, station_summary,
       }
     )
   }
+
+  # Swedish summary (translation of the English summary)
+  doc <- officer::body_add_par(doc, "Sammanfattning", style = "heading 2")
+  swedish_text <- "[Skriv sammanfattning pa svenska har.]"
+  if (use_llm) {
+    report_progress("Swedish summary")
+    swedish_text <- tryCatch(
+      translate_summary_to_swedish(english_text, provider = llm_provider),
+      error = function(e) {
+        warning("LLM Swedish translation failed: ", e$message, call. = FALSE)
+        "[Skriv sammanfattning pa svenska har. (LLM generation failed)]"
+      }
+    )
+  }
+  doc <- add_formatted_par(doc, swedish_text, taxa_lookup, style = "Normal")
+  doc <- officer::body_add_par(doc, "")
+
+  doc <- officer::body_add_par(doc, "Summary", style = "heading 2")
   doc <- add_formatted_par(doc, english_text, taxa_lookup, style = "Normal")
 
   # Summary table
@@ -324,13 +355,15 @@ generate_report <- function(output_path, station_summary,
   maps <- create_biomass_maps(station_summary)
   month_year <- extract_month_year(cruise_info)
 
-  # Image count map — skip if already shown on the front page
-  if (!has_cover_page && !is.null(image_counts) && nrow(image_counts) > 0) {
-    doc <- officer::body_add_break(doc)
-    doc <- officer::body_add_par(doc, "Spatial biomass distribution", style = "heading 2")
-    img_map <- create_image_count_map(image_counts)
+  doc <- officer::body_add_break(doc)
+  doc <- officer::body_add_par(doc, "Spatial biomass distribution", style = "heading 2")
+  doc <- officer::body_add_par(doc, "")
+
+  if (!is.null(image_counts) && nrow(image_counts) > 0) {
+    img_map <- create_image_count_map(image_counts,
+                                      title = "IFCB image concentration")
     doc <- add_centered_plot(doc, img_map, cleanup,
-      width = 7, height = 5, display_width = 6, display_height = 4.3)
+      width = 7, height = 4, display_width = 5.8, display_height = 3.2)
     total_images <- format(sum(image_counts$n_images, na.rm = TRUE),
                            big.mark = ",")
     doc <- officer::body_add_fpar(doc, officer::fpar(
@@ -342,86 +375,9 @@ generate_report <- function(output_path, station_summary,
       ), fp_p = left_pp
     ))
     fig_num <- fig_num + 1L
-  }
-
-  # Biomass and chlorophyll maps on one page
-  doc <- officer::body_add_break(doc)
-  if (has_cover_page || is.null(image_counts) || nrow(image_counts) == 0) {
-    doc <- officer::body_add_par(doc, "Spatial biomass distribution", style = "heading 2")
+    doc <- officer::body_add_par(doc, "")
     doc <- officer::body_add_par(doc, "")
   }
-
-  # Phytoplankton group composition pie map (one per station).
-  # Compute group assignments on demand if the caller didn't provide them.
-  if (is.null(phyto_groups) &&
-      requireNamespace("SHARK4R", quietly = TRUE) &&
-      !is.null(station_summary) && nrow(station_summary) > 0) {
-    taxa <- unique(station_summary[, c("name", "AphiaID")])
-    taxa <- taxa[!is.na(taxa$name), ]
-    if (nrow(taxa) > 0) {
-      groups <- tryCatch(
-        SHARK4R::assign_phytoplankton_group(
-          scientific_names = taxa$name,
-          aphia_ids        = taxa$AphiaID,
-          verbose          = FALSE
-        ),
-        error = function(e) NULL
-      )
-      if (!is.null(groups)) {
-        phyto_groups <- data.frame(
-          name        = taxa$name,
-          AphiaID     = taxa$AphiaID,
-          phyto_group = groups,
-          stringsAsFactors = FALSE
-        )
-      }
-    }
-  }
-
-  if (!is.null(phyto_groups) && nrow(phyto_groups) > 0) {
-    group_map_plot <- tryCatch(
-      create_group_map(station_summary, phyto_groups),
-      error = function(e) NULL
-    )
-    if (!is.null(group_map_plot)) {
-      doc <- add_centered_plot(doc, group_map_plot, cleanup,
-        width = 8, height = 6, display_width = 6.2, display_height = 4.6)
-      doc <- officer::body_add_fpar(doc, officer::fpar(
-        officer::ftext(
-          paste0("Figure ", fig_num,
-                 ". Phytoplankton group composition (carbon biomass) ",
-                 "at AlgAware stations",
-                 if (nzchar(month_year)) {
-                   paste0(" during the ", month_year, " cruise.")
-                 } else {
-                   "."
-                 }),
-          officer::fp_text(font.size = 10, font.family = "Adobe Garamond Pro")
-        ), fp_p = left_pp
-      ))
-      fig_num <- fig_num + 1L
-      doc <- officer::body_add_break(doc)
-    }
-  }
-
-  doc <- add_centered_plot(doc, maps$biomass_map, cleanup,
-    width = 7, height = 4, display_width = 5.8, display_height = 3.2)
-  doc <- officer::body_add_fpar(doc, officer::fpar(
-    officer::ftext(
-      paste0("Figure ", fig_num,
-             ". Total carbon biomass at AlgAware stations",
-             if (nzchar(month_year)) {
-               paste0(" during the ", month_year, " cruise.")
-             } else {
-               "."
-             }),
-      officer::fp_text(font.size = 10, font.family = "Adobe Garamond Pro")
-    ), fp_p = left_pp
-  ))
-  fig_num <- fig_num + 1L
-
-  doc <- officer::body_add_par(doc, "")
-  doc <- officer::body_add_par(doc, "")
 
   # Use the correct chl map based on active source
   chl_map_plot <- if (chl_map_source == "ctd" && !is.null(ctd_data)) {
@@ -498,6 +454,7 @@ generate_report <- function(output_path, station_summary,
 
   # Station sections
   doc <- add_station_sections(doc, station_summary, taxa_lookup, use_llm,
+                               phyto_groups = phyto_groups,
                                llm_provider = llm_provider,
                                on_llm_progress = report_progress,
                                unclassified_fractions = unclassified_fractions)
@@ -673,6 +630,7 @@ add_stacked_bar_section <- function(doc, wide_data, taxa_lookup, title,
 #' @keywords internal
 add_station_sections <- function(doc, station_summary,
                                  taxa_lookup = NULL, use_llm = FALSE,
+                                 phyto_groups = NULL,
                                  llm_provider = NULL,
                                  on_llm_progress = NULL,
                                  unclassified_fractions = NULL) {
@@ -707,6 +665,7 @@ add_station_sections <- function(doc, station_summary,
       description <- tryCatch(
         generate_station_description(station_data, taxa_lookup,
                                      station_summary,
+                                     phyto_groups = phyto_groups,
                                      provider = llm_provider,
                                      unclassified_pct = visit_unclass_pct),
         error = function(e) {
@@ -978,7 +937,7 @@ add_report_banner <- function(doc, center_pp, cleanup = NULL,
 #'
 #' Inserts a professional cover page with the AlgAware logo, report title,
 #' issue number, diary number placeholder, cruise information, and cruise
-#' track map. Mosaics are placed on the following page via
+#' phytoplankton group-composition map. Mosaics are placed on the following page via
 #' \code{add_mosaic_overview()}.
 #'
 #' @param doc An rdocx object.
@@ -989,12 +948,15 @@ add_report_banner <- function(doc, center_pp, cleanup = NULL,
 #' @param report_number Optional report issue number (e.g. "1").
 #' @param report_dnr Optional diarienummer string (e.g. "2026-1234").
 #' @param image_counts Optional image counts data for the cruise track map.
+#' @param group_map_plot Optional phytoplankton group composition pie map for
+#'   the front page.
 #' @return The modified rdocx object.
 #' @keywords internal
 add_front_page <- function(doc, cleanup,
                            taxa_lookup = NULL, cruise_info = "",
                            report_number = NULL, report_dnr = NULL,
-                           image_counts = NULL) {
+                           image_counts = NULL,
+                           group_map_plot = NULL) {
   font <- "Adobe Garamond Pro"
   center_pp <- officer::fp_par(text.align = "center")
 
@@ -1063,20 +1025,17 @@ add_front_page <- function(doc, cleanup,
   doc <- officer::body_add_par(doc, "")
   doc <- officer::body_add_par(doc, "")
 
-  # -- Cruise track map (centered) --
-  if (!is.null(image_counts) && nrow(image_counts) > 0) {
-    track_map <- create_image_count_map(image_counts, legend_position = "right")
-    doc <- add_centered_plot(doc, track_map, cleanup,
+  # -- Phytoplankton group composition map (centered) --
+  if (!is.null(group_map_plot)) {
+    doc <- add_centered_plot(doc, group_map_plot, cleanup,
       width = 8, height = 5.6, display_width = 6.1, display_height = 4.3)
 
     doc <- officer::body_add_fpar(doc, officer::fpar(
       officer::ftext(
-        "Number of images captured per litre of water along the cruise track.",
-        officer::fp_text(font.size = 10, font.family = font)
-      ),
-      officer::run_linebreak(),
-      officer::ftext(
-        "Equivalent to chlorophyll-fluorescing particles detected by the IFCB.",
+        paste0(
+          "Phytoplankton group composition at AlgAware stations based on carbon concentration. ",
+          "Pie slices show relative group composition; pie size shows relative total carbon concentration among stations."
+        ),
         officer::fp_text(font.size = 10, font.family = font)
       ),
       fp_p = center_pp

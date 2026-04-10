@@ -140,10 +140,10 @@ through the Settings panel.
 Set one of the following environment variables to enable AI-generated
 report text (summaries and station descriptions):
 
-| Variable         | Provider                                  |
-|------------------|-------------------------------------------|
-| `OPENAI_API_KEY` | OpenAI (default: gpt-5.1)                 |
-| `GEMINI_API_KEY` | Google Gemini (default: gemini-2.5-flash) |
+| Variable         | Provider                                       |
+|------------------|------------------------------------------------|
+| `OPENAI_API_KEY` | OpenAI (default: gpt-5.1)                      |
+| `GEMINI_API_KEY` | Google Gemini (default: gemini-2.5-flash-lite) |
 
 Override the model with `OPENAI_MODEL` or `GEMINI_MODEL`. When both keys
 are set, OpenAI is used by default.

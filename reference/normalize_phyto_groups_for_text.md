@@ -2,7 +2,7 @@
 
 Standardises the group column name from either `phyto_group` or
 `phyto_group.plankton_group` into `detailed_group` and `text_group`
-(identical — all groups from the YAML config are preserved in both
+(identical; all groups from the YAML config are preserved in both
 columns).
 
 ## Usage

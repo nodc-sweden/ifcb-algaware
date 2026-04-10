@@ -28,7 +28,7 @@ call_gemini(
 
 - model:
 
-  Gemini model name (default: "gemini-2.5-flash").
+  Gemini model name (default: "gemini-2.5-flash-lite").
 
 - temperature:
 

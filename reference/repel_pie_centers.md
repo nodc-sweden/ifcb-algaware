@@ -2,13 +2,11 @@
 
 Sequential, asymmetric placement so that pie charts never overlap and
 any pie that *does* get displaced is pushed far enough that its anchor
-(true station location) lands outside the pie boundary — so the leader
-line and anchor dot are always visible. The most-constrained stations
-are placed first at their true coordinates and act as fixed obstacles;
-subsequent stations yield and are shifted away as needed. All geometry
-is computed in an isotropic coordinate system \\(lon \cdot
-\cos(\bar{lat}), lat)\\ so that visual distance on a `coord_sf` map
-corresponds to Euclidean distance here.
+(true station location) lands outside the pie boundary, so the leader
+line and anchor dot remain visible. Geometry is computed in an isotropic
+coordinate system \\(lon \cdot \cos(\bar{lat}), lat)\\ so that visual
+distance on a `coord_sf` map corresponds approximately to Euclidean
+distance here.
 
 ## Usage
 

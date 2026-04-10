@@ -212,6 +212,57 @@ locally.</p>
 editing them, rebuild and reinstall the package with
 <code>devtools::install()</code> for changes to take effect.</p>
 <div class="section level3">
+<h3 id="phytoplankton-group-definitions">Phytoplankton group definitions<a class="anchor" aria-label="anchor" href="#phytoplankton-group-definitions"></a>
+</h3>
+<p><code>inst/config/phyto_groups.yaml</code> controls how taxa are
+assigned to the groups shown in the pie charts and passed to the LLM
+prompts. Each top-level key is a group name (e.g. <code>Diatoms</code>,
+<code>Mesodinium spp.</code>). Groups marked with a <code>role</code>
+field map to the three built-in SHARK4R parameters; all others are
+passed as custom groups and are evaluated in order — place more-specific
+rules (genus-level) before broader ones (class-level).</p>
+<p>Supported matching criteria are <code>class</code>,
+<code>phylum</code>, <code>order</code>, <code>family</code>, and
+<code>genus</code>. Any combination can be used within one group
+entry.</p>
+<p><strong>Built-in (core) groups</strong> use the <code>role</code>
+key:</p>
+<table class="table">
+<thead><tr class="header">
+<th>Role</th>
+<th>SHARK4R parameter</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td><code>diatoms</code></td>
+<td><code>diatom_class</code></td>
+</tr>
+<tr class="even">
+<td><code>dinoflagellates</code></td>
+<td><code>dinoflagellate_class</code></td>
+</tr>
+<tr class="odd">
+<td><code>cyanobacteria</code></td>
+<td>
+<code>cyanobacteria_class</code> /
+<code>cyanobacteria_phylum</code>
+</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example — adding a new custom group:</strong></p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">Haptophytes</span><span class="kw">:</span></span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="at">  </span><span class="fu">class</span><span class="kw">:</span></span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> Coccolithophyceae</span></span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> Pavlovophyceae</span></span></code></pre></div>
+<p>Place this entry <em>before</em> any broader group
+(e.g. <code>Other</code>) that would otherwise capture haptophyte
+classes first.</p>
+<p>After adding a group, also add the corresponding colour entry to
+<code><a href="../reference/create_group_map.html">create_group_map()</a></code> in <code>R/plots.R</code> so the new
+group gets a distinct colour in the pie chart.</p>
+</div>
+<div class="section level3">
 <h3 id="editing-the-llm-style-guide">Editing the LLM style guide<a class="anchor" aria-label="anchor" href="#editing-the-llm-style-guide"></a>
 </h3>
 <p><code>inst/extdata/report_writing_guide.md</code> is the system

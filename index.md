@@ -14,8 +14,8 @@ instruments. Developed for Swedish marine monitoring at SMHI.
 AlgAware-IFCB integrates with the IFCB Dashboard for automated data
 retrieval, provides an interactive image gallery for reviewing and
 correcting AI classifier predictions, and generates Word reports with
-biomass maps, chlorophyll maps, heatmaps, image mosaics, and CTD
-fluorescence profiles.
+phytoplankton group composition maps, image-count maps, chlorophyll
+maps, heatmaps, image mosaics, and CTD fluorescence profiles.
 
 > **Intended use:** This application is developed for internal use at
 > SMHI as part of the Swedish national marine monitoring programme. It
@@ -93,8 +93,10 @@ The application opens in your default browser.
 
 ### Visualizations
 
-- **Maps**: Biomass, image count, and chlorophyll (CTD fluorescence +
-  LIMS bottle) distribution across stations
+- **Maps**: Phytoplankton group composition pies (Diatoms,
+  Dinoflagellates, Cyanobacteria, Cryptophytes, Mesodinium spp.,
+  Silicoflagellates, Other), image count, and chlorophyll (CTD
+  fluorescence + LIMS bottle) distribution across stations
 - **Heatmaps**: Biovolume by taxon and station visit
 - **Stacked bar charts**: Relative biovolume composition (top 15 taxa)
 - **Summary table**: Interactive, sortable station-level data
@@ -104,6 +106,8 @@ The application opens in your default browser.
 - Automated Word document (`.docx`) with all plots and station sections
 - AI-generated summaries and station descriptions via OpenAI or Google
   Gemini
+- Front page with phytoplankton group composition pie map and narrative
+  caption
 - Front-page mosaic designer with interactive taxon and image selection
 - Image mosaics for top taxa per region (adaptive layout for chains
   vs. compact organisms)
@@ -138,7 +142,7 @@ report text (summaries and station descriptions):
 
 | Variable         | Provider                                  |
 |------------------|-------------------------------------------|
-| `OPENAI_API_KEY` | OpenAI (default: gpt-4.1)                 |
+| `OPENAI_API_KEY` | OpenAI (default: gpt-5.1)                 |
 | `GEMINI_API_KEY` | Google Gemini (default: gemini-2.5-flash) |
 
 Override the model with `OPENAI_MODEL` or `GEMINI_MODEL`. When both keys
@@ -146,15 +150,16 @@ are set, OpenAI is used by default.
 
 ## Bundled Data
 
-| File                                                  | Description                                                           |
-|-------------------------------------------------------|-----------------------------------------------------------------------|
-| `inst/extdata/taxa_lookup.csv`                        | Phytoplankton taxa with WoRMS AphiaID references and HAB status flags |
-| `inst/extdata/standard_stations.yaml`                 | Standard monitoring stations with regional assignments                |
-| `inst/extdata/station_mapper.txt`                     | Synonym mapper for raw station names to canonical names               |
-| `inst/extdata/annual_1991-2020_statistics_chl20m.txt` | Historical 0–20 m Chl-a monthly statistics (1991–2020)                |
-| `inst/extdata/report_writing_guide.md`                | LLM system prompt and style guide for report text generation          |
-| `inst/stations/algaware_stations.tsv`                 | 12 AlgAware monitoring stations (6 Baltic Sea, 6 West Coast)          |
-| `inst/templates/report_template.docx`                 | Word document template for generated reports                          |
+| File                                                  | Description                                                                    |
+|-------------------------------------------------------|--------------------------------------------------------------------------------|
+| `inst/extdata/taxa_lookup.csv`                        | Phytoplankton taxa with WoRMS AphiaID references and HAB status flags          |
+| `inst/extdata/standard_stations.yaml`                 | Standard monitoring stations with regional assignments                         |
+| `inst/extdata/station_mapper.txt`                     | Synonym mapper for raw station names to canonical names                        |
+| `inst/extdata/annual_1991-2020_statistics_chl20m.txt` | Historical 0–20 m Chl-a monthly statistics (1991–2020)                         |
+| `inst/extdata/report_writing_guide.md`                | LLM system prompt and style guide for report text generation                   |
+| `inst/config/phyto_groups.yaml`                       | Phytoplankton group definitions (class/phylum/genus mappings for WoRMS lookup) |
+| `inst/stations/algaware_stations.tsv`                 | 12 AlgAware monitoring stations (6 Baltic Sea, 6 West Coast)                   |
+| `inst/templates/report_template.docx`                 | Word document template for generated reports                                   |
 
 ## Project Structure
 
@@ -183,6 +188,7 @@ are set, OpenAI is used by default.
     │   └── utils.R                # Settings and utilities
     ├── inst/
     │   ├── app/                   # Shiny app (ui.R, server.R)
+    │   ├── config/                # Editable configuration files (phyto_groups.yaml)
     │   ├── extdata/               # Bundled data files
     │   ├── stations/              # Station definitions
     │   └── templates/             # Report template

@@ -2,7 +2,8 @@
 
 Inserts a professional cover page with the AlgAware logo, report title,
 issue number, diary number placeholder, cruise information, and cruise
-track map. Mosaics are placed on the following page via
+phytoplankton group-composition map. Mosaics are placed on the following
+page via
 [`add_mosaic_overview()`](https://nodc-sweden.github.io/ifcb-algaware/reference/add_mosaic_overview.md).
 
 ## Usage
@@ -15,7 +16,8 @@ add_front_page(
   cruise_info = "",
   report_number = NULL,
   report_dnr = NULL,
-  image_counts = NULL
+  image_counts = NULL,
+  group_map_plot = NULL
 )
 ```
 
@@ -49,6 +51,10 @@ add_front_page(
 - image_counts:
 
   Optional image counts data for the cruise track map.
+
+- group_map_plot:
+
+  Optional phytoplankton group composition pie map for the front page.
 
 ## Value
 

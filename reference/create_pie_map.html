@@ -105,6 +105,7 @@ and any numeric value (biomass, biovolume, abundance, …).</p>
 <span>  label_col <span class="op">=</span> <span class="va">station_col</span>,</span>
 <span>  group_levels <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  group_colors <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  group_labels <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  radius <span class="op">=</span> <span class="fl">0.28</span>,</span>
 <span>  size_by <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  size_range <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.15</span>, <span class="fl">0.4</span><span class="op">)</span>,</span>
@@ -167,6 +168,11 @@ slice ordering. Groups not present in <code>data</code> are dropped.</p></dd>
 group name. If <code>NULL</code>, ggplot's default discrete palette is used.</p></dd>
 
 
+<dt id="arg-group-labels">group_labels<a class="anchor" aria-label="anchor" href="#arg-group-labels"></a></dt>
+<dd><p>Optional named character vector of legend labels,
+keyed by group name. Labels may include HTML markup.</p></dd>
+
+
 <dt id="arg-radius">radius<a class="anchor" aria-label="anchor" href="#arg-radius"></a></dt>
 <dd><p>Pie radius in latitude degrees. Default <code>0.28</code>.</p></dd>
 
@@ -176,7 +182,9 @@ group name. If <code>NULL</code>, ggplot's default discrete palette is used.</p>
 <code>radius</code>. <code>"total"</code> scales each pie's radius by the square
 root of the station's total value. Any other character value is
 interpreted as the name of a numeric column on the wide-format station
-table; pass that to scale by an external metric (e.g. chlorophyll).</p></dd>
+table; pass that to scale by an external metric (e.g. chlorophyll).
+Scaled pie sizes are relative within the current plot only; no size
+legend is drawn.</p></dd>
 
 
 <dt id="arg-size-range">size_range<a class="anchor" aria-label="anchor" href="#arg-size-range"></a></dt>
@@ -296,7 +304,8 @@ legend defaults to "Group".</p></dd>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="create_pie_map-2.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># 3. Pie size proportional to total value at each station</span></span></span>
+<span class="r-in"><span><span class="co"># 3. Pie size proportional to total value at each station.</span></span></span>
+<span class="r-in"><span><span class="co">#    Sizes are relative within the figure; no size legend is shown.</span></span></span>
 <span class="r-in"><span><span class="va">df_variable</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
 <span class="r-in"><span>  station_name        <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"S1"</span>, <span class="st">"S2"</span>, <span class="st">"S3"</span>, <span class="st">"S4"</span>, <span class="st">"S5"</span><span class="op">)</span>, each <span class="op">=</span> <span class="fl">4</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  sample_longitude_dd <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">11.4</span>, <span class="fl">11.6</span>, <span class="fl">12.5</span>, <span class="fl">14.0</span>, <span class="fl">18.0</span><span class="op">)</span>, each <span class="op">=</span> <span class="fl">4</span><span class="op">)</span>,</span></span>

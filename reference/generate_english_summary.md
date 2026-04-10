@@ -9,6 +9,7 @@ generate_english_summary(
   station_summary,
   taxa_lookup = NULL,
   cruise_info = "",
+  phyto_groups = NULL,
   provider = NULL,
   unclassified_fractions = NULL
 )
@@ -27,6 +28,11 @@ generate_english_summary(
 - cruise_info:
 
   Cruise info string.
+
+- phyto_groups:
+
+  Optional phytoplankton group table used to provide explicit group
+  assignments in the prompt text.
 
 - provider:
 

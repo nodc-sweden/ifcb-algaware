@@ -7,7 +7,7 @@ IFCB.
 ## Usage
 
 ``` r
-create_image_count_map(image_counts, legend_position = "bottom")
+create_image_count_map(image_counts, legend_position = "right", title = NULL)
 ```
 
 ## Arguments
@@ -20,7 +20,11 @@ create_image_count_map(image_counts, legend_position = "bottom")
 
 - legend_position:
 
-  Legend position. Default `"bottom"`.
+  Legend position. Default `"right"`.
+
+- title:
+
+  Optional plot title string.
 
 ## Value
 

@@ -1,8 +1,9 @@
 # Generate the AlgAware Word report
 
-Creates a Word document with biomass maps, heatmaps, stacked bar charts,
-station sections, and image mosaics. Optionally includes a front page
-with logo, diary number placeholder, and two summary mosaics.
+Creates a Word document with overview maps, heatmaps, stacked bar
+charts, station sections, and image mosaics. Optionally includes a front
+page with logo, diary number placeholder, a phytoplankton pie map, and
+two summary mosaics.
 
 ## Usage
 

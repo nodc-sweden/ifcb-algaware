@@ -83,7 +83,8 @@ footer {
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">format_station_data_for_prompt</span><span class="op">(</span></span>
 <span>  <span class="va">station_data</span>,</span>
 <span>  taxa_lookup <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  unclassified_pct <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  unclassified_pct <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  phyto_groups <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -98,6 +99,11 @@ footer {
 <dt id="arg-taxa-lookup">taxa_lookup<a class="anchor" aria-label="anchor" href="#arg-taxa-lookup"></a></dt>
 <dd><p>Optional taxa lookup with <code>HAB</code> and
 <code>warning_level</code> columns.</p></dd>
+
+
+<dt id="arg-phyto-groups">phyto_groups<a class="anchor" aria-label="anchor" href="#arg-phyto-groups"></a></dt>
+<dd><p>Optional phytoplankton group table used to provide
+explicit group assignments in the prompt text.</p></dd>
 
 </dl></div>
     <div class="section level2">

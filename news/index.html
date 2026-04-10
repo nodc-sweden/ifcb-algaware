@@ -110,7 +110,9 @@ footer {
 </ul></div>
 <div class="section level3">
 <h3 id="maps-and-plots-0-1-0">Maps and plots<a class="anchor" aria-label="anchor" href="#maps-and-plots-0-1-0"></a></h3>
-<ul><li>Station maps: image count, pie chart, biomass, and chlorophyll maps.</li>
+<ul><li>Station maps: image count, phytoplankton group composition pie chart (Diatoms, Dinoflagellates, Cyanobacteria, Cryptophytes, Mesodinium spp., Silicoflagellates, Other), and chlorophyll maps.</li>
+<li>Cyanobacteria pie slice colour: teal-cyan (<code>#14B8A6</code>).</li>
+<li>Image count map legend: “Images (counts/L)”; width matched to chlorophyll map so y-axes align in the Word report.</li>
 <li>Chlorophyll source selector: FerryBox, CTD fluorescence, LIMS bottle (0–20 m), or LIMS hose-integrated (0–10 m).</li>
 <li>Regional heatmaps and stacked bar charts for Baltic Sea and West Coast.</li>
 <li>Summary DT table with per-station taxa and biovolume data.</li>
@@ -124,11 +126,11 @@ footer {
 <div class="section level3">
 <h3 id="word-report-generation-0-1-0">Word report generation<a class="anchor" aria-label="anchor" href="#word-report-generation-0-1-0"></a></h3>
 <ul><li>Generates a Word <code>.docx</code> report from an <code>officer</code> template with:
-<ul><li>Front page with logo, diarienummer, image count map and report number.</li>
+<ul><li>Front page with logo, diarienummer, phytoplankton group composition pie map, and report number.</li>
 <li>Swedish summary (Sammanfattning) and English summary (Abstract).</li>
 <li>Cruise metadata table.</li>
 <li>Image mosaic overview with numbered captions and italic species formatting.</li>
-<li>Biomass maps, heatmaps, and stacked bar charts.</li>
+<li>Image count map, chlorophyll map, heatmaps, and stacked bar charts.</li>
 <li>Per-station sections with image mosaics.</li>
 <li>CTD fluorescence profiles and Chl-a time-series.</li>
 </ul></li>
@@ -139,7 +141,9 @@ footer {
 <ul><li>Optional AI-generated report text via OpenAI (<code>OPENAI_API_KEY</code>) or Google Gemini (<code>GEMINI_API_KEY</code>).</li>
 <li>Generates Swedish summary, English summary, and individual station descriptions guided by a configurable writing guide (<code>inst/extdata/report_writing_guide.md</code>).</li>
 <li>HAB taxa are deterministically marked with <code>*</code> regardless of LLM output.</li>
-<li>Rate-limiting and retry logic for Gemini free-tier compatibility.</li>
+<li>Default OpenAI model: <code>gpt-5.1</code>. Override via <code>OPENAI_MODEL</code> environment variable.</li>
+<li>Retry on HTTP 429 (rate-limited) and 503 (service overload) with exponential back-off up to 120 s.</li>
+<li>Bloom alert instructions appended to prompts when conditions are met: spring bloom (West Coast, Jan–Feb, diatoms &gt; 50 % biovolume at any station, chl &gt; 3 µg/L) and cyanobacterial bloom (Baltic, Jun–Aug, cyanobacteria &gt; 50 % biovolume at any station, chl &gt; 3 µg/L).</li>
 </ul></div>
 <div class="section level3">
 <h3 id="taxa-lookup-and-warning-levels-0-1-0">Taxa lookup and warning levels<a class="anchor" aria-label="anchor" href="#taxa-lookup-and-warning-levels-0-1-0"></a></h3>
@@ -156,6 +160,8 @@ footer {
 <code>inst/extdata/annual_1991-2020_statistics_chl20m.txt</code> — Chl-a climatology for CTD time-series ribbon.</li>
 <li>
 <code>inst/extdata/report_writing_guide.md</code> — LLM system prompt / style guide.</li>
+<li>
+<code>inst/config/phyto_groups.yaml</code> — phytoplankton group definitions (class, phylum, genus mappings for WoRMS lookup). Edit to add or rename groups without touching R code. Read via the exported <code><a href="../reference/assign_phyto_groups.html">assign_phyto_groups()</a></code>.</li>
 </ul></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

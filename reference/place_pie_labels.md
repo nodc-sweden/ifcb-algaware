@@ -14,7 +14,8 @@ place_pie_labels(
   map_ylim = c(54.4, 59.6),
   n_angles = 48,
   char_w = 0.055,
-  char_h = 0.055
+  char_h = 0.055,
+  radius_mults = c(1.08, 1.25, 1.55, 1.9, 2.4, 3, 3.8, 4.8)
 )
 ```
 

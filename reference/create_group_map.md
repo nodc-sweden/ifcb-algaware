@@ -3,7 +3,8 @@
 Thin AlgAware-specific wrapper around
 [`create_pie_map`](https://nodc-sweden.github.io/ifcb-algaware/reference/create_pie_map.md).
 Draws a pie chart at each station showing the relative carbon biomass
-contributed by Diatoms, Dinoflagellates, Cyanobacteria, and Other.
+contributed by Diatoms, Dinoflagellates, Cyanobacteria, Cryptophytes,
+Mesodinium spp., Silicoflagellates, and Other.
 
 ## Usage
 

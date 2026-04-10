@@ -8,7 +8,8 @@ Format cruise-level data summary for LLM prompt
 format_cruise_summary_for_prompt(
   station_summary,
   taxa_lookup = NULL,
-  unclassified_fractions = NULL
+  unclassified_fractions = NULL,
+  phyto_groups = NULL
 )
 ```
 
@@ -21,6 +22,11 @@ format_cruise_summary_for_prompt(
 - taxa_lookup:
 
   Optional taxa lookup with `HAB` and `warning_level` columns.
+
+- phyto_groups:
+
+  Optional phytoplankton group table used to provide explicit group
+  assignments in the prompt text.
 
 ## Value
 

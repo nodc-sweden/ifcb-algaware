@@ -97,7 +97,7 @@ footer {
 </h1></div>
 <p><a href="https://github.com/nodc-sweden/ifcb-algaware/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/nodc-sweden/ifcb-algaware/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a> <a href="https://opensource.org/licenses/MIT" class="external-link"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a> <a href="https://lifecycle.r-lib.org/articles/stages.html#experimental" class="external-link"><img src="https://img.shields.io/badge/lifecycle-experimental-orange.svg" alt="Lifecycle: experimental"></a> <a href="https://nodc-sweden.github.io/ifcb-algaware/"><img src="https://img.shields.io/badge/docs-pkgdown-brightgreen.svg" alt="pkgdown"></a></p>
 <p>An interactive R/Shiny application for processing, validating, and reporting phytoplankton data from Imaging FlowCytobot (IFCB) instruments. Developed for Swedish marine monitoring at SMHI.</p>
-<p>AlgAware-IFCB integrates with the IFCB Dashboard for automated data retrieval, provides an interactive image gallery for reviewing and correcting AI classifier predictions, and generates Word reports with biomass maps, chlorophyll maps, heatmaps, image mosaics, and CTD fluorescence profiles.</p>
+<p>AlgAware-IFCB integrates with the IFCB Dashboard for automated data retrieval, provides an interactive image gallery for reviewing and correcting AI classifier predictions, and generates Word reports with phytoplankton group composition maps, image-count maps, chlorophyll maps, heatmaps, image mosaics, and CTD fluorescence profiles.</p>
 <blockquote>
 <p><strong>Intended use:</strong> This application is developed for internal use at SMHI as part of the Swedish national marine monitoring programme. It may be adapted for use at other institutes operating IFCB instruments, though configuration and data infrastructure will need to be adjusted accordingly.</p>
 </blockquote>
@@ -187,7 +187,7 @@ footer {
 </h3>
 <ul>
 <li>
-<strong>Maps</strong>: Biomass, image count, and chlorophyll (CTD fluorescence + LIMS bottle) distribution across stations</li>
+<strong>Maps</strong>: Phytoplankton group composition pies (Diatoms, Dinoflagellates, Cyanobacteria, Cryptophytes, Mesodinium spp., Silicoflagellates, Other), image count, and chlorophyll (CTD fluorescence + LIMS bottle) distribution across stations</li>
 <li>
 <strong>Heatmaps</strong>: Biovolume by taxon and station visit</li>
 <li>
@@ -202,6 +202,7 @@ footer {
 <ul>
 <li>Automated Word document (<code>.docx</code>) with all plots and station sections</li>
 <li>AI-generated summaries and station descriptions via OpenAI or Google Gemini</li>
+<li>Front page with phytoplankton group composition pie map and narrative caption</li>
 <li>Front-page mosaic designer with interactive taxon and image selection</li>
 <li>Image mosaics for top taxa per region (adaptive layout for chains vs. compact organisms)</li>
 <li>CTD regional figures with fluorescence profiles and Chl-a time series</li>
@@ -282,7 +283,7 @@ footer {
 <tbody>
 <tr class="odd">
 <td><code>OPENAI_API_KEY</code></td>
-<td>OpenAI (default: gpt-4.1)</td>
+<td>OpenAI (default: gpt-5.1)</td>
 </tr>
 <tr class="even">
 <td><code>GEMINI_API_KEY</code></td>
@@ -327,10 +328,14 @@ footer {
 <td>LLM system prompt and style guide for report text generation</td>
 </tr>
 <tr class="even">
+<td><code>inst/config/phyto_groups.yaml</code></td>
+<td>Phytoplankton group definitions (class/phylum/genus mappings for WoRMS lookup)</td>
+</tr>
+<tr class="odd">
 <td><code>inst/stations/algaware_stations.tsv</code></td>
 <td>12 AlgAware monitoring stations (6 Baltic Sea, 6 West Coast)</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>inst/templates/report_template.docx</code></td>
 <td>Word document template for generated reports</td>
 </tr>
@@ -365,6 +370,7 @@ footer {
 │   └── utils.R                # Settings and utilities
 ├── inst/
 │   ├── app/                   # Shiny app (ui.R, server.R)
+│   ├── config/                # Editable configuration files (phyto_groups.yaml)
 │   ├── extdata/               # Bundled data files
 │   ├── stations/              # Station definitions
 │   └── templates/             # Report template

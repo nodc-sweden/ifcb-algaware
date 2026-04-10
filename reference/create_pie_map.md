@@ -20,6 +20,7 @@ create_pie_map(
   label_col = station_col,
   group_levels = NULL,
   group_colors = NULL,
+  group_labels = NULL,
   radius = 0.28,
   size_by = NULL,
   size_range = c(0.15, 0.4),
@@ -77,6 +78,11 @@ create_pie_map(
   Optional named character vector of colours, keyed by group name. If
   `NULL`, ggplot's default discrete palette is used.
 
+- group_labels:
+
+  Optional named character vector of legend labels, keyed by group name.
+  Labels may include HTML markup.
+
 - radius:
 
   Pie radius in latitude degrees. Default `0.28`.
@@ -87,7 +93,8 @@ create_pie_map(
   scales each pie's radius by the square root of the station's total
   value. Any other character value is interpreted as the name of a
   numeric column on the wide-format station table; pass that to scale by
-  an external metric (e.g. chlorophyll).
+  an external metric (e.g. chlorophyll). Scaled pie sizes are relative
+  within the current plot only; no size legend is drawn.
 
 - size_range:
 
@@ -196,7 +203,8 @@ create_pie_map(
 )
 
 
-# 3. Pie size proportional to total value at each station
+# 3. Pie size proportional to total value at each station.
+#    Sizes are relative within the figure; no size legend is shown.
 df_variable <- data.frame(
   station_name        = rep(c("S1", "S2", "S3", "S4", "S5"), each = 4),
   sample_longitude_dd = rep(c(11.4, 11.6, 12.5, 14.0, 18.0), each = 4),

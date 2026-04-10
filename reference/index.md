@@ -113,6 +113,8 @@ Generate Word reports
   : Generate the English summary text
 - [`generate_swedish_summary()`](https://nodc-sweden.github.io/ifcb-algaware/reference/generate_swedish_summary.md)
   : Generate the Swedish summary text
+- [`translate_summary_to_swedish()`](https://nodc-sweden.github.io/ifcb-algaware/reference/translate_summary_to_swedish.md)
+  : Translate an English summary to Swedish
 - [`generate_station_description()`](https://nodc-sweden.github.io/ifcb-algaware/reference/generate_station_description.md)
   : Generate a station description
 
@@ -132,6 +134,8 @@ SQLite database operations
   : Load AlgAware station definitions
 - [`load_taxa_lookup()`](https://nodc-sweden.github.io/ifcb-algaware/reference/load_taxa_lookup.md)
   : Load the bundled taxa lookup table
+- [`assign_phyto_groups()`](https://nodc-sweden.github.io/ifcb-algaware/reference/assign_phyto_groups.md)
+  : Assign phytoplankton groups using the bundled YAML configuration
 - [`get_db_path()`](https://nodc-sweden.github.io/ifcb-algaware/reference/get_db_path.md)
   : Get path to the annotations SQLite database
 

@@ -99,7 +99,8 @@ create_fluorescence_profile <- function(station_ctd, station_label,
       plot.title    = ggplot2::element_text(size = 10, face = "bold"),
       plot.subtitle = ggplot2::element_text(size = 7, color = "gray40"),
       panel.grid.minor = ggplot2::element_blank(),
-      legend.title  = ggplot2::element_blank()
+      legend.title  = ggplot2::element_blank(),
+      legend.position = if (has_lims) "bottom" else "none"
     )
 
   if (has_lims) {

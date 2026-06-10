@@ -16,7 +16,6 @@ BugReports: https://github.com/nodc-sweden/ifcb-algaware/issues
 Depends: R (>= 4.1.0)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.3
 Imports:
     shiny (>= 1.8.0),
     bslib (>= 0.6.0),
@@ -32,7 +31,7 @@ Imports:
     jsonlite,
     hdf5r,
     iRfcb (>= 0.8.1),
-    SHARK4R (>= 1.1.0),
+    SHARK4R (>= 1.2.0),
     ggrepel,
     ggtext,
     viridis,
@@ -53,3 +52,4 @@ Suggests:
 VignetteBuilder: knitr
 Config/testthat/edition: 3
 Language: en-GB
+Config/roxygen2/version: 8.0.0

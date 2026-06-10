@@ -20,5 +20,10 @@ Useful links:
 \author{
 \strong{Maintainer}: Anders Torstensson \email{anders.torstensson@smhi.se} (\href{https://orcid.org/0000-0002-8283-656X}{ORCID})
 
+Authors:
+\itemize{
+  \item Anders Torstensson \email{anders.torstensson@smhi.se} (\href{https://orcid.org/0000-0002-8283-656X}{ORCID})
+}
+
 }
 \keyword{internal}

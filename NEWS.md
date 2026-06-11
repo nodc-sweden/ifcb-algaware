@@ -3,6 +3,7 @@
 ## Minor improvements and fixes
 
 - Split llm.R, plots.R and report.R into manageable file sizes
+- Migrate pie chart plotting from internal functions to `SHARK4R` 1.2.0
 
 # algaware 0.1.0
 

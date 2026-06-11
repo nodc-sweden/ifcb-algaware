@@ -23,8 +23,9 @@ and \code{phyto_group} as returned by
 A ggplot object.
 }
 \description{
-Thin AlgAware-specific wrapper around \code{\link{create_pie_map}}. Draws
-a pie chart at each station showing the relative carbon biomass
-contributed by Diatoms, Dinoflagellates, Cyanobacteria, Cryptophytes,
-Mesodinium spp., Silicoflagellates, and Other.
+Thin AlgAware-specific wrapper around
+\code{\link[SHARK4R]{create_pie_map}}. Draws a pie chart at each station
+showing the relative carbon biomass contributed by Diatoms,
+Dinoflagellates, Cyanobacteria, Cryptophytes, Mesodinium spp.,
+Silicoflagellates, and Other.
 }

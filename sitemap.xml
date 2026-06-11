@@ -30,7 +30,6 @@
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/base_sweden_map.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/bloom_alert_note.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/build_cruise_info.html</loc></url>
-<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/build_pie_polygons.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/build_readiness_items.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/build_relabel_choices.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/build_sample_counts.html</loc></url>
@@ -39,7 +38,6 @@
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/call_gemini.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/call_llm.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/call_openai.html</loc></url>
-<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/clamp_pie_centers.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/collect_ferrybox_data.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/compute_ctd_chl_avg.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/compute_lims_chl_avg.html</loc></url>
@@ -61,7 +59,6 @@
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/create_heatmap.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/create_image_count_map.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/create_mosaic.html</loc></url>
-<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/create_pie_map.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/create_region_mosaics.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/create_stacked_bar.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/create_wide_summary.html</loc></url>
@@ -149,7 +146,6 @@
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/parse_non_bio_classes.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/parse_single_cnv.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/parse_single_cnv_all.html</loc></url>
-<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/place_pie_labels.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/process_classifications.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/read_classifier_name.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/read_cnv_folder.html</loc></url>
@@ -158,7 +154,6 @@
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/read_lims_data.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/read_lims_data_all.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/read_roi_dimensions.html</loc></url>
-<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/repel_pie_centers.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/resolve_class_list.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/resolve_classes.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/resolve_classification_path.html</loc></url>

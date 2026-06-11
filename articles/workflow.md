@@ -35,6 +35,7 @@ App overview showing sidebar and main tabs
 ## 1. Launch the application
 
 ``` r
+
 library(algaware)
 launch_app()
 ```
@@ -143,14 +144,14 @@ sidebar](../reference/figures/screenshot-validation-sidebar.png)
 
 Validate panel in the sidebar
 
-| Button             | What it does                                                                                                                                                               |
-|--------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Store Annotations  | Save selected images to the SQLite database (permanent, for classifier training)                                                                                           |
-| Relabel Selected   | Move selected images to a different class (session-only)                                                                                                                   |
-| Relabel Class      | Move all images of the current class in the current region to a different class (session-only)                                                                             |
-| Invalidate Class   | Move all images of the current class to unclassified, so they no longer contribute to that taxon’s biovolume or appear in plots and reports under that name (session-only) |
-| Add Custom Class   | Add a taxon not in the database or taxa lookup (session-only)                                                                                                              |
-| Import corrections | Upload a corrections CSV from a previous session to replay earlier work                                                                                                    |
+| Button | What it does |
+|----|----|
+| Store Annotations | Save selected images to the SQLite database (permanent, for classifier training) |
+| Relabel Selected | Move selected images to a different class (session-only) |
+| Relabel Class | Move all images of the current class in the current region to a different class (session-only) |
+| Invalidate Class | Move all images of the current class to unclassified, so they no longer contribute to that taxon’s biovolume or appear in plots and reports under that name (session-only) |
+| Add Custom Class | Add a taxon not in the database or taxa lookup (session-only) |
+| Import corrections | Upload a corrections CSV from a previous session to replay earlier work |
 
 The status summary below the buttons shows how many images are selected
 and a running log of corrections made this session.

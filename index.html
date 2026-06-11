@@ -7,8 +7,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Interactive IFCB Phytoplankton Reporting Tool • algaware</title>
 <script src="lightswitch.js"></script><script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Interactive IFCB Phytoplankton Reporting Tool">
 <meta name="description" content="A Shiny application for processing, validating, and reporting phytoplankton data from Imaging FlowCytobot (IFCB) instruments. Integrates with IFCB Dashboard for data retrieval, supports interactive validation of classifier predictions, and generates Word reports with biomass plots, heatmaps, and image mosaics.">
@@ -112,20 +112,20 @@ footer {
 <span>                        ref <span class="op">=</span> <span class="fu">remotes</span><span class="fu">::</span><span class="fu">github_release</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>The <code>dependencies = TRUE</code> flag installs both required and suggested packages. Suggested packages enable optional features:</p>
 <table class="table">
-<thead><tr class="header">
+<thead><tr>
 <th>Package</th>
 <th>Feature</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>oce</code></td>
 <td>Parsing SeaBird CTD <code>.cnv</code> files</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>patchwork</code></td>
 <td>Multi-panel CTD regional figures in the report</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>yaml</code></td>
 <td>Reading standard monitoring station definitions</td>
 </tr>
@@ -222,48 +222,48 @@ footer {
 <col width="41%">
 <col width="29%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th>Setting</th>
 <th>Description</th>
 <th>Default</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td>Dashboard URL</td>
 <td>IFCB Dashboard base URL</td>
 <td>–</td>
 </tr>
-<tr class="even">
+<tr>
 <td>Dashboard Dataset</td>
 <td>Dataset name</td>
 <td>–</td>
 </tr>
-<tr class="odd">
+<tr>
 <td>Classification Path</td>
 <td>Directory with HDF5 classifier output</td>
 <td>–</td>
 </tr>
-<tr class="even">
+<tr>
 <td>FerryBox Data Path</td>
 <td>Directory with FerryBox CSV files</td>
 <td>–</td>
 </tr>
-<tr class="odd">
+<tr>
 <td>Local Storage Path</td>
 <td>Where downloaded data is cached</td>
 <td><code>./algaware_data</code></td>
 </tr>
-<tr class="even">
+<tr>
 <td>Database Folder</td>
 <td>Directory for annotations.sqlite</td>
 <td>–</td>
 </tr>
-<tr class="odd">
+<tr>
 <td>Non-biological Classes</td>
 <td>Comma-separated list of classes excluded from analysis</td>
 <td><code>detritus,Air_bubbles,Beads,Debris,mix,mixed</code></td>
 </tr>
-<tr class="even">
+<tr>
 <td>Pixels per Micron</td>
 <td>IFCB camera calibration factor</td>
 <td><code>2.77</code></td>
@@ -276,16 +276,16 @@ footer {
 </h3>
 <p>Set one of the following environment variables to enable AI-generated report text (summaries and station descriptions):</p>
 <table class="table">
-<thead><tr class="header">
+<thead><tr>
 <th>Variable</th>
 <th>Provider</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>OPENAI_API_KEY</code></td>
 <td>OpenAI (default: gpt-5.1)</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>GEMINI_API_KEY</code></td>
 <td>Google Gemini (default: gemini-2.5-flash-lite)</td>
 </tr>
@@ -302,40 +302,40 @@ footer {
 <col width="31%">
 <col width="68%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th>File</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>inst/extdata/taxa_lookup.csv</code></td>
 <td>Phytoplankton taxa with WoRMS AphiaID references and HAB status flags</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>inst/extdata/standard_stations.yaml</code></td>
 <td>Standard monitoring stations with regional assignments</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>inst/extdata/station_mapper.txt</code></td>
 <td>Synonym mapper for raw station names to canonical names</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>inst/extdata/annual_1991-2020_statistics_chl20m.txt</code></td>
 <td>Historical 0–20 m Chl-a monthly statistics (1991–2020)</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>inst/extdata/report_writing_guide.md</code></td>
 <td>LLM system prompt and style guide for report text generation</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>inst/config/phyto_groups.yaml</code></td>
 <td>Phytoplankton group definitions (class/phylum/genus mappings for WoRMS lookup)</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>inst/stations/algaware_stations.tsv</code></td>
 <td>12 AlgAware monitoring stations (6 Baltic Sea, 6 West Coast)</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>inst/templates/report_template.docx</code></td>
 <td>Word document template for generated reports</td>
 </tr>

@@ -29,6 +29,7 @@ Install the latest release from GitHub including all optional
 dependencies:
 
 ``` r
+
 # install.packages("remotes")
 remotes::install_github("nodc-sweden/ifcb-algaware",
                         dependencies = TRUE,
@@ -47,12 +48,14 @@ packages. Suggested packages enable optional features:
 Install suggested packages individually if needed:
 
 ``` r
+
 install.packages(c("oce", "patchwork", "yaml"))
 ```
 
 ## Usage
 
 ``` r
+
 library(algaware)
 launch_app()
 ```
@@ -121,16 +124,16 @@ The application opens in your default browser.
 Settings are persisted in `~/.config/R/algaware/settings.json` and can
 be edited through the in-app Settings panel:
 
-| Setting                | Description                                            | Default                                       |
-|------------------------|--------------------------------------------------------|-----------------------------------------------|
-| Dashboard URL          | IFCB Dashboard base URL                                | –                                             |
-| Dashboard Dataset      | Dataset name                                           | –                                             |
-| Classification Path    | Directory with HDF5 classifier output                  | –                                             |
-| FerryBox Data Path     | Directory with FerryBox CSV files                      | –                                             |
-| Local Storage Path     | Where downloaded data is cached                        | `./algaware_data`                             |
-| Database Folder        | Directory for annotations.sqlite                       | –                                             |
+| Setting | Description | Default |
+|----|----|----|
+| Dashboard URL | IFCB Dashboard base URL | – |
+| Dashboard Dataset | Dataset name | – |
+| Classification Path | Directory with HDF5 classifier output | – |
+| FerryBox Data Path | Directory with FerryBox CSV files | – |
+| Local Storage Path | Where downloaded data is cached | `./algaware_data` |
+| Database Folder | Directory for annotations.sqlite | – |
 | Non-biological Classes | Comma-separated list of classes excluded from analysis | `detritus,Air_bubbles,Beads,Debris,mix,mixed` |
-| Pixels per Micron      | IFCB camera calibration factor                         | `2.77`                                        |
+| Pixels per Micron | IFCB camera calibration factor | `2.77` |
 
 Extra monitoring stations can be added from the SHARK station register
 through the Settings panel.
@@ -150,16 +153,16 @@ are set, OpenAI is used by default.
 
 ## Bundled Data
 
-| File                                                  | Description                                                                    |
-|-------------------------------------------------------|--------------------------------------------------------------------------------|
-| `inst/extdata/taxa_lookup.csv`                        | Phytoplankton taxa with WoRMS AphiaID references and HAB status flags          |
-| `inst/extdata/standard_stations.yaml`                 | Standard monitoring stations with regional assignments                         |
-| `inst/extdata/station_mapper.txt`                     | Synonym mapper for raw station names to canonical names                        |
-| `inst/extdata/annual_1991-2020_statistics_chl20m.txt` | Historical 0–20 m Chl-a monthly statistics (1991–2020)                         |
-| `inst/extdata/report_writing_guide.md`                | LLM system prompt and style guide for report text generation                   |
-| `inst/config/phyto_groups.yaml`                       | Phytoplankton group definitions (class/phylum/genus mappings for WoRMS lookup) |
-| `inst/stations/algaware_stations.tsv`                 | 12 AlgAware monitoring stations (6 Baltic Sea, 6 West Coast)                   |
-| `inst/templates/report_template.docx`                 | Word document template for generated reports                                   |
+| File | Description |
+|----|----|
+| `inst/extdata/taxa_lookup.csv` | Phytoplankton taxa with WoRMS AphiaID references and HAB status flags |
+| `inst/extdata/standard_stations.yaml` | Standard monitoring stations with regional assignments |
+| `inst/extdata/station_mapper.txt` | Synonym mapper for raw station names to canonical names |
+| `inst/extdata/annual_1991-2020_statistics_chl20m.txt` | Historical 0–20 m Chl-a monthly statistics (1991–2020) |
+| `inst/extdata/report_writing_guide.md` | LLM system prompt and style guide for report text generation |
+| `inst/config/phyto_groups.yaml` | Phytoplankton group definitions (class/phylum/genus mappings for WoRMS lookup) |
+| `inst/stations/algaware_stations.tsv` | 12 AlgAware monitoring stations (6 Baltic Sea, 6 West Coast) |
+| `inst/templates/report_template.docx` | Word document template for generated reports |
 
 ## Project Structure
 
@@ -197,6 +200,7 @@ are set, OpenAI is used by default.
 ## Testing
 
 ``` r
+
 devtools::test()
 ```
 
@@ -290,8 +294,6 @@ Parse CTD profiles and LIMS chlorophyll data for the chlorophyll map
 
 Create plots and maps
 
-- [`create_pie_map()`](https://nodc-sweden.github.io/ifcb-algaware/reference/create_pie_map.md)
-  : Pie chart map with displacement and leader lines
 - [`create_group_map()`](https://nodc-sweden.github.io/ifcb-algaware/reference/create_group_map.md)
   : Create a phytoplankton group composition map
 - [`create_biomass_maps()`](https://nodc-sweden.github.io/ifcb-algaware/reference/create_biomass_maps.md)

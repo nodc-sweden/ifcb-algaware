@@ -121,12 +121,12 @@ below.
 
 ## Troubleshooting
 
-| Symptom                              | Likely cause                                 | Action                                                                                                                                                                        |
-|--------------------------------------|----------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Cruise shows as `SVEA_YYYY_NA`       | Cruise number not in `cruise_numbers.txt`    | Add the cruise number to the end of `cruise_numbers.txt` using a text editor (tab-separated fields). Wait up to one hour for the metadata file to regenerate, then re-upload. |
-| Cruise not listed after upload       | Metadata file not yet regenerated            | Wait up to one hour and re-upload, or contact the maintainer.                                                                                                                 |
-| Upload fails / dashboard unreachable | Network or server issue                      | Check SMHI VPN connection; contact the maintainer if the server appears down.                                                                                                 |
-| No cruise number available           | Metadata workflow cannot be resolved in time | Use **Date Range** selection in the AlgAware app instead of **Cruise**.                                                                                                       |
+| Symptom | Likely cause | Action |
+|----|----|----|
+| Cruise shows as `SVEA_YYYY_NA` | Cruise number not in `cruise_numbers.txt` | Add the cruise number to the end of `cruise_numbers.txt` using a text editor (tab-separated fields). Wait up to one hour for the metadata file to regenerate, then re-upload. |
+| Cruise not listed after upload | Metadata file not yet regenerated | Wait up to one hour and re-upload, or contact the maintainer. |
+| Upload fails / dashboard unreachable | Network or server issue | Check SMHI VPN connection; contact the maintainer if the server appears down. |
+| No cruise number available | Metadata workflow cannot be resolved in time | Use **Date Range** selection in the AlgAware app instead of **Cruise**. |
 
 For persistent issues, contact **Anders Torstensson** (maintainer).
 

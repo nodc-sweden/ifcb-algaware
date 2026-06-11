@@ -149,15 +149,15 @@ behaviour.
 displayed, which taxa are treated as potentially harmful, and which taxa
 carry a recommended warning level. Each row has:
 
-| Column          | Description                                                            |
-|-----------------|------------------------------------------------------------------------|
-| `clean_names`   | Classifier class name — must match the `.h5` file exactly              |
-| `name`          | Scientific name shown in plots and reports                             |
-| `sflag`         | Optional qualifier appended to the name (e.g. `spp.`, `cf.`)           |
-| `AphiaID`       | WoRMS AphiaID (for reference)                                          |
-| `HAB`           | `TRUE` if the taxon is potentially harmful or toxic                    |
+| Column | Description |
+|----|----|
+| `clean_names` | Classifier class name — must match the `.h5` file exactly |
+| `name` | Scientific name shown in plots and reports |
+| `sflag` | Optional qualifier appended to the name (e.g. `spp.`, `cf.`) |
+| `AphiaID` | WoRMS AphiaID (for reference) |
+| `HAB` | `TRUE` if the taxon is potentially harmful or toxic |
 | `warning_level` | Recommended alert threshold in cells/L (leave empty if not applicable) |
-| `italic`        | `TRUE` if the name should be italicised (species/genus)                |
+| `italic` | `TRUE` if the name should be italicised (species/genus) |
 
 After adding a new taxon row and rebuilding, the taxon will appear in
 the gallery dropdown, be included in biovolume calculations, and be

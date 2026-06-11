@@ -24,6 +24,7 @@ Open RStudio and paste the following into the **Console** panel
 (bottom-left), then press Enter:
 
 ``` r
+
 install.packages("remotes")
 remotes::install_github("nodc-sweden/ifcb-algaware",
                         dependencies = TRUE,
@@ -46,6 +47,7 @@ minutes the first time.
 ## 3. Launch the application
 
 ``` r
+
 library(algaware)
 launch_app()
 ```
@@ -69,16 +71,16 @@ paths and connection details before the app can load any data.
 
 Settings panel overview
 
-| Field                      | What to enter                                              | Example                                       |
-|----------------------------|------------------------------------------------------------|-----------------------------------------------|
-| **Dashboard URL**          | Base URL of the IFCB Dashboard instance                    | `http://ifcb-dashboard-utv.smhi.se/`          |
-| **Dashboard Dataset**      | Dataset name as it appears in the Dashboard                | `RV_Svea`                                     |
-| **Classification Path**    | Folder containing the HDF5 (`.h5`) classifier output files | `C:/Users/name/classifications`               |
-| **FerryBox Data Path**     | Folder with FerryBox `.csv` files (optional)               | `C:/Users/name/ferrybox`                      |
-| **Local Storage Path**     | Where downloaded IFCB data will be cached on your computer | `C:/Users/name/algaware_data`                 |
-| **Database Folder**        | Where the annotations SQLite file will be stored           | `C:/Users/name/algaware_db`                   |
-| **Non-biological Classes** | Comma-separated class names excluded from all analyses     | `detritus,Air_bubbles,Beads,Debris,mix,mixed` |
-| **Pixels per Micron**      | Calibration factor for the IFCB camera                     | `2.77`                                        |
+| Field | What to enter | Example |
+|----|----|----|
+| **Dashboard URL** | Base URL of the IFCB Dashboard instance | `http://ifcb-dashboard-utv.smhi.se/` |
+| **Dashboard Dataset** | Dataset name as it appears in the Dashboard | `RV_Svea` |
+| **Classification Path** | Folder containing the HDF5 (`.h5`) classifier output files | `C:/Users/name/classifications` |
+| **FerryBox Data Path** | Folder with FerryBox `.csv` files (optional) | `C:/Users/name/ferrybox` |
+| **Local Storage Path** | Where downloaded IFCB data will be cached on your computer | `C:/Users/name/algaware_data` |
+| **Database Folder** | Where the annotations SQLite file will be stored | `C:/Users/name/algaware_db` |
+| **Non-biological Classes** | Comma-separated class names excluded from all analyses | `detritus,Air_bubbles,Beads,Debris,mix,mixed` |
+| **Pixels per Micron** | Calibration factor for the IFCB camera | `2.77` |
 
 Click **Save Settings** when done. Settings are stored in
 `~/.config/R/algaware/settings.json` and reloaded automatically next
@@ -114,6 +116,7 @@ the respective provider and the `httr2` package (installed with
 Open your `.Renviron` file by running:
 
 ``` r
+
 usethis::edit_r_environ()
 ```
 

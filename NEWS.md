@@ -4,6 +4,10 @@
 
 - Split llm.R, plots.R and report.R into manageable file sizes
 - Migrate pie chart plotting from internal functions to `SHARK4R` 1.2.0
+- Fix biomass and chlorophyll maps failing with "no rows to aggregate" when
+  FerryBox provides no valid chlorophyll readings. The chlorophyll column is
+  now omitted when entirely missing, and map aggregation tolerates all-`NA`
+  chlorophyll.
 
 # algaware 0.1.0
 

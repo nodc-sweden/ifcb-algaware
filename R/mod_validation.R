@@ -133,6 +133,47 @@ mod_validation_server <- function(id, rv, config) {
       invisible(NULL)
     }
 
+    # Apply a session-only relabel of the currently selected images to `target`.
+    # Shared by "Relabel Selected" and "Invalidate Selected" (target =
+    # "unclassified"): parse the selection, rewrite matching rows in both the
+    # active and full classification tables, log the corrections, and clear the
+    # selection. Returns the number of images changed (0 if none matched, in
+    # which case the selection is still cleared). Callers handle their own
+    # notifications since the wording differs.
+    relabel_selected_images <- function(target) {
+      parsed <- parse_image_ids(rv$selected_images)
+
+      updated <- rv$classifications
+      updated_keys <- paste0(updated$sample_name, "_", updated$roi_number)
+      parsed_keys <- paste0(parsed$sample_name, "_", parsed$roi_number)
+      mask <- updated_keys %in% parsed_keys
+
+      n_changed <- sum(mask)
+      if (n_changed == 0) {
+        rv$selected_images <- character(0)
+        return(0L)
+      }
+
+      # Record corrections
+      new_corrections <- data.frame(
+        sample_name = updated$sample_name[mask],
+        roi_number = updated$roi_number[mask],
+        original_class = updated$class_name[mask],
+        new_class = target,
+        stringsAsFactors = FALSE
+      )
+      rv$corrections <- rbind(rv$corrections, new_corrections)
+
+      updated$class_name <- ifelse(mask, target, updated$class_name)
+      rv$classifications <- updated
+      update_full_classifications(updated$sample_name[mask],
+                                  updated$roi_number[mask], target)
+      rv$selected_images <- character(0)
+      rv$summaries_stale <- TRUE
+
+      n_changed
+    }
+
     # ---- 1. Store Annotations (to database) ----
     shiny::observeEvent(input$store_annotations, {
       shiny::req(length(rv$selected_images) > 0)
@@ -222,44 +263,16 @@ mod_validation_server <- function(id, rv, config) {
       shiny::req(nzchar(target))
       shiny::req(length(rv$selected_images) > 0)
 
-      # Parse selected image IDs to sample_name + roi_number
-      parsed <- parse_image_ids(rv$selected_images)
-
-      # Build mask for matching rows in classifications (vectorized)
-      updated <- rv$classifications
-      updated_keys <- paste0(updated$sample_name, "_", updated$roi_number)
-      parsed_keys <- paste0(parsed$sample_name, "_", parsed$roi_number)
-      mask <- updated_keys %in% parsed_keys
-
-      n_relabeled <- sum(mask)
-      if (n_relabeled == 0) {
-        shiny::removeModal()
-        return()
-      }
-
-      # Record corrections
-      new_corrections <- data.frame(
-        sample_name = updated$sample_name[mask],
-        roi_number = updated$roi_number[mask],
-        original_class = updated$class_name[mask],
-        new_class = target,
-        stringsAsFactors = FALSE
-      )
-      rv$corrections <- rbind(rv$corrections, new_corrections)
-
-      updated$class_name <- ifelse(mask, target, updated$class_name)
-      rv$classifications <- updated
-      update_full_classifications(updated$sample_name[mask],
-                                  updated$roi_number[mask], target)
-      rv$selected_images <- character(0)
-      rv$summaries_stale <- TRUE
+      n_relabeled <- relabel_selected_images(target)
 
       shiny::removeModal()
-      shiny::showNotification(
-        paste0("Relabeled ", n_relabeled, " selected image(s) to '",
-               target, "'"),
-        type = "message"
-      )
+      if (n_relabeled > 0) {
+        shiny::showNotification(
+          paste0("Relabeled ", n_relabeled, " selected image(s) to '",
+                 target, "'"),
+          type = "message"
+        )
+      }
     })
 
     # ---- 2b. Invalidate Selected (session-only) ----
@@ -274,40 +287,14 @@ mod_validation_server <- function(id, rv, config) {
         return()
       }
 
-      parsed <- parse_image_ids(rv$selected_images)
+      n_invalidated <- relabel_selected_images("unclassified")
 
-      updated <- rv$classifications
-      updated_keys <- paste0(updated$sample_name, "_", updated$roi_number)
-      parsed_keys <- paste0(parsed$sample_name, "_", parsed$roi_number)
-      mask <- updated_keys %in% parsed_keys
-
-      n_invalidated <- sum(mask)
-      if (n_invalidated == 0) {
-        rv$selected_images <- character(0)
-        return()
+      if (n_invalidated > 0) {
+        shiny::showNotification(
+          paste0("Invalidated ", n_invalidated, " selected image(s)"),
+          type = "message"
+        )
       }
-
-      # Record corrections
-      new_corrections <- data.frame(
-        sample_name = updated$sample_name[mask],
-        roi_number = updated$roi_number[mask],
-        original_class = updated$class_name[mask],
-        new_class = "unclassified",
-        stringsAsFactors = FALSE
-      )
-      rv$corrections <- rbind(rv$corrections, new_corrections)
-
-      updated$class_name <- ifelse(mask, "unclassified", updated$class_name)
-      rv$classifications <- updated
-      update_full_classifications(updated$sample_name[mask],
-                                  updated$roi_number[mask], "unclassified")
-      rv$selected_images <- character(0)
-      rv$summaries_stale <- TRUE
-
-      shiny::showNotification(
-        paste0("Invalidated ", n_invalidated, " selected image(s)"),
-        type = "message"
-      )
     })
 
     # ---- 3. Relabel Entire Class (session-only) ----

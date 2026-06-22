@@ -34,3 +34,36 @@ test_that("paginate_images returns second page correctly", {
   result <- paginate_images(imgs, page = 2L, page_size = 10L)
   expect_equal(result$id, 11:20)
 })
+
+# ---- match_pending_echo (class selectize echo guard) ----
+
+test_that("match_pending_echo treats a value not in the queue as user action", {
+  res <- match_pending_echo(c("A", "B"), "C")
+  expect_false(res$is_echo)
+  expect_equal(res$queue, c("A", "B"))
+})
+
+test_that("match_pending_echo swallows an in-order echo and drops it", {
+  res <- match_pending_echo(c("A", "B", "C"), "A")
+  expect_true(res$is_echo)
+  expect_equal(res$queue, c("B", "C"))
+})
+
+test_that("match_pending_echo drains through the last match on a coalesced echo", {
+  # Rapid navigation: A and B were pushed but coalesced; only C echoes back.
+  res <- match_pending_echo(c("A", "B", "C"), "C")
+  expect_true(res$is_echo)
+  expect_equal(res$queue, character(0))
+})
+
+test_that("match_pending_echo handles duplicate values by clearing through the last", {
+  res <- match_pending_echo(c("A", "B", "A"), "A")
+  expect_true(res$is_echo)
+  expect_equal(res$queue, character(0))
+})
+
+test_that("match_pending_echo handles an empty queue and NA selection", {
+  expect_false(match_pending_echo(character(0), "A")$is_echo)
+  expect_false(match_pending_echo(c("A", "B"), NA_character_)$is_echo)
+  expect_true(match_pending_echo(c(NA_character_, "B"), NA_character_)$is_echo)
+})

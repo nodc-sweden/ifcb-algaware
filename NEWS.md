@@ -10,6 +10,10 @@
   chlorophyll.
 - Allow downloading the corrections log at any time after making corrections,
   without first generating the Word report.
+- Fix the validation gallery getting stuck in an infinite loop, switching back
+  and forth between two classes, when the class navigation arrows were clicked
+  while a whole-class relabel was still in progress. Selectize echo events can
+  no longer feed back into the current class index.
 
 # algaware 0.1.0
 

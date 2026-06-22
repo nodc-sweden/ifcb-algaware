@@ -322,14 +322,16 @@ mod_validation_server <- function(id, rv, config) {
                                   updated$roi_number[mask], target)
       rv$summaries_stale <- TRUE
 
-      # Adjust class index if needed (class list changed)
+      # Adjust class index if needed (the relabelled class may have vanished
+      # from the region's class list). Use the same class-list definition as
+      # the gallery (get_region_context / region_classes), and keep the index
+      # within [1, length] so it can never point off the end or become 0.
       new_classes <- sort(unique(
-        updated$class_name[
-          updated$sample_name %in% ctx$region_samples &
-          updated$class_name != "unclassified"
-        ]
+        updated$class_name[updated$sample_name %in% ctx$region_samples]
       ))
-      rv$current_class_idx <- min(rv$current_class_idx, length(new_classes))
+      rv$current_class_idx <- max(
+        1L, min(rv$current_class_idx, length(new_classes))
+      )
 
       shiny::removeModal()
       shiny::showNotification(

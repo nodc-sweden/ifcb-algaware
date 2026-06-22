@@ -137,6 +137,29 @@ test_that("create_biomass_maps handles chl_mean column", {
   expect_s3_class(result$biomass_map, "ggplot")
 })
 
+test_that("create_biomass_maps handles all-NA chl_mean column", {
+  skip_if_not_installed("rnaturalearthdata")
+
+  # Ferrybox folder present but no valid chlorophyll readings: the chl_mean
+  # column exists but is entirely NA. Aggregation must not abort with
+  # "no rows to aggregate".
+  station_summary <- data.frame(
+    STATION_NAME_SHORT = c("BY5", "BY31"),
+    LATITUDE_WGS84_SWEREF99_DD = c(55.25, 58.59),
+    LONGITUDE_WGS84_SWEREF99_DD = c(15.98, 18.23),
+    median_time = as.POSIXct(c("2022-01-01 10:00", "2022-01-01 12:00")),
+    carbon_ug_per_liter = c(10, 20),
+    biovolume_mm3_per_liter = c(0.5, 1.0),
+    chl_mean = c(NA_real_, NA_real_),
+    stringsAsFactors = FALSE
+  )
+
+  result <- create_biomass_maps(station_summary)
+  expect_type(result, "list")
+  expect_s3_class(result$biomass_map, "ggplot")
+  expect_s3_class(result$chl_map, "ggplot")
+})
+
 test_that("create_image_count_map returns ggplot", {
   skip_if_not_installed("rnaturalearthdata")
 

@@ -8,6 +8,8 @@
   FerryBox provides no valid chlorophyll readings. The chlorophyll column is
   now omitted when entirely missing, and map aggregation tolerates all-`NA`
   chlorophyll.
+- Allow downloading the corrections log at any time after making corrections,
+  without first generating the Word report.
 
 # algaware 0.1.0
 

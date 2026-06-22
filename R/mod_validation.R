@@ -14,6 +14,9 @@ mod_validation_ui <- function(id) {
       shiny::actionButton(ns("relabel_selected"), "Relabel Selected",
                           class = "btn-outline-info btn-sm",
                           icon = shiny::icon("arrow-right-arrow-left")),
+      shiny::actionButton(ns("invalidate_selected"), "Invalidate Selected",
+                          class = "btn-outline-danger btn-sm",
+                          icon = shiny::icon("eraser")),
       shiny::actionButton(ns("relabel_class"), "Relabel Class",
                           class = "btn-info btn-sm",
                           icon = shiny::icon("arrows-rotate")),
@@ -89,12 +92,14 @@ get_region_context <- function(rv) {
 
 #' Validation Module Server
 #'
-#' Provides four validation actions:
+#' Provides five validation actions:
 #' \enumerate{
 #'   \item \strong{Store Annotations}: save selected images to the SQLite
 #'     database (persistent, shared with ClassiPyR)
 #'   \item \strong{Relabel Selected}: move selected images to a different class
 #'     (session-only, logged in rv$corrections)
+#'   \item \strong{Invalidate Selected}: move selected images to "unclassified"
+#'     in one click (session-only); a fixed-target shortcut for Relabel Selected
 #'   \item \strong{Relabel Class}: move ALL images of the current class in
 #'     the current region to a different class (session-only)
 #'   \item \strong{Invalidate Class}: mark an entire class as non-biological /
@@ -253,6 +258,54 @@ mod_validation_server <- function(id, rv, config) {
       shiny::showNotification(
         paste0("Relabeled ", n_relabeled, " selected image(s) to '",
                target, "'"),
+        type = "message"
+      )
+    })
+
+    # ---- 2b. Invalidate Selected (session-only) ----
+    # One-click shortcut for the common case of relabelling the selected images
+    # to "unclassified". Equivalent to "Relabel Selected" with the target fixed
+    # to "unclassified", so no target picker is needed. Unlike "Invalidate
+    # Class" this only touches the picked images and does not flag the whole
+    # class as non-biological (rv$invalidated_classes is left untouched).
+    shiny::observeEvent(input$invalidate_selected, {
+      if (length(rv$selected_images) == 0) {
+        shiny::showNotification("No images selected.", type = "warning")
+        return()
+      }
+
+      parsed <- parse_image_ids(rv$selected_images)
+
+      updated <- rv$classifications
+      updated_keys <- paste0(updated$sample_name, "_", updated$roi_number)
+      parsed_keys <- paste0(parsed$sample_name, "_", parsed$roi_number)
+      mask <- updated_keys %in% parsed_keys
+
+      n_invalidated <- sum(mask)
+      if (n_invalidated == 0) {
+        rv$selected_images <- character(0)
+        return()
+      }
+
+      # Record corrections
+      new_corrections <- data.frame(
+        sample_name = updated$sample_name[mask],
+        roi_number = updated$roi_number[mask],
+        original_class = updated$class_name[mask],
+        new_class = "unclassified",
+        stringsAsFactors = FALSE
+      )
+      rv$corrections <- rbind(rv$corrections, new_corrections)
+
+      updated$class_name <- ifelse(mask, "unclassified", updated$class_name)
+      rv$classifications <- updated
+      update_full_classifications(updated$sample_name[mask],
+                                  updated$roi_number[mask], "unclassified")
+      rv$selected_images <- character(0)
+      rv$summaries_stale <- TRUE
+
+      shiny::showNotification(
+        paste0("Invalidated ", n_invalidated, " selected image(s)"),
         type = "message"
       )
     })

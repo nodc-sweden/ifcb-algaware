@@ -17,6 +17,10 @@
 - Add an "Invalidate Selected" button to the Validate tab: a one-click shortcut
   that moves the selected images to "unclassified" without picking a target in
   the Relabel Selected dropdown.
+- Fix stations with Swedish characters (e.g. `Å17`, `SLÄGGÖ`) silently
+  dropping out on non-UTF-8 locales (such as Windows Server). The bundled
+  station list is now read as UTF-8 explicitly, so those stations no longer
+  vanish from the pie charts and image-count cruise track.
 
 # algaware 0.1.0
 

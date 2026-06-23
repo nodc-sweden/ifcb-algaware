@@ -9,7 +9,16 @@
 load_algaware_stations <- function(extra_stations = list()) {
   station_file <- system.file("stations", "algaware_stations.tsv",
                               package = "algaware")
-  stations <- utils::read.delim(station_file, stringsAsFactors = FALSE)
+  # The bundled file is UTF-8. Declare it explicitly so station names with
+  # Swedish characters (Å/Ä/Ö, e.g. "Å17", "SLÄGGÖ") are read correctly
+  # regardless of the host machine's native locale. Without this, a non-UTF-8
+  # native encoding (common on Windows Server) mangles those names, so they
+  # fail to match the SHARK station register and silently drop out of the
+  # spatial join. enc2utf8() then guarantees UTF-8 marking for the comparison.
+  stations <- utils::read.delim(station_file, stringsAsFactors = FALSE,
+                                fileEncoding = "UTF-8", encoding = "UTF-8")
+  char_cols <- vapply(stations, is.character, logical(1))
+  stations[char_cols] <- lapply(stations[char_cols], enc2utf8)
 
   if (length(extra_stations) > 0) {
     extra_df <- do.call(rbind, lapply(extra_stations, function(s) {

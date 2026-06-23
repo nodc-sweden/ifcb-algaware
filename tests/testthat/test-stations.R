@@ -7,6 +7,20 @@ test_that("load_algaware_stations returns a data.frame", {
   expect_true(nrow(stations) > 0)
 })
 
+test_that("load_algaware_stations reads Swedish station names as UTF-8", {
+  # Regression: on non-UTF-8 locales (e.g. Windows Server) station names with
+  # Å/Ä/Ö were mangled and silently dropped from the spatial join. Names must
+  # be valid UTF-8 with the expected characters regardless of host locale.
+  stations <- load_algaware_stations()
+
+  expect_true("Å17" %in% stations$STATION_NAME)
+  expect_true("SLÄGGÖ" %in% stations$STATION_NAME)
+
+  swedish <- stations$STATION_NAME[grepl("Å17|SLÄGGÖ", stations$STATION_NAME)]
+  expect_true(all(Encoding(swedish) == "UTF-8"))
+  expect_false(any(is.na(iconv(stations$STATION_NAME, "UTF-8", "UTF-8"))))
+})
+
 test_that("load_algaware_stations appends extra stations", {
   base <- load_algaware_stations()
   extra <- list(

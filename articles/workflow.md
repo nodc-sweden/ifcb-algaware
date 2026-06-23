@@ -148,6 +148,7 @@ Validate panel in the sidebar
 |----|----|
 | Store Annotations | Save selected images to the SQLite database (permanent, for classifier training) |
 | Relabel Selected | Move selected images to a different class (session-only) |
+| Invalidate Selected | Move the selected images to unclassified in one click — a fixed-target shortcut for Relabel Selected (session-only) |
 | Relabel Class | Move all images of the current class in the current region to a different class (session-only) |
 | Invalidate Class | Move all images of the current class to unclassified, so they no longer contribute to that taxon’s biovolume or appear in plots and reports under that name (session-only) |
 | Add Custom Class | Add a taxon not in the database or taxa lookup (session-only) |
@@ -168,7 +169,10 @@ class contains so many errors that it should not appear under that taxon
 name in biovolume summaries, plots, or the report. The images are moved
 to the unclassified pool — they remain visible in the gallery and still
 contribute to the unclassified fraction, but no longer count as that
-taxon.
+taxon. To invalidate only a subset rather than the whole class, select
+the images and use Invalidate Selected, which moves just those images to
+unclassified in one click (the same result as Relabel Selected with the
+target set to unclassified).
 
 **Storing annotations** with Store Annotations is intended for
 situations where you encounter something unusual — a rare species, a
@@ -364,9 +368,10 @@ When done, click Download Report to save the `.docx` file.
 ### Download the corrections log
 
 Click Download Corrections to export all relabelling and invalidation
-actions from this session as a CSV file. Save this alongside the report
-for archiving. You can replay it next session using Import corrections
-in the Validate panel.
+actions from this session as a CSV file. This is available at any time
+once you have made corrections — you do not need to generate the report
+first. Save this alongside the report for archiving. You can replay it
+next session using Import corrections in the Validate panel.
 
 ------------------------------------------------------------------------
 

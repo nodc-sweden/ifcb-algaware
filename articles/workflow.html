@@ -125,6 +125,9 @@ footer {
 .badge-outline-info     { background: #fff; color: #3498db; border: 1.5px solid #3498db; }
 /* Warning (#f39c12) */
 .badge-warning          { background: #f39c12; color: #fff; }
+/* Danger (#e74c3c) */
+.badge-danger           { background: #e74c3c; color: #fff; }
+.badge-outline-danger   { background: #fff; color: #e74c3c; border: 1.5px solid #e74c3c; }
 /* Secondary (#95a5a6) */
 .badge-secondary        { background: #95a5a6; color: #fff; }
 .badge-outline-secondary { background: #fff; color: #7b8a8b; border: 1.5px solid #95a5a6; }
@@ -309,22 +312,28 @@ Selected</span></td>
 <td>Move selected images to a different class (session-only)</td>
 </tr>
 <tr class="odd">
+<td><span class="btn-badge badge-outline-danger">Invalidate
+Selected</span></td>
+<td>Move the selected images to unclassified in one click — a
+fixed-target shortcut for Relabel Selected (session-only)</td>
+</tr>
+<tr class="even">
 <td><span class="btn-badge badge-info">Relabel Class</span></td>
 <td>Move all images of the current class in the current region to a
 different class (session-only)</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><span class="btn-badge badge-warning">Invalidate Class</span></td>
 <td>Move all images of the current class to unclassified, so they no
 longer contribute to that taxon’s biovolume or appear in plots and
 reports under that name (session-only)</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><span class="btn-badge badge-outline-secondary">Add Custom
 Class</span></td>
 <td>Add a taxon not in the database or taxa lookup (session-only)</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><span class="btn-badge badge-secondary">Import
 corrections</span></td>
 <td>Upload a corrections CSV from a previous session to replay earlier
@@ -348,7 +357,10 @@ when the class contains so many errors that it should not appear under
 that taxon name in biovolume summaries, plots, or the report. The images
 are moved to the unclassified pool — they remain visible in the gallery
 and still contribute to the unclassified fraction, but no longer count
-as that taxon.</p>
+as that taxon. To invalidate only a subset rather than the whole class,
+select the images and use <span class="btn-badge badge-outline-danger">Invalidate Selected</span>, which
+moves just those images to unclassified in one click (the same result as
+Relabel Selected with the target set to unclassified).</p>
 <p><strong>Storing annotations</strong> with <span class="btn-badge badge-success">Store Annotations</span> is intended for
 situations where you encounter something unusual — a rare species, a
 life stage the classifier has rarely seen, or images where you are
@@ -581,9 +593,11 @@ the <code>.docx</code> file.</p>
 </h3>
 <p>Click <span class="btn-badge badge-outline-secondary">Download
 Corrections</span> to export all relabelling and invalidation actions
-from this session as a CSV file. Save this alongside the report for
-archiving. You can replay it next session using <span class="btn-badge badge-secondary">Import corrections</span> in the
-Validate panel.</p>
+from this session as a CSV file. This is available at any time once you
+have made corrections — you do not need to generate the report first.
+Save this alongside the report for archiving. You can replay it next
+session using <span class="btn-badge badge-secondary">Import
+corrections</span> in the Validate panel.</p>
 <hr>
 </div>
 </div>

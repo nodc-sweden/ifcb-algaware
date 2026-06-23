@@ -165,6 +165,13 @@ server <- function(input, output, session) {
       na.action = stats::na.pass
     )
     names(chl_summary)[names(chl_summary) == "chl"] <- "chl_mean"
+
+    # No valid chlorophyll anywhere: return NULL so the column is omitted
+    # entirely rather than merged in as all-NA.
+    if (!any(!is.na(chl_summary$chl_mean))) {
+      return(NULL)
+    }
+
     chl_summary
   }
 

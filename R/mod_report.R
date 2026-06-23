@@ -372,9 +372,14 @@ mod_report_server <- function(id, rv, config, phyto_groups_reactive = NULL) {
         paste0("algaware_corrections_", format(Sys.Date(), "%Y%m%d"), ".csv")
       },
       content = function(file) {
-        cp <- corrections_path()
-        shiny::req(cp)
-        file.copy(cp, file)
+        # Build the corrections CSV on demand from the session log so it can be
+        # downloaded any time after corrections are made, without first
+        # generating the Word report.
+        shiny::req(nrow(rv$corrections) > 0)
+        corrections_export <- enrich_corrections_for_export(
+          rv$corrections, rv$custom_classes
+        )
+        utils::write.csv(corrections_export, file, row.names = FALSE)
       }
     )
 

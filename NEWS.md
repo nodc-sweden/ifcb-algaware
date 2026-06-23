@@ -4,6 +4,19 @@
 
 - Split llm.R, plots.R and report.R into manageable file sizes
 - Migrate pie chart plotting from internal functions to `SHARK4R` 1.2.0
+- Fix biomass and chlorophyll maps failing with "no rows to aggregate" when
+  FerryBox provides no valid chlorophyll readings. The chlorophyll column is
+  now omitted when entirely missing, and map aggregation tolerates all-`NA`
+  chlorophyll.
+- Allow downloading the corrections log at any time after making corrections,
+  without first generating the Word report.
+- Fix the validation gallery getting stuck in an infinite loop, switching back
+  and forth between two classes, when the class navigation arrows were clicked
+  while a whole-class relabel was still in progress. Selectize echo events can
+  no longer feed back into the current class index.
+- Add an "Invalidate Selected" button to the Validate tab: a one-click shortcut
+  that moves the selected images to "unclassified" without picking a target in
+  the Relabel Selected dropdown.
 
 # algaware 0.1.0
 

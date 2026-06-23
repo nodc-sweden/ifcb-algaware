@@ -1,5 +1,22 @@
 // Gallery interaction JavaScript for algaware
 // Adapted from ClassiPyR's gallery.js
+//
+// This file provides the client-side behaviour for the image gallery: image
+// selection (click, drag-select, page-sync) and the on-screen measurement
+// tool. It communicates with the R server (R/mod_gallery.R) over two channels.
+//
+// R -> JS  (R calls session$sendCustomMessage(<name>, ...), handled below):
+//   "toggle-toolbar-height"  add/remove the .has-data class on the toolbar
+//   "measureMode"            enable/disable the measurement tool
+//   "updatePixelsPerMicron"  push the camera calibration factor for measuring
+//   "toggleMeasureBtn"       style the Measure button as active/inactive
+//   "syncSelection"          replace the selected set (select-page / clear-all)
+//
+// JS -> R  (Shiny.setInputValue(<name>, ...), read as input$<...> in R):
+//   "gallery-toggle_image"   {img}     a single image was clicked
+//   "gallery-drag_select"    {images}  a rubber-band drag selected several
+//   ("gallery-" is the module namespace; in mod_gallery.R these arrive as
+//    input$toggle_image and input$drag_select.)
 
 $(document).ready(function() {
   // Toggle toolbar min-height when data loads/unloads

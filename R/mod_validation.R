@@ -14,6 +14,9 @@ mod_validation_ui <- function(id) {
       shiny::actionButton(ns("relabel_selected"), "Relabel Selected",
                           class = "btn-outline-info btn-sm",
                           icon = shiny::icon("arrow-right-arrow-left")),
+      shiny::actionButton(ns("invalidate_selected"), "Invalidate Selected",
+                          class = "btn-outline-danger btn-sm",
+                          icon = shiny::icon("eraser")),
       shiny::actionButton(ns("relabel_class"), "Relabel Class",
                           class = "btn-info btn-sm",
                           icon = shiny::icon("arrows-rotate")),
@@ -89,12 +92,14 @@ get_region_context <- function(rv) {
 
 #' Validation Module Server
 #'
-#' Provides four validation actions:
+#' Provides five validation actions:
 #' \enumerate{
 #'   \item \strong{Store Annotations}: save selected images to the SQLite
 #'     database (persistent, shared with ClassiPyR)
 #'   \item \strong{Relabel Selected}: move selected images to a different class
 #'     (session-only, logged in rv$corrections)
+#'   \item \strong{Invalidate Selected}: move selected images to "unclassified"
+#'     in one click (session-only); a fixed-target shortcut for Relabel Selected
 #'   \item \strong{Relabel Class}: move ALL images of the current class in
 #'     the current region to a different class (session-only)
 #'   \item \strong{Invalidate Class}: mark an entire class as non-biological /
@@ -126,6 +131,47 @@ mod_validation_server <- function(id, rv, config) {
         rv$classifications_all$class_name[mask_all] <- new_class
       }
       invisible(NULL)
+    }
+
+    # Apply a session-only relabel of the currently selected images to `target`.
+    # Shared by "Relabel Selected" and "Invalidate Selected" (target =
+    # "unclassified"): parse the selection, rewrite matching rows in both the
+    # active and full classification tables, log the corrections, and clear the
+    # selection. Returns the number of images changed (0 if none matched, in
+    # which case the selection is still cleared). Callers handle their own
+    # notifications since the wording differs.
+    relabel_selected_images <- function(target) {
+      parsed <- parse_image_ids(rv$selected_images)
+
+      updated <- rv$classifications
+      updated_keys <- paste0(updated$sample_name, "_", updated$roi_number)
+      parsed_keys <- paste0(parsed$sample_name, "_", parsed$roi_number)
+      mask <- updated_keys %in% parsed_keys
+
+      n_changed <- sum(mask)
+      if (n_changed == 0) {
+        rv$selected_images <- character(0)
+        return(0L)
+      }
+
+      # Record corrections
+      new_corrections <- data.frame(
+        sample_name = updated$sample_name[mask],
+        roi_number = updated$roi_number[mask],
+        original_class = updated$class_name[mask],
+        new_class = target,
+        stringsAsFactors = FALSE
+      )
+      rv$corrections <- rbind(rv$corrections, new_corrections)
+
+      updated$class_name <- ifelse(mask, target, updated$class_name)
+      rv$classifications <- updated
+      update_full_classifications(updated$sample_name[mask],
+                                  updated$roi_number[mask], target)
+      rv$selected_images <- character(0)
+      rv$summaries_stale <- TRUE
+
+      n_changed
     }
 
     # ---- 1. Store Annotations (to database) ----
@@ -217,44 +263,38 @@ mod_validation_server <- function(id, rv, config) {
       shiny::req(nzchar(target))
       shiny::req(length(rv$selected_images) > 0)
 
-      # Parse selected image IDs to sample_name + roi_number
-      parsed <- parse_image_ids(rv$selected_images)
+      n_relabeled <- relabel_selected_images(target)
 
-      # Build mask for matching rows in classifications (vectorized)
-      updated <- rv$classifications
-      updated_keys <- paste0(updated$sample_name, "_", updated$roi_number)
-      parsed_keys <- paste0(parsed$sample_name, "_", parsed$roi_number)
-      mask <- updated_keys %in% parsed_keys
+      shiny::removeModal()
+      if (n_relabeled > 0) {
+        shiny::showNotification(
+          paste0("Relabeled ", n_relabeled, " selected image(s) to '",
+                 target, "'"),
+          type = "message"
+        )
+      }
+    })
 
-      n_relabeled <- sum(mask)
-      if (n_relabeled == 0) {
-        shiny::removeModal()
+    # ---- 2b. Invalidate Selected (session-only) ----
+    # One-click shortcut for the common case of relabelling the selected images
+    # to "unclassified". Equivalent to "Relabel Selected" with the target fixed
+    # to "unclassified", so no target picker is needed. Unlike "Invalidate
+    # Class" this only touches the picked images and does not flag the whole
+    # class as non-biological (rv$invalidated_classes is left untouched).
+    shiny::observeEvent(input$invalidate_selected, {
+      if (length(rv$selected_images) == 0) {
+        shiny::showNotification("No images selected.", type = "warning")
         return()
       }
 
-      # Record corrections
-      new_corrections <- data.frame(
-        sample_name = updated$sample_name[mask],
-        roi_number = updated$roi_number[mask],
-        original_class = updated$class_name[mask],
-        new_class = target,
-        stringsAsFactors = FALSE
-      )
-      rv$corrections <- rbind(rv$corrections, new_corrections)
+      n_invalidated <- relabel_selected_images("unclassified")
 
-      updated$class_name <- ifelse(mask, target, updated$class_name)
-      rv$classifications <- updated
-      update_full_classifications(updated$sample_name[mask],
-                                  updated$roi_number[mask], target)
-      rv$selected_images <- character(0)
-      rv$summaries_stale <- TRUE
-
-      shiny::removeModal()
-      shiny::showNotification(
-        paste0("Relabeled ", n_relabeled, " selected image(s) to '",
-               target, "'"),
-        type = "message"
-      )
+      if (n_invalidated > 0) {
+        shiny::showNotification(
+          paste0("Invalidated ", n_invalidated, " selected image(s)"),
+          type = "message"
+        )
+      }
     })
 
     # ---- 3. Relabel Entire Class (session-only) ----
@@ -322,14 +362,16 @@ mod_validation_server <- function(id, rv, config) {
                                   updated$roi_number[mask], target)
       rv$summaries_stale <- TRUE
 
-      # Adjust class index if needed (class list changed)
+      # Adjust class index if needed (the relabelled class may have vanished
+      # from the region's class list). Use the same class-list definition as
+      # the gallery (get_region_context / region_classes), and keep the index
+      # within [1, length] so it can never point off the end or become 0.
       new_classes <- sort(unique(
-        updated$class_name[
-          updated$sample_name %in% ctx$region_samples &
-          updated$class_name != "unclassified"
-        ]
+        updated$class_name[updated$sample_name %in% ctx$region_samples]
       ))
-      rv$current_class_idx <- min(rv$current_class_idx, length(new_classes))
+      rv$current_class_idx <- max(
+        1L, min(rv$current_class_idx, length(new_classes))
+      )
 
       shiny::removeModal()
       shiny::showNotification(

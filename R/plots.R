@@ -37,13 +37,20 @@ create_biomass_maps <- function(station_summary) {
     na.rm = TRUE
   )
 
-  # Add chlorophyll if available
-  if ("chl_mean" %in% names(station_summary)) {
+  # Add chlorophyll if available. Use na.action = na.pass so stations whose
+  # ferrybox chlorophyll is entirely NA (e.g. no valid sensor readings) are
+  # kept rather than dropped, which would otherwise leave aggregate() with no
+  # rows and abort with "no rows to aggregate".
+  if ("chl_mean" %in% names(station_summary) &&
+      any(!is.na(station_summary$chl_mean))) {
     chl_agg <- stats::aggregate(
       chl_mean ~ STATION_NAME_SHORT,
       data = station_summary,
-      FUN = mean,
-      na.rm = TRUE
+      FUN = function(x) {
+        vals <- x[!is.na(x)]
+        if (length(vals) == 0) NA_real_ else mean(vals)
+      },
+      na.action = stats::na.pass
     )
     station_biomass <- merge(station_biomass, chl_agg,
                              by = "STATION_NAME_SHORT", all.x = TRUE)

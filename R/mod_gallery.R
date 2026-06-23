@@ -1,3 +1,35 @@
+#' Match a selectize change event against the pending programmatic-update queue
+#'
+#' The gallery keeps the class selectize in sync with the current class index by
+#' calling \code{updateSelectizeInput()}. Each such call echoes back as an
+#' \code{input$class_select} change event. To stop those echoes from feeding
+#' back into the index (which could ping-pong between two classes), every pushed
+#' value is recorded in a queue and the matching echo is swallowed here.
+#'
+#' The queue is drained through the \emph{last} matching entry, not just the
+#' head: rapid navigation can make Shiny coalesce several programmatic updates
+#' and only echo the final value, so intermediate entries never return.
+#'
+#' @param queue Character vector of values pushed to the widget, oldest first.
+#' @param sel The incoming \code{input$class_select} value (length-1 character,
+#'   possibly \code{NA}).
+#' @return A list with \code{is_echo} (logical) and \code{queue} (the queue with
+#'   consumed entries removed when \code{is_echo} is \code{TRUE}).
+#' @keywords internal
+match_pending_echo <- function(queue, sel) {
+  if (length(sel) == 0 || is.null(sel)) sel <- NA_character_
+  hit <- if (is.na(sel)) {
+    which(is.na(queue))
+  } else {
+    which(!is.na(queue) & queue == sel)
+  }
+  if (length(hit) > 0) {
+    list(is_echo = TRUE, queue = queue[-seq_len(max(hit))])
+  } else {
+    list(is_echo = FALSE, queue = queue)
+  }
+}
+
 #' Gallery Module UI
 #'
 #' @param id Module namespace ID.
@@ -153,6 +185,17 @@ mod_gallery_server <- function(id, rv, config) {
     ns <- session$ns
     page <- shiny::reactiveVal(1L)
 
+    # Outstanding values pushed to the class selectize by the sync observer
+    # below. Every programmatic updateSelectizeInput() echoes back as an
+    # input$class_select change event; we record each pushed value here and
+    # swallow the matching echo so it never feeds back into current_class_idx.
+    # A queue (not a single value or boolean) is required because rapid
+    # navigation can leave several programmatic echoes in flight at once —
+    # the previous single-guard logic let stale echoes through, which made the
+    # selectize and the index correct each other forever, ping-ponging between
+    # two classes after the class list changed (e.g. relabelling a whole class).
+    pending_selections <- shiny::reactiveVal(character(0))
+
     # Temp directory for extracted PNG images. Each browser session gets its
     # own folder (keyed by session$token) so concurrent users don't collide.
     # Cleaned up automatically when the session ends.
@@ -224,16 +267,32 @@ mod_gallery_server <- function(id, rv, config) {
 
     # ---- Class dropdown synchronization ----
 
-    # Keep the selectize dropdown in sync with the current class index
+    # Currently displayed class name, derived from the index (single source of
+    # truth). Clamped to a valid position so a shrinking class list can never
+    # produce an out-of-range or zero index.
+    displayed_class <- shiny::reactive({
+      classes <- region_classes()
+      if (length(classes) == 0) return(NULL)
+      idx <- max(1L, min(rv$current_class_idx, length(classes)))
+      classes[idx]
+    })
+
+    # Keep the selectize dropdown in sync with the current class (state ->
+    # widget, one-way). Only push when the selection actually changes, so each
+    # programmatic update yields exactly one echo to swallow below.
     shiny::observe({
       classes <- region_classes()
-      # Explicit dependency on current_class_idx
-      current_idx <- rv$current_class_idx
-      idx <- min(current_idx, max(1L, length(classes)))
-      selected <- if (length(classes) > 0) classes[idx] else NULL
-      shiny::updateSelectizeInput(session, "class_select",
-                                  choices = classes,
-                                  selected = selected)
+      selected <- displayed_class()
+
+      current_value <- shiny::isolate(input$class_select)
+      if (!identical(selected, current_value)) {
+        pending_selections(c(shiny::isolate(pending_selections()),
+                             selected %||% NA_character_))
+        shiny::updateSelectizeInput(session, "class_select",
+                                    choices = classes,
+                                    selected = selected)
+      }
+
       # Tell the browser to adjust toolbar height (JS handler in gallery.js).
       # sendCustomMessage() calls a JavaScript function registered via
       # Shiny.addCustomMessageHandler() in inst/app/www/gallery.js.
@@ -241,14 +300,24 @@ mod_gallery_server <- function(id, rv, config) {
       session$sendCustomMessage("toggle-toolbar-height", has_data)
     })
 
-    # Jump to class when user picks from selectize.
-    # The new_idx != rv$current_class_idx guard prevents acting on programmatic
-    # updateSelectizeInput() calls that echo back as change events — if the
-    # selectize value is already the current class, indices match and we no-op.
+    # Jump to class when the user picks from the selectize (widget -> state).
+    # Echoes from the programmatic updates above are swallowed by matching them
+    # against the pending queue, so they never write back to current_class_idx.
+    # We drop the queue through the *last* matching entry rather than just the
+    # head: when navigation is rapid, Shiny may coalesce several programmatic
+    # updates and only echo the final value, so intermediate entries never come
+    # back. Clearing through the last match keeps the queue from getting stuck.
     shiny::observeEvent(input$class_select, {
+      sel <- input$class_select %||% NA_character_
+      echo <- match_pending_echo(pending_selections(), sel)
+      if (echo$is_echo) {
+        pending_selections(echo$queue)  # our own update echoing back: ignore
+        return()
+      }
+
       classes <- region_classes()
       if (length(classes) == 0) return()
-      new_idx <- match(input$class_select, classes)
+      new_idx <- match(sel, classes)
       if (!is.na(new_idx) && new_idx != rv$current_class_idx) {
         rv$current_class_idx <- new_idx
         page(1L)

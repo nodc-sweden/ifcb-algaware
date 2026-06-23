@@ -249,6 +249,13 @@ aggregate_station_data <- function(biovolume_data, metadata) {
   # AphiaID is excluded from the formula because stats::aggregate drops rows
   # where any grouping variable is NA (which is the case for "Unclassified").
   # It is joined back afterwards from the unique name->AphiaID mapping.
+  #
+  # na.action = na.pass is required so that a row with a valid count but an NA
+  # measure (e.g. a missing/failed feature file leaves biovolume_mm3 or
+  # carbon_ug as NA) is NOT dropped entirely. The default (na.omit) would
+  # discard the whole row before FUN runs, silently under-reporting counts and
+  # corrupting the per-liter concentrations and presence categories. With
+  # na.pass the per-column na.rm = TRUE handles the NAs correctly.
   agg <- stats::aggregate(
     cbind(total_counts = counts,
           total_biovolume_mm3 = biovolume_mm3,
@@ -257,10 +264,17 @@ aggregate_station_data <- function(biovolume_data, metadata) {
       name + sflag,
     data = all_data,
     FUN = sum,
-    na.rm = TRUE
+    na.rm = TRUE,
+    na.action = stats::na.pass
   )
 
+  # Collapse to a single AphiaID per (name, sflag) before joining. If a key
+  # mapped to more than one distinct AphiaID, the merge would multiply the
+  # aggregated rows and double-count that taxon's biovolume in the report.
   aphia_map <- unique(all_data[, c("name", "sflag", "AphiaID")])
+  # Sort NA AphiaIDs last so a non-NA value is kept when a key has both.
+  aphia_map <- aphia_map[order(is.na(aphia_map$AphiaID)), ]
+  aphia_map <- aphia_map[!duplicated(aphia_map[, c("name", "sflag")]), ]
   agg <- merge(agg, aphia_map, by = c("name", "sflag"), all.x = TRUE)
 
   agg <- merge(agg, sample_volume, by = c("visit_id", "STATION_NAME"),

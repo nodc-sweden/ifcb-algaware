@@ -2,6 +2,17 @@
 
 ## Minor improvements and fixes
 
+- Fix station-visit aggregation silently dropping taxa whose biovolume or
+  carbon value was missing (e.g. a failed or missing feature file). Such rows
+  were discarded entirely, including their valid cell counts, which
+  under-reported counts and skewed the per-litre concentrations and presence
+  categories. Aggregation now tolerates `NA` measures per column.
+- Fix a double-counting risk when re-joining `AphiaID` after aggregation: a
+  taxon name mapping to more than one `AphiaID` could duplicate its rows and
+  inflate biovolume in the report. The join now keeps a single `AphiaID` per
+  taxon, preferring a non-missing value.
+- Require `ggplot2` (>= 3.4.0) for the `linewidth` aesthetic used in CTD
+  figures, and `tidyr` (>= 1.1.0) for `pivot_wider()`/`pivot_longer()`.
 - Split llm.R, plots.R and report.R into manageable file sizes
 - Migrate pie chart plotting from internal functions to `SHARK4R` 1.2.0
 - Fix biomass and chlorophyll maps failing with "no rows to aggregate" when

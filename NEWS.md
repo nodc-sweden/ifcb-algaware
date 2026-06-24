@@ -25,9 +25,13 @@
   and forth between two classes, when the class navigation arrows were clicked
   while a whole-class relabel was still in progress. Selectize echo events can
   no longer feed back into the current class index.
-- Add an "Invalidate Selected" button to the Validate tab: a one-click shortcut
+- Add an "Unclassify Selected" button to the Validate tab: a one-click shortcut
   that moves the selected images to "unclassified" without picking a target in
   the Relabel Selected dropdown.
+- Rename the "Invalidate Selected" and "Invalidate Class" buttons to "Unclassify
+  Selected" and "Unclassify Class", and use the same wording in the validation
+  status summary and import preview, so the label matches the resulting
+  "unclassified" state.
 
 # algaware 0.1.0
 

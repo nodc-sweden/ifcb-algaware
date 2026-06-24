@@ -14,13 +14,13 @@ mod_validation_ui <- function(id) {
       shiny::actionButton(ns("relabel_selected"), "Relabel Selected",
                           class = "btn-outline-info btn-sm",
                           icon = shiny::icon("arrow-right-arrow-left")),
-      shiny::actionButton(ns("invalidate_selected"), "Invalidate Selected",
+      shiny::actionButton(ns("invalidate_selected"), "Unclassify Selected",
                           class = "btn-outline-danger btn-sm",
                           icon = shiny::icon("eraser")),
       shiny::actionButton(ns("relabel_class"), "Relabel Class",
                           class = "btn-info btn-sm",
                           icon = shiny::icon("arrows-rotate")),
-      shiny::actionButton(ns("invalidate_class"), "Invalidate Class",
+      shiny::actionButton(ns("invalidate_class"), "Unclassify Class",
                           class = "btn-warning btn-sm",
                           icon = shiny::icon("ban")),
       shiny::actionButton(ns("add_custom_class"), "Add Custom Class",
@@ -98,11 +98,11 @@ get_region_context <- function(rv) {
 #'     database (persistent, shared with ClassiPyR)
 #'   \item \strong{Relabel Selected}: move selected images to a different class
 #'     (session-only, logged in rv$corrections)
-#'   \item \strong{Invalidate Selected}: move selected images to "unclassified"
+#'   \item \strong{Unclassify Selected}: move selected images to "unclassified"
 #'     in one click (session-only); a fixed-target shortcut for Relabel Selected
 #'   \item \strong{Relabel Class}: move ALL images of the current class in
 #'     the current region to a different class (session-only)
-#'   \item \strong{Invalidate Class}: mark an entire class as non-biological /
+#'   \item \strong{Unclassify Class}: mark an entire class as non-biological /
 #'     unclassified (session-only)
 #' }
 #'
@@ -134,7 +134,7 @@ mod_validation_server <- function(id, rv, config) {
     }
 
     # Apply a session-only relabel of the currently selected images to `target`.
-    # Shared by "Relabel Selected" and "Invalidate Selected" (target =
+    # Shared by "Relabel Selected" and "Unclassify Selected" (target =
     # "unclassified"): parse the selection, rewrite matching rows in both the
     # active and full classification tables, log the corrections, and clear the
     # selection. Returns the number of images changed (0 if none matched, in
@@ -275,10 +275,10 @@ mod_validation_server <- function(id, rv, config) {
       }
     })
 
-    # ---- 2b. Invalidate Selected (session-only) ----
+    # ---- 2b. Unclassify Selected (session-only) ----
     # One-click shortcut for the common case of relabelling the selected images
     # to "unclassified". Equivalent to "Relabel Selected" with the target fixed
-    # to "unclassified", so no target picker is needed. Unlike "Invalidate
+    # to "unclassified", so no target picker is needed. Unlike "Unclassify
     # Class" this only touches the picked images and does not flag the whole
     # class as non-biological (rv$invalidated_classes is left untouched).
     shiny::observeEvent(input$invalidate_selected, {
@@ -291,7 +291,7 @@ mod_validation_server <- function(id, rv, config) {
 
       if (n_invalidated > 0) {
         shiny::showNotification(
-          paste0("Invalidated ", n_invalidated, " selected image(s)"),
+          paste0("Unclassified ", n_invalidated, " selected image(s)"),
           type = "message"
         )
       }
@@ -381,18 +381,18 @@ mod_validation_server <- function(id, rv, config) {
       )
     })
 
-    # ---- 4. Invalidate Class (session-only) ----
+    # ---- 4. Unclassify Class (session-only) ----
     shiny::observeEvent(input$invalidate_class, {
       ctx <- get_region_context(rv)
       if (is.null(ctx$current_class)) return()
 
       shiny::showModal(shiny::modalDialog(
-        title = "Confirm Invalidation",
-        paste0("Invalidate all '", ctx$current_class, "' images in ",
+        title = "Confirm Unclassification",
+        paste0("Unclassify all '", ctx$current_class, "' images in ",
                if (rv$current_region == "EAST") "Baltic Sea" else "West Coast",
                "? They will be treated as unclassified."),
         footer = shiny::tagList(
-          shiny::actionButton(ns("confirm_invalidate"), "Invalidate",
+          shiny::actionButton(ns("confirm_invalidate"), "Unclassify",
                               class = "btn-warning"),
           shiny::modalButton("Cancel")
         )
@@ -429,7 +429,7 @@ mod_validation_server <- function(id, rv, config) {
 
       shiny::removeModal()
       shiny::showNotification(
-        paste0("Invalidated '", ctx$current_class, "' (", sum(mask),
+        paste0("Unclassified '", ctx$current_class, "' (", sum(mask),
                " images)"),
         type = "message"
       )
@@ -572,7 +572,7 @@ mod_validation_server <- function(id, rv, config) {
           )
         },
         if (length(invalidated) > 0) {
-          shiny::p(paste0("Invalidated: ", paste(invalidated, collapse = ", ")))
+          shiny::p(paste0("Unclassified: ", paste(invalidated, collapse = ", ")))
         },
         warning_text,
         footer = shiny::tagList(
@@ -697,7 +697,7 @@ mod_validation_server <- function(id, rv, config) {
         if (n_invalidated > 0) {
           shiny::p(
             style = "color: #856404;",
-            shiny::strong(n_invalidated), " classes invalidated: ",
+            shiny::strong(n_invalidated), " classes unclassified: ",
             paste(rv$invalidated_classes, collapse = ", ")
           )
         }

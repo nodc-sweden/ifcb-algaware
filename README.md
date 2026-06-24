@@ -72,7 +72,7 @@ The application opens in your default browser.
 - Visual tags for HAB species and non-biological classes
 - Select individual images or entire pages
 - Relabel selected images or entire classes
-- Invalidate misclassified taxa
+- Unclassify misclassified taxa
 - Store manual annotations to SQLite (compatible with ClassiPyR)
 - Measurement tool for on-screen size estimation
 

@@ -4,6 +4,11 @@
 
 ### Minor improvements and fixes
 
+- Abbreviate repeated species binomials across the whole Station reports
+  section: a species written out in full at one station (e.g. *Nodularia
+  spumigena*) is abbreviated (*N. spumigena*) at any later station,
+  following standard biological convention. The Swedish and English
+  summaries are unchanged.
 - Order report sections consistently with West Coast before Baltic Sea
   throughout (heatmaps, relative-biovolume bars, station reports, image
   mosaics and the front-page mosaic overview), matching the order

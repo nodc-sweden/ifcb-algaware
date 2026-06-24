@@ -37,7 +37,8 @@ Imports:
     viridis,
     rectpacker (>= 1.0.0),
     httr2,
-    cmocean
+    cmocean,
+    zip
 Suggests:
     knitr (>= 1.49),
     mockery,

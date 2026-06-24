@@ -141,8 +141,11 @@ fetch_image_counts <- function(dashboard_url, dataset_name,
       httr2::req_timeout(30) |>
       httr2::req_perform()
 
-    raw_text <- httr2::resp_body_string(resp)
-    df <- utils::read.csv(textConnection(raw_text), stringsAsFactors = FALSE)
+    # Decode the response as UTF-8 deterministically (don't depend on the
+    # server's Content-Type charset, which may be missing).
+    raw_text <- httr2::resp_body_string(resp, encoding = "UTF-8")
+    df <- utils::read.csv(textConnection(raw_text), stringsAsFactors = FALSE,
+                          encoding = "UTF-8")
 
     # Keep only rows with valid coordinates
     df <- df[!is.na(df$latitude) & !is.na(df$longitude) &

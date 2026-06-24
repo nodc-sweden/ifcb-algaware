@@ -81,7 +81,10 @@ assign_phyto_groups <- function(scientific_names, aphia_ids = NULL,
 load_taxa_lookup <- function() {
   lookup_file <- system.file("extdata", "taxa_lookup.csv",
                              package = "algaware")
-  utils::read.csv(lookup_file, stringsAsFactors = FALSE)
+  # Declare UTF-8 so any non-ASCII taxon names stay consistent across locales.
+  lookup <- utils::read.csv(lookup_file, stringsAsFactors = FALSE,
+                            encoding = "UTF-8")
+  as_utf8_columns(lookup)
 }
 
 #' Build Grouped Relabel Choices

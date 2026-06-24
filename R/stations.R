@@ -9,16 +9,16 @@
 load_algaware_stations <- function(extra_stations = list()) {
   station_file <- system.file("stations", "algaware_stations.tsv",
                               package = "algaware")
-  # The bundled file is UTF-8. Declare it explicitly so station names with
-  # Swedish characters (Å/Ä/Ö, e.g. "Å17", "SLÄGGÖ") are read correctly
-  # regardless of the host machine's native locale. Without this, a non-UTF-8
-  # native encoding (common on Windows Server) mangles those names, so they
-  # fail to match the SHARK station register and silently drop out of the
-  # spatial join. enc2utf8() then guarantees UTF-8 marking for the comparison.
+  # The bundled file is UTF-8. Declare it via `encoding` (which marks the
+  # parsed strings as UTF-8 without re-encoding through the native locale) so
+  # station names with Swedish characters (Å/Ä/Ö, e.g. "Å17", "SLÄGGÖ") are
+  # read correctly on any machine. Note: do NOT also pass `fileEncoding`, which
+  # would re-encode the bytes through the native locale first and corrupt those
+  # characters on a non-UTF-8 host (e.g. Windows Server). as_utf8_columns()
+  # then guarantees consistent UTF-8 marking for downstream matching.
   stations <- utils::read.delim(station_file, stringsAsFactors = FALSE,
-                                fileEncoding = "UTF-8", encoding = "UTF-8")
-  char_cols <- vapply(stations, is.character, logical(1))
-  stations[char_cols] <- lapply(stations[char_cols], enc2utf8)
+                                encoding = "UTF-8")
+  stations <- as_utf8_columns(stations)
 
   if (length(extra_stations) > 0) {
     extra_df <- do.call(rbind, lapply(extra_stations, function(s) {
@@ -29,7 +29,8 @@ load_algaware_stations <- function(extra_stations = list()) {
         stringsAsFactors = FALSE
       )
     }))
-    # Avoid duplicates
+    # Avoid duplicates (compare on UTF-8 to match the bundled names reliably)
+    extra_df <- as_utf8_columns(extra_df)
     extra_df <- extra_df[!extra_df$STATION_NAME %in% stations$STATION_NAME, ]
     stations <- rbind(stations, extra_df)
   }
@@ -54,8 +55,16 @@ match_bins_to_stations <- function(metadata, algaware_stations) {
 
   station_bundle <- load_shark_stations(verbose = FALSE)
 
+  # Normalise both sides to UTF-8 before matching. The SHARK register and the
+  # bundled station list can carry different encoding marks depending on the
+  # host locale; without this, names containing Å/Ä/Ö (e.g. "Å17", "SLÄGGÖ",
+  # "BY39 ÖLANDS SÖDRA UDDE") fail the comparison and the station is silently
+  # dropped from the spatial join (and therefore from downloads and plots).
+  station_bundle$STATION_NAME <- enc2utf8(station_bundle$STATION_NAME)
+  algaware_names <- enc2utf8(algaware_stations$STATION_NAME)
+
   algaware_station_data <- station_bundle[
-    station_bundle$STATION_NAME %in% algaware_stations$STATION_NAME,
+    station_bundle$STATION_NAME %in% algaware_names,
   ]
 
   # Convert station coordinates to an sf spatial object.

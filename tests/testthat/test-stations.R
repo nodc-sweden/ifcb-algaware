@@ -21,6 +21,38 @@ test_that("load_algaware_stations reads Swedish station names as UTF-8", {
   expect_false(any(is.na(iconv(stations$STATION_NAME, "UTF-8", "UTF-8"))))
 })
 
+test_that("as_utf8_columns marks character columns as UTF-8", {
+  df <- data.frame(
+    a = "SL\xc4GG\xd6",          # latin1 bytes for SLÄGGÖ
+    b = 1L,
+    stringsAsFactors = FALSE
+  )
+  Encoding(df$a) <- "latin1"
+
+  out <- algaware:::as_utf8_columns(df)
+  expect_equal(Encoding(out$a), "UTF-8")
+  expect_equal(out$a, "SLÄGGÖ")
+  expect_type(out$b, "integer")
+})
+
+test_that("latin1-bundled files are read with Å/Ä/Ö intact (UTF-8)", {
+  mapper <- load_station_mapper()
+  expect_s3_class(mapper, "data.frame")
+  if (nrow(mapper) > 0) {
+    char_cols <- vapply(mapper, is.character, logical(1))
+    encs <- unlist(lapply(mapper[char_cols], Encoding))
+    # No column should contain mojibake / unknown-marked non-ASCII bytes.
+    expect_false(any(encs == "latin1"))
+    expect_true(any(grepl("SLÄGGÖ", mapper[[1]], fixed = TRUE)))
+  }
+
+  chl <- load_chl_statistics()
+  expect_s3_class(chl, "data.frame")
+  if (nrow(chl) > 0) {
+    expect_false(any(is.na(iconv(chl$STATN, "UTF-8", "UTF-8"))))
+  }
+})
+
 test_that("load_algaware_stations appends extra stations", {
   base <- load_algaware_stations()
   extra <- list(

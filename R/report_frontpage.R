@@ -345,8 +345,11 @@ add_mosaic_overview <- function(doc, baltic_mosaic, westcoast_mosaic, cleanup,
     doc
   }
 
-  doc <- add_one_mosaic(doc, baltic_mosaic, "Baltic Sea images", baltic_taxa)
-  doc <- add_one_mosaic(doc, westcoast_mosaic, "West Coast images", westcoast_taxa,
+  # West Coast first, then Baltic Sea, to match the summary and the rest of
+  # the report. add_spacing separates the second mosaic from the first.
+  doc <- add_one_mosaic(doc, westcoast_mosaic, "West Coast images",
+                        westcoast_taxa)
+  doc <- add_one_mosaic(doc, baltic_mosaic, "Baltic Sea images", baltic_taxa,
                         add_spacing = TRUE)
   doc
 }
@@ -416,10 +419,44 @@ add_back_page <- function(doc, cleanup) {
   doc
 }
 
-#' Fix page numbering to start at 1 after the front page
+#' Read, transform, and rewrite an OOXML part as UTF-8
 #'
-#' Post-processes the .docx file XML to add \code{pgNumType} with
-#' \code{start="1"} to the second section (first content section).
+#' OOXML is UTF-8; read and write parts as UTF-8 explicitly so station names
+#' with Å/Ä/Ö survive the round-trip on non-UTF-8 locales.
+#'
+#' @param path Path to the XML part.
+#' @param fun Function taking the file's text and returning the new text.
+#' @return Invisibly TRUE if the file changed, FALSE otherwise.
+#' @keywords internal
+transform_ooxml_part <- function(path, fun) {
+  if (!file.exists(path)) return(invisible(FALSE))
+  in_con <- file(path, encoding = "UTF-8")
+  on.exit(close(in_con), add = TRUE)
+  xml_text <- paste(readLines(in_con, warn = FALSE), collapse = "\n")
+  close(in_con)
+  on.exit(NULL)
+  new_text <- fun(xml_text)
+  if (identical(new_text, xml_text)) return(invisible(FALSE))
+  out_con <- file(path, encoding = "UTF-8")
+  writeLines(new_text, out_con)
+  close(out_con)
+  invisible(TRUE)
+}
+
+#' Post-process the report .docx (page numbering and field flags)
+#'
+#' Performs two fixes on the assembled document:
+#' \enumerate{
+#'   \item Adds \code{pgNumType} with \code{start="1"} to the second section
+#'     (the first content section) so page numbers restart after the front
+#'     page.
+#'   \item Strips \code{w:dirty="true"} from the page-number field that officer
+#'     emits via \code{run_word_field()}. The dirty flag makes Word prompt
+#'     "This document contains fields that may refer to other files. Do you
+#'     want to update the fields?" on every open. Removing it suppresses the
+#'     prompt; \code{PAGE} fields are still recomputed automatically during
+#'     layout, so page numbers display correctly.
+#' }
 #'
 #' @param docx_path Path to the .docx file.
 #' @keywords internal
@@ -431,37 +468,65 @@ fix_page_numbering <- function(docx_path) {
 
     utils::unzip(docx_path, exdir = tmp_dir)
 
-    doc_xml_path <- file.path(tmp_dir, "word", "document.xml")
-    # OOXML is UTF-8; read and write it as UTF-8 explicitly so station names
-    # with Å/Ä/Ö survive the round-trip on non-UTF-8 locales.
-    in_con <- file(doc_xml_path, encoding = "UTF-8")
-    xml <- readLines(in_con, warn = FALSE)
-    close(in_con)
-    xml_text <- paste(xml, collapse = "\n")
+    word_dir <- file.path(tmp_dir, "word")
+    doc_xml_path <- file.path(word_dir, "document.xml")
 
-    sect_positions <- gregexpr("<w:sectPr", xml_text)[[1]]
-    if (length(sect_positions) >= 2) {
+    # Restart page numbering at 1 in the first content section.
+    transform_ooxml_part(doc_xml_path, function(xml_text) {
+      sect_positions <- gregexpr("<w:sectPr", xml_text)[[1]]
+      if (sect_positions[1] == -1 || length(sect_positions) < 2) {
+        return(xml_text)
+      }
       second_pos <- sect_positions[2]
       close_pos <- regexpr(">", substring(xml_text, second_pos))
       insert_at <- second_pos + close_pos - 1
-      xml_text <- paste0(
+      paste0(
         substring(xml_text, 1, insert_at),
         '<w:pgNumType w:start="1"/>',
         substring(xml_text, insert_at + 1)
       )
-      out_con <- file(doc_xml_path, encoding = "UTF-8")
-      writeLines(xml_text, out_con)
-      close(out_con)
+    })
 
-      old_wd <- getwd()
-      on.exit(setwd(old_wd), add = TRUE)
-      setwd(tmp_dir)
-      files <- list.files(".", recursive = TRUE, all.files = TRUE)
-      file.remove(docx_path)
-      utils::zip(docx_path, files, flags = "-r9Xq")
+    # Remove dirty-field flags from the document and every header/footer part
+    # so Word does not prompt to update fields on open.
+    strip_dirty <- function(xml_text) gsub(' w:dirty="true"', "", xml_text,
+                                           fixed = TRUE)
+    parts <- c(
+      doc_xml_path,
+      list.files(word_dir, pattern = "^(header|footer)\\d*\\.xml$",
+                 full.names = TRUE)
+    )
+    for (p in parts) transform_ooxml_part(p, strip_dirty)
+
+    # Re-zip into a temporary archive first and only overwrite the report once
+    # it has been rebuilt successfully. The original .docx must not be removed
+    # before re-zipping, otherwise a failed re-zip destroys the report (e.g. on
+    # servers where utils::zip()'s external `zip` executable is missing).
+    # zip::zip() (a pure-R/C implementation, already a dependency via officer)
+    # needs no system binary and, unlike zip::zipr(), preserves the relative
+    # paths (word/document.xml, word/settings.xml, ...) that Word requires.
+    old_wd <- getwd()
+    on.exit(setwd(old_wd), add = TRUE)
+    setwd(tmp_dir)
+    files <- list.files(".", recursive = TRUE, all.files = TRUE)
+
+    new_zip <- tempfile("docx_rezip_", fileext = ".docx")
+    ok <- tryCatch({
+      zip::zip(new_zip, files, recurse = FALSE)
+      file.exists(new_zip) && file.info(new_zip)$size > 0
+    }, error = function(e) FALSE)
+
+    setwd(old_wd)
+
+    if (isTRUE(ok)) {
+      file.copy(new_zip, docx_path, overwrite = TRUE)
+    } else {
+      warning("Could not rebuild .docx for post-processing; ",
+              "the report is unchanged.", call. = FALSE)
     }
+    unlink(new_zip)
   }, error = function(e) {
-    warning("Could not fix page numbering: ", e$message, call. = FALSE)
+    warning("Could not post-process report .docx: ", e$message, call. = FALSE)
   })
 }
 

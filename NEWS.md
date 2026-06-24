@@ -7,6 +7,29 @@
   *Nodularia spumigena*) is abbreviated (*N. spumigena*) at any later station,
   following standard biological convention. The Swedish and English summaries
   are unchanged.
+- Order report sections consistently with West Coast before Baltic Sea
+  throughout (heatmaps, relative-biovolume bars, station reports, image
+  mosaics and the front-page mosaic overview), matching the order already
+  used in the summary/abstract.
+- Fix the generated Word report sometimes disappearing (failed download) when
+  page numbering was post-processed. The report is no longer deleted before
+  being rebuilt, and the rebuild uses the `zip` package instead of an external
+  `zip` executable that may be missing on some servers.
+- Stop Microsoft Word prompting to update fields ("This document contains
+  fields that may refer to other files...") when opening the report, by
+  clearing the dirty-field flags on the page-number field. Page numbers still
+  update automatically.
+- Fix station-visit aggregation silently dropping taxa whose biovolume or
+  carbon value was missing (e.g. a failed or missing feature file). Such rows
+  were discarded entirely, including their valid cell counts, which
+  under-reported counts and skewed the per-litre concentrations and presence
+  categories. Aggregation now tolerates `NA` measures per column.
+- Fix a double-counting risk when re-joining `AphiaID` after aggregation: a
+  taxon name mapping to more than one `AphiaID` could duplicate its rows and
+  inflate biovolume in the report. The join now keeps a single `AphiaID` per
+  taxon, preferring a non-missing value.
+- Require `ggplot2` (>= 3.4.0) for the `linewidth` aesthetic used in CTD
+  figures, and `tidyr` (>= 1.1.0) for `pivot_wider()`/`pivot_longer()`.
 - Split llm.R, plots.R and report.R into manageable file sizes
 - Migrate pie chart plotting from internal functions to `SHARK4R` 1.2.0
 - Fix biomass and chlorophyll maps failing with "no rows to aggregate" when
@@ -19,9 +42,13 @@
   and forth between two classes, when the class navigation arrows were clicked
   while a whole-class relabel was still in progress. Selectize echo events can
   no longer feed back into the current class index.
-- Add an "Invalidate Selected" button to the Validate tab: a one-click shortcut
+- Add an "Unclassify Selected" button to the Validate tab: a one-click shortcut
   that moves the selected images to "unclassified" without picking a target in
   the Relabel Selected dropdown.
+- Rename the "Invalidate Selected" and "Invalidate Class" buttons to "Unclassify
+  Selected" and "Unclassify Class", and use the same wording in the validation
+  status summary and import preview, so the label matches the resulting
+  "unclassified" state.
 - Fix stations with Swedish characters (e.g. `Å17`, `SLÄGGÖ`,
   `BY39 ÖLANDS SÖDRA UDDE`) silently dropping out on non-UTF-8 locales (such as
   Windows Server), which also removed whole sampling days from downloads, pie

@@ -840,3 +840,68 @@ test_that("bloom_alert_note uses median_time when visit_date absent", {
   result <- algaware:::bloom_alert_note(ss, pg, lang = "en")
   expect_true(grepl("SPRING BLOOM", result))
 })
+
+# -- abbreviate_repeated_binomials --------------------------------------------
+
+test_that("abbreviate_repeated_binomials keeps first mention, abbreviates later", {
+  taxa <- data.frame(
+    name = c("Nodularia spumigena", "Skeletonema marinoi"),
+    italic = TRUE, stringsAsFactors = FALSE
+  )
+  text <- paste("Nodularia spumigena dominated.",
+                "Skeletonema marinoi and Nodularia spumigena co-occurred.")
+  res <- algaware:::abbreviate_repeated_binomials(text, taxa)
+  # First mention stays full, the repeat is abbreviated
+  expect_equal(
+    res$text,
+    "Nodularia spumigena dominated. Skeletonema marinoi and N. spumigena co-occurred."
+  )
+  expect_setequal(res$seen,
+                  c("Nodularia spumigena", "Skeletonema marinoi"))
+})
+
+test_that("abbreviate_repeated_binomials carries the seen set across texts", {
+  taxa <- data.frame(name = "Dinophysis acuminata", italic = TRUE,
+                     stringsAsFactors = FALSE)
+  r1 <- algaware:::abbreviate_repeated_binomials(
+    "Dinophysis acuminata was present.", taxa, character(0))
+  r2 <- algaware:::abbreviate_repeated_binomials(
+    "Dinophysis acuminata persisted.", taxa, r1$seen)
+  expect_equal(r1$text, "Dinophysis acuminata was present.")
+  expect_equal(r2$text, "D. acuminata persisted.")
+})
+
+test_that("abbreviate_repeated_binomials tracks each binomial independently", {
+  taxa <- data.frame(
+    name = c("Nodularia spumigena", "Nodularia baltica"),
+    italic = TRUE, stringsAsFactors = FALSE
+  )
+  # Genus already seen via spumigena, but baltica's first mention stays full
+  r1 <- algaware:::abbreviate_repeated_binomials(
+    "Nodularia spumigena bloomed.", taxa, character(0))
+  r2 <- algaware:::abbreviate_repeated_binomials(
+    "Nodularia baltica appeared.", taxa, r1$seen)
+  expect_equal(r2$text, "Nodularia baltica appeared.")
+})
+
+test_that("abbreviate_repeated_binomials preserves a trailing HAB asterisk", {
+  taxa <- data.frame(name = "Dinophysis acuminata", italic = TRUE,
+                     stringsAsFactors = FALSE)
+  res <- algaware:::abbreviate_repeated_binomials(
+    "Dinophysis acuminata* and Dinophysis acuminata* again.", taxa)
+  expect_equal(res$text, "Dinophysis acuminata* and D. acuminata* again.")
+})
+
+test_that("abbreviate_repeated_binomials leaves genus-only and spp. forms alone", {
+  taxa <- data.frame(name = c("Chaetoceros", "Nodularia spumigena"),
+                     italic = TRUE, stringsAsFactors = FALSE)
+  text <- "Chaetoceros spp. and Chaetoceros were common; Nodularia spumigena too."
+  res <- algaware:::abbreviate_repeated_binomials(text, taxa)
+  expect_equal(res$text, text)
+})
+
+test_that("abbreviate_repeated_binomials is a no-op without taxa_lookup", {
+  res <- algaware:::abbreviate_repeated_binomials("Some text.", NULL)
+  expect_equal(res$text, "Some text.")
+  expect_equal(res$seen, character(0))
+})

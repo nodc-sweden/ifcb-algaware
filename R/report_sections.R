@@ -126,6 +126,11 @@ add_station_sections <- function(doc, station_summary,
   visits <- visits[order(visits$COAST, visits$visit_date,
                          visits$STATION_NAME), ]
 
+  # Track species binomials already written in full so that repeats across
+  # station descriptions are abbreviated (e.g. Nodularia spumigena -> N.
+  # spumigena), following standard convention across the whole section.
+  seen_binomials <- character(0)
+
   current_region <- ""
   for (i in seq_len(nrow(visits))) {
     region <- ifelse(visits$COAST[i] == "EAST", "Baltic Sea", "West Coast")
@@ -161,7 +166,12 @@ add_station_sections <- function(doc, station_summary,
       )
     }
 
-    doc <- add_formatted_par(doc, description, taxa_lookup, style = "Normal")
+    abbreviated <- abbreviate_repeated_binomials(description, taxa_lookup,
+                                                 seen_binomials)
+    seen_binomials <- abbreviated$seen
+
+    doc <- add_formatted_par(doc, abbreviated$text, taxa_lookup,
+                             style = "Normal")
     doc <- officer::body_add_par(doc, "")
   }
   doc

@@ -59,6 +59,85 @@ ensure_hab_asterisks <- function(text, taxa_lookup) {
   text
 }
 
+#' Abbreviate repeated species binomials across a running text sequence
+#'
+#' Standard biological convention writes a species binomial in full at its
+#' first mention (\emph{Nodularia spumigena}) and abbreviates the genus
+#' thereafter (\emph{N. spumigena}). The LLM applies this within a single
+#' generated chunk, but the station descriptions are generated separately, so
+#' each one re-expands names. This function carries the convention across the
+#' whole station-reports section: given the set of binomials already written
+#' out in full earlier in the section, it abbreviates every repeat in the
+#' current text. The first mention of a binomial anywhere in the section is
+#' left in full; all later mentions, in this or a later text, are abbreviated.
+#'
+#' Only two-word italic binomials from \code{taxa_lookup} are considered;
+#' genus-only and "Genus spp." forms are left untouched. A trailing HAB
+#' asterisk (and any following text) is preserved. Genus initials are
+#' abbreviated even when two genera share the same letter, matching the
+#' standard convention and the existing within-paragraph behaviour.
+#'
+#' @param text Character string (one station description).
+#' @param taxa_lookup Data frame with a \code{name} column and optionally an
+#'   \code{italic} column.
+#' @param seen Character vector of binomials already written out in full
+#'   earlier in the section.
+#' @return A list with \code{text} (the rewritten string) and \code{seen} (the
+#'   updated vector of binomials seen in full).
+#' @keywords internal
+abbreviate_repeated_binomials <- function(text, taxa_lookup,
+                                          seen = character(0)) {
+  if (is.null(taxa_lookup) || nrow(taxa_lookup) == 0 ||
+      length(text) != 1 || is.na(text) || !nzchar(text)) {
+    return(list(text = text, seen = seen))
+  }
+
+  italic <- if ("italic" %in% names(taxa_lookup)) {
+    taxa_lookup$italic == TRUE & !is.na(taxa_lookup$italic)
+  } else {
+    rep(TRUE, nrow(taxa_lookup))
+  }
+  names_all <- taxa_lookup$name[italic & !is.na(taxa_lookup$name) &
+                                  nzchar(taxa_lookup$name)]
+  binomials <- unique(names_all[grepl(" ", names_all, fixed = TRUE)])
+  if (length(binomials) == 0) return(list(text = text, seen = seen))
+
+  # Match longer names first so e.g. "Genus species var. x" is handled before
+  # the shorter "Genus species".
+  binomials <- binomials[order(-nchar(binomials))]
+
+  for (full in binomials) {
+    parts <- strsplit(full, " ", fixed = TRUE)[[1]]
+    abbr <- paste0(substr(parts[1], 1, 1), ". ",
+                   paste(parts[-1], collapse = " "))
+
+    escaped <- gsub("([.\\\\|()\\[\\]\\{\\}^$+?*])", "\\\\\\1", full)
+    pattern <- paste0("\\b", escaped, "\\b")
+    m <- gregexpr(pattern, text, perl = TRUE)[[1]]
+    if (m[1] == -1) next
+
+    starts <- as.integer(m)
+    lens <- attr(m, "match.length")
+    already_seen <- full %in% seen
+
+    # Keep the first mention in full the first time the binomial appears in the
+    # section; abbreviate every later occurrence.
+    repl <- if (already_seen) seq_along(starts) else seq_along(starts)[-1]
+    if (!already_seen) seen <- c(seen, full)
+    if (length(repl) == 0) next
+
+    # Replace from last to first so earlier match positions stay valid.
+    for (k in rev(repl)) {
+      s <- starts[k]
+      e <- starts[k] + lens[k] - 1L
+      text <- paste0(substring(text, 1, s - 1L), abbr,
+                     substring(text, e + 1L))
+    }
+  }
+
+  list(text = text, seen = seen)
+}
+
 #' Build a formatted paragraph with italic species names and red HAB asterisks
 #'
 #' Parses plain text and returns an \code{officer::fpar} object with italic

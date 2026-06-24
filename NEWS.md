@@ -2,6 +2,11 @@
 
 ## Minor improvements and fixes
 
+- Abbreviate repeated species binomials across the whole Station reports
+  section: a species written out in full at one station (e.g.
+  *Nodularia spumigena*) is abbreviated (*N. spumigena*) at any later station,
+  following standard biological convention. The Swedish and English summaries
+  are unchanged.
 - Split llm.R, plots.R and report.R into manageable file sizes
 - Migrate pie chart plotting from internal functions to `SHARK4R` 1.2.0
 - Fix biomass and chlorophyll maps failing with "no rows to aggregate" when

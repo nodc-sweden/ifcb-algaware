@@ -282,7 +282,11 @@ load_writing_guide <- function() {
   if (!nzchar(guide_path) || !file.exists(guide_path)) {
     return("")
   }
-  paste(readLines(guide_path, warn = FALSE), collapse = "\n")
+  # Guide is UTF-8; read it as such so any non-ASCII text is preserved on
+  # non-UTF-8 locales before it is passed to the LLM prompt.
+  con <- file(guide_path, encoding = "UTF-8")
+  on.exit(close(con))
+  paste(readLines(con, warn = FALSE), collapse = "\n")
 }
 
 #' Normalize phytoplankton groups for report text

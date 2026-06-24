@@ -32,6 +32,13 @@
   Selected" and "Unclassify Class", and use the same wording in the validation
   status summary and import preview, so the label matches the resulting
   "unclassified" state.
+- Fix stations with Swedish characters (e.g. `Å17`, `SLÄGGÖ`,
+  `BY39 ÖLANDS SÖDRA UDDE`) silently dropping out on non-UTF-8 locales (such as
+  Windows Server), which also removed whole sampling days from downloads, pie
+  charts and the image-count cruise track. Every bundled/external text file is
+  now read with its declared encoding (UTF-8 or latin1) and normalised to
+  UTF-8, and station-name matching compares on UTF-8, so results no longer
+  depend on the host machine's locale.
 
 # algaware 0.1.0
 

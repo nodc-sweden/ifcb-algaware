@@ -13,6 +13,10 @@ load_chl_statistics <- function() {
                       CHLA_std = numeric(0), CHLA_n = integer(0)))
   }
 
+  # File is latin1; `fileEncoding` re-encodes it through the connection to the
+  # native encoding (the only form that parses on a UTF-8 host), then
+  # as_utf8_columns() normalises station names to UTF-8 so they match the
+  # (UTF-8) algaware stations on any locale.
   raw <- utils::read.delim(path, fileEncoding = "latin1",
                            stringsAsFactors = FALSE, check.names = FALSE)
 
@@ -26,7 +30,7 @@ load_chl_statistics <- function() {
     stringsAsFactors = FALSE
   )
   # "nan" strings become NA via as.numeric, which is correct
-  out
+  as_utf8_columns(out)
 }
 
 #' Load station name synonym mapper
@@ -41,8 +45,11 @@ load_station_mapper <- function() {
     return(data.frame(synonym = character(0), statn = character(0),
                       stringsAsFactors = FALSE))
   }
-  utils::read.delim(path, fileEncoding = "latin1", stringsAsFactors = FALSE,
-                    check.names = FALSE)
+  # station_mapper.txt is latin1; re-encode via fileEncoding, then normalise to
+  # UTF-8 so the synonym/canonical names match algaware stations on any locale.
+  mapper <- utils::read.delim(path, fileEncoding = "latin1",
+                              stringsAsFactors = FALSE, check.names = FALSE)
+  as_utf8_columns(mapper)
 }
 
 #' Load standard monitoring stations with regional assignments
@@ -66,7 +73,8 @@ load_standard_stations <- function() {
     r <- s[[nm]]
     if (is.character(r) && length(r) == 1L) r else NA_character_
   }, character(1L))
-  data.frame(station_name = station_list, region = unname(regions),
+  data.frame(station_name = enc2utf8(station_list),
+             region = enc2utf8(unname(regions)),
              stringsAsFactors = FALSE)
 }
 
@@ -164,7 +172,8 @@ parse_single_cnv <- function(file_path, algaware_stations) {
   station_line <- grep("^\\*\\*\\s*Station:", header_lines, value = TRUE)
   if (length(station_line) == 0) return(NULL)
 
-  raw_station <- trimws(sub("^\\*\\*\\s*Station:\\s*", "", station_line[1]))
+  raw_station <- enc2utf8(trimws(sub("^\\*\\*\\s*Station:\\s*", "",
+                                     station_line[1])))
   station_short <- trimws(strsplit(raw_station, "\\s+")[[1]][1])
 
   match_idx <- match(tolower(station_short),
@@ -281,7 +290,8 @@ parse_single_cnv_all <- function(file_path, station_mapper, standard_stations) {
   station_line <- grep("^\\*\\*\\s*Station:", header_lines, value = TRUE)
   if (length(station_line) == 0) return(NULL)
 
-  raw_station <- trimws(sub("^\\*\\*\\s*Station:\\s*", "", station_line[1]))
+  raw_station <- enc2utf8(trimws(sub("^\\*\\*\\s*Station:\\s*", "",
+                                     station_line[1])))
 
   canonical <- normalize_station_name(raw_station, station_mapper,
                                       standard_stations)
@@ -398,6 +408,7 @@ read_lims_data <- function(lims_path, algaware_stations) {
     }
   )
   if (is.null(raw) || nrow(raw) == 0) return(NULL)
+  raw <- as_utf8_columns(raw)
 
   if ("Q_CPHL" %in% names(raw)) {
     raw <- raw[is.na(raw$Q_CPHL) | raw$Q_CPHL != "B", ]
@@ -506,6 +517,7 @@ read_lims_data_all <- function(lims_path, station_mapper, standard_stations) {
     }
   )
   if (is.null(raw) || nrow(raw) == 0) return(NULL)
+  raw <- as_utf8_columns(raw)
 
   if ("Q_CPHL" %in% names(raw)) {
     raw <- raw[is.na(raw$Q_CPHL) | raw$Q_CPHL != "B", ]

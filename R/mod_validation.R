@@ -517,7 +517,9 @@ mod_validation_server <- function(id, rv, config) {
 
       path <- input$import_corrections_file$datapath
       df <- tryCatch(
-        utils::read.csv(path, stringsAsFactors = FALSE),
+        as_utf8_columns(
+          utils::read.csv(path, stringsAsFactors = FALSE, encoding = "UTF-8")
+        ),
         error = function(e) {
           shiny::showNotification(
             paste0("Could not read file: ", e$message),

@@ -4,6 +4,15 @@
 
 ### Minor improvements and fixes
 
+- Fix the generated Word report sometimes disappearing (failed download)
+  when page numbering was post-processed. The report is no longer
+  deleted before being rebuilt, and the rebuild uses the `zip` package
+  instead of an external `zip` executable that may be missing on some
+  servers.
+- Stop Microsoft Word prompting to update fields (“This document
+  contains fields that may refer to other files…”) when opening the
+  report, by clearing the dirty-field flags on the page-number field.
+  Page numbers still update automatically.
 - Fix station-visit aggregation silently dropping taxa whose biovolume
   or carbon value was missing (e.g. a failed or missing feature file).
   Such rows were discarded entirely, including their valid cell counts,

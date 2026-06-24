@@ -453,12 +453,36 @@ fix_page_numbering <- function(docx_path) {
       writeLines(xml_text, out_con)
       close(out_con)
 
+      # Re-zip into a temporary archive first and only overwrite the report
+      # once it has been rebuilt successfully. The previous approach removed
+      # the original .docx before re-zipping, which destroyed the report when
+      # the re-zip failed (e.g. on servers where utils::zip()'s external `zip`
+      # executable is missing). zip::zipr() is a pure-R/C implementation
+      # (already a dependency via officer) that needs no system binary.
       old_wd <- getwd()
       on.exit(setwd(old_wd), add = TRUE)
       setwd(tmp_dir)
       files <- list.files(".", recursive = TRUE, all.files = TRUE)
-      file.remove(docx_path)
-      utils::zip(docx_path, files, flags = "-r9Xq")
+
+      # zip::zip() (not zipr()) preserves the relative paths as given, so
+      # entries stay at word/document.xml, word/settings.xml, etc. zipr()
+      # flattens individual file paths to their basenames, which produces a
+      # .docx that Word/officer cannot reopen (missing word/settings.xml).
+      new_zip <- tempfile("docx_rezip_", fileext = ".docx")
+      ok <- tryCatch({
+        zip::zip(new_zip, files, recurse = FALSE)
+        file.exists(new_zip) && file.info(new_zip)$size > 0
+      }, error = function(e) FALSE)
+
+      setwd(old_wd)
+
+      if (isTRUE(ok)) {
+        file.copy(new_zip, docx_path, overwrite = TRUE)
+      } else {
+        warning("Could not rebuild .docx to fix page numbering; ",
+                "the report is unchanged.", call. = FALSE)
+      }
+      unlink(new_zip)
     }
   }, error = function(e) {
     warning("Could not fix page numbering: ", e$message, call. = FALSE)

@@ -60,8 +60,8 @@ re-included at any time using Include Selected or Include All.
 
 ## 4. Exporting the corrections log
 
-All manual relabellings and invalidations made during the session are
-held in memory. Export them before closing the app:
+All manual relabellings and unclassifications made during the session
+are held in memory. Export them before closing the app:
 
 1.  In the **Report** panel, click Download Corrections.
 2.  Choose a save location. The file is saved as a `.csv`.
@@ -69,7 +69,7 @@ held in memory. Export them before closing the app:
 The corrections log serves two purposes. First, it is an archive record
 of all changes made to the classifier output for a given cruise. Second,
 it can be re-imported in a future session using Import corrections in
-the **Validate** panel — all relabellings and invalidations will be
+the **Validate** panel — all relabellings and unclassifications will be
 replayed automatically on the freshly loaded data, so you can continue
 where you left off without repeating the validation work.
 

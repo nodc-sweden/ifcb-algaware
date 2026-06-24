@@ -148,9 +148,9 @@ Validate panel in the sidebar
 |----|----|
 | Store Annotations | Save selected images to the SQLite database (permanent, for classifier training) |
 | Relabel Selected | Move selected images to a different class (session-only) |
-| Invalidate Selected | Move the selected images to unclassified in one click — a fixed-target shortcut for Relabel Selected (session-only) |
+| Unclassify Selected | Move the selected images to unclassified in one click — a fixed-target shortcut for Relabel Selected (session-only) |
 | Relabel Class | Move all images of the current class in the current region to a different class (session-only) |
-| Invalidate Class | Move all images of the current class to unclassified, so they no longer contribute to that taxon’s biovolume or appear in plots and reports under that name (session-only) |
+| Unclassify Class | Move all images of the current class to unclassified, so they no longer contribute to that taxon’s biovolume or appear in plots and reports under that name (session-only) |
 | Add Custom Class | Add a taxon not in the database or taxa lookup (session-only) |
 | Import corrections | Upload a corrections CSV from a previous session to replay earlier work |
 
@@ -164,13 +164,13 @@ move a handful of individual images, or Relabel Class when the entire
 class is systematically wrong (e.g. all images are actually a different
 species).
 
-**Invalidating** a class with Invalidate Class is appropriate when the
+**Unclassifying** a class with Unclassify Class is appropriate when the
 class contains so many errors that it should not appear under that taxon
 name in biovolume summaries, plots, or the report. The images are moved
 to the unclassified pool — they remain visible in the gallery and still
 contribute to the unclassified fraction, but no longer count as that
-taxon. To invalidate only a subset rather than the whole class, select
-the images and use Invalidate Selected, which moves just those images to
+taxon. To unclassify only a subset rather than the whole class, select
+the images and use Unclassify Selected, which moves just those images to
 unclassified in one click (the same result as Relabel Selected with the
 target set to unclassified).
 
@@ -182,7 +182,7 @@ Saving these images helps improve future classifier versions. For
 routine corrections use the relabel buttons instead — those are faster
 and do not require a configured database folder.
 
-> **Session-only vs. permanent:** Relabelling and invalidation only
+> **Session-only vs. permanent:** Relabelling and unclassifying only
 > affect the current session. To carry corrections forward to the next
 > session, export the corrections log from the Report panel and
 > re-import it using Import corrections.
@@ -367,11 +367,12 @@ When done, click Download Report to save the `.docx` file.
 
 ### Download the corrections log
 
-Click Download Corrections to export all relabelling and invalidation
-actions from this session as a CSV file. This is available at any time
-once you have made corrections — you do not need to generate the report
-first. Save this alongside the report for archiving. You can replay it
-next session using Import corrections in the Validate panel.
+Click Download Corrections to export all relabelling and
+unclassification actions from this session as a CSV file. This is
+available at any time once you have made corrections — you do not need
+to generate the report first. Save this alongside the report for
+archiving. You can replay it next session using Import corrections in
+the Validate panel.
 
 ------------------------------------------------------------------------
 

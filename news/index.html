@@ -77,12 +77,16 @@ footer {
 <h2 class="pkg-version" data-toc-text="development version" id="algaware-development-version">algaware (development version)<a class="anchor" aria-label="anchor" href="#algaware-development-version"></a></h2>
 <div class="section level3">
 <h3 id="minor-improvements-and-fixes-development-version">Minor improvements and fixes<a class="anchor" aria-label="anchor" href="#minor-improvements-and-fixes-development-version"></a></h3>
-<ul><li>Split llm.R, plots.R and report.R into manageable file sizes</li>
+<ul><li>Fix station-visit aggregation silently dropping taxa whose biovolume or carbon value was missing (e.g. a failed or missing feature file). Such rows were discarded entirely, including their valid cell counts, which under-reported counts and skewed the per-litre concentrations and presence categories. Aggregation now tolerates <code>NA</code> measures per column.</li>
+<li>Fix a double-counting risk when re-joining <code>AphiaID</code> after aggregation: a taxon name mapping to more than one <code>AphiaID</code> could duplicate its rows and inflate biovolume in the report. The join now keeps a single <code>AphiaID</code> per taxon, preferring a non-missing value.</li>
+<li>Require <code>ggplot2</code> (&gt;= 3.4.0) for the <code>linewidth</code> aesthetic used in CTD figures, and <code>tidyr</code> (&gt;= 1.1.0) for <code>pivot_wider()</code>/<code>pivot_longer()</code>.</li>
+<li>Split llm.R, plots.R and report.R into manageable file sizes</li>
 <li>Migrate pie chart plotting from internal functions to <code>SHARK4R</code> 1.2.0</li>
 <li>Fix biomass and chlorophyll maps failing with “no rows to aggregate” when FerryBox provides no valid chlorophyll readings. The chlorophyll column is now omitted when entirely missing, and map aggregation tolerates all-<code>NA</code> chlorophyll.</li>
 <li>Allow downloading the corrections log at any time after making corrections, without first generating the Word report.</li>
 <li>Fix the validation gallery getting stuck in an infinite loop, switching back and forth between two classes, when the class navigation arrows were clicked while a whole-class relabel was still in progress. Selectize echo events can no longer feed back into the current class index.</li>
-<li>Add an “Invalidate Selected” button to the Validate tab: a one-click shortcut that moves the selected images to “unclassified” without picking a target in the Relabel Selected dropdown.</li>
+<li>Add an “Unclassify Selected” button to the Validate tab: a one-click shortcut that moves the selected images to “unclassified” without picking a target in the Relabel Selected dropdown.</li>
+<li>Rename the “Invalidate Selected” and “Invalidate Class” buttons to “Unclassify Selected” and “Unclassify Class”, and use the same wording in the validation status summary and import preview, so the label matches the resulting “unclassified” state.</li>
 <li>Fix stations with Swedish characters (e.g. <code>Å17</code>, <code>SLÄGGÖ</code>, <code>BY39 ÖLANDS SÖDRA UDDE</code>) silently dropping out on non-UTF-8 locales (such as Windows Server), which also removed whole sampling days from downloads, pie charts and the image-count cruise track. Every bundled/external text file is now read with its declared encoding (UTF-8 or latin1) and normalised to UTF-8, and station-name matching compares on UTF-8, so results no longer depend on the host machine’s locale.</li>
 </ul></div>
 </div>

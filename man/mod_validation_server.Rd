@@ -23,11 +23,11 @@ Provides five validation actions:
 database (persistent, shared with ClassiPyR)
 \item \strong{Relabel Selected}: move selected images to a different class
 (session-only, logged in rv$corrections)
-\item \strong{Invalidate Selected}: move selected images to "unclassified"
+\item \strong{Unclassify Selected}: move selected images to "unclassified"
 in one click (session-only); a fixed-target shortcut for Relabel Selected
 \item \strong{Relabel Class}: move ALL images of the current class in
 the current region to a different class (session-only)
-\item \strong{Invalidate Class}: mark an entire class as non-biological /
+\item \strong{Unclassify Class}: mark an entire class as non-biological /
 unclassified (session-only)
 }
 }

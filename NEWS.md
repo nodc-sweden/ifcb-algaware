@@ -2,6 +2,10 @@
 
 ## Minor improvements and fixes
 
+- Order report sections consistently with West Coast before Baltic Sea
+  throughout (heatmaps, relative-biovolume bars, station reports, image
+  mosaics and the front-page mosaic overview), matching the order already
+  used in the summary/abstract.
 - Split llm.R, plots.R and report.R into manageable file sizes
 - Migrate pie chart plotting from internal functions to `SHARK4R` 1.2.0
 - Fix biomass and chlorophyll maps failing with "no rows to aggregate" when

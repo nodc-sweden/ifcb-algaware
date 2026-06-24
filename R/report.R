@@ -402,12 +402,14 @@ generate_report <- function(output_path, station_summary,
 
   sample_counts <- build_sample_counts(station_summary)
 
-  result <- add_heatmap_section(doc, baltic_wide, taxa_lookup, "Baltic Sea",
+  # Regions are ordered West Coast first, then Baltic Sea, to match the order
+  # used in the summary/abstract and across all other report sections.
+  result <- add_heatmap_section(doc, westcoast_wide, taxa_lookup, "West Coast",
                                 fig_num, cleanup, sample_counts)
   doc <- result$doc
   fig_num <- result$fig_num
 
-  result <- add_heatmap_section(doc, westcoast_wide, taxa_lookup, "West Coast",
+  result <- add_heatmap_section(doc, baltic_wide, taxa_lookup, "Baltic Sea",
                                 fig_num, cleanup, sample_counts)
   doc <- result$doc
   fig_num <- result$fig_num
@@ -419,15 +421,15 @@ generate_report <- function(output_path, station_summary,
     doc <- officer::body_add_break(doc)
     doc <- officer::body_add_par(doc, "Relative biovolume", style = "heading 2")
 
-    if (has_baltic_bar) {
-      result <- add_stacked_bar_section(doc, baltic_wide, taxa_lookup,
-                                        "Baltic Sea", fig_num, cleanup)
-      doc <- result$doc
-      fig_num <- result$fig_num
-    }
     if (has_westcoast_bar) {
       result <- add_stacked_bar_section(doc, westcoast_wide, taxa_lookup,
                                         "West Coast", fig_num, cleanup)
+      doc <- result$doc
+      fig_num <- result$fig_num
+    }
+    if (has_baltic_bar) {
+      result <- add_stacked_bar_section(doc, baltic_wide, taxa_lookup,
+                                        "Baltic Sea", fig_num, cleanup)
       doc <- result$doc
       fig_num <- result$fig_num
     }
@@ -457,10 +459,10 @@ generate_report <- function(output_path, station_summary,
   }
 
   hab_species <- get_hab_species(taxa_lookup)
-  doc <- add_mosaic_section(doc, baltic_mosaics, hab_species, "Baltic Sea",
-                            cleanup, taxa_lookup)
   doc <- add_mosaic_section(doc, westcoast_mosaics, hab_species,
                             "West Coast", cleanup, taxa_lookup)
+  doc <- add_mosaic_section(doc, baltic_mosaics, hab_species, "Baltic Sea",
+                            cleanup, taxa_lookup)
 
   page_footer <- officer::block_list(
     officer::fpar(

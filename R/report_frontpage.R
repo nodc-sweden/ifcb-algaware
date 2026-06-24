@@ -345,8 +345,11 @@ add_mosaic_overview <- function(doc, baltic_mosaic, westcoast_mosaic, cleanup,
     doc
   }
 
-  doc <- add_one_mosaic(doc, baltic_mosaic, "Baltic Sea images", baltic_taxa)
-  doc <- add_one_mosaic(doc, westcoast_mosaic, "West Coast images", westcoast_taxa,
+  # West Coast first, then Baltic Sea, to match the summary and the rest of
+  # the report. add_spacing separates the second mosaic from the first.
+  doc <- add_one_mosaic(doc, westcoast_mosaic, "West Coast images",
+                        westcoast_taxa)
+  doc <- add_one_mosaic(doc, baltic_mosaic, "Baltic Sea images", baltic_taxa,
                         add_spacing = TRUE)
   doc
 }

@@ -123,7 +123,11 @@ add_station_sections <- function(doc, station_summary,
 
   visits <- unique(station_summary[, c("STATION_NAME", "STATION_NAME_SHORT",
                                        "COAST", "visit_date", "visit_id")])
-  visits <- visits[order(visits$COAST, visits$visit_date,
+  # Order West Coast ("WEST") before Baltic Sea ("EAST") to match the summary
+  # and the other report sections; default alphabetical order would put EAST
+  # first.
+  coast_order <- factor(visits$COAST, levels = c("WEST", "EAST"))
+  visits <- visits[order(coast_order, visits$visit_date,
                          visits$STATION_NAME), ]
 
   current_region <- ""

@@ -2,6 +2,10 @@
 
 ## Minor improvements and fixes
 
+- Order report sections consistently with West Coast before Baltic Sea
+  throughout (heatmaps, relative-biovolume bars, station reports, image
+  mosaics and the front-page mosaic overview), matching the order already
+  used in the summary/abstract.
 - Fix the generated Word report sometimes disappearing (failed download) when
   page numbering was post-processed. The report is no longer deleted before
   being rebuilt, and the rebuild uses the `zip` package instead of an external

@@ -905,3 +905,24 @@ test_that("abbreviate_repeated_binomials is a no-op without taxa_lookup", {
   expect_equal(res$text, "Some text.")
   expect_equal(res$seen, character(0))
 })
+
+test_that("abbreviate_repeated_binomials spans paragraphs within a summary", {
+  taxa <- data.frame(
+    name = c("Dinophysis acuminata", "Aphanizomenon flos-aquae"),
+    italic = TRUE, stringsAsFactors = FALSE
+  )
+  # West Coast paragraph, Baltic paragraph, then a HAB sentence
+  summary_text <- paste(
+    "On the West Coast, Dinophysis acuminata was common.",
+    "In the Baltic, Aphanizomenon flos-aquae dominated and Dinophysis acuminata occurred.",
+    "Potentially harmful taxa include Dinophysis acuminata and Aphanizomenon flos-aquae.",
+    sep = "\n\n"
+  )
+  res <- algaware:::abbreviate_repeated_binomials(summary_text, taxa)
+  expect_equal(res$text, paste(
+    "On the West Coast, Dinophysis acuminata was common.",
+    "In the Baltic, Aphanizomenon flos-aquae dominated and D. acuminata occurred.",
+    "Potentially harmful taxa include D. acuminata and A. flos-aquae.",
+    sep = "\n\n"
+  ))
+})

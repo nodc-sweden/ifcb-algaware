@@ -260,10 +260,17 @@ generate_report <- function(output_path, station_summary,
       }
     )
   }
+  # Abbreviate repeated binomials within each summary independently, so a
+  # species written out in full in the West Coast part (or the HAB sentence)
+  # is abbreviated where it recurs in the Baltic part of the same summary.
+  # The English and Swedish summaries are treated separately; the Swedish
+  # text is translated from the full-name English before this step.
+  swedish_text <- abbreviate_repeated_binomials(swedish_text, taxa_lookup)$text
   doc <- add_formatted_par(doc, swedish_text, taxa_lookup, style = "Normal")
   doc <- officer::body_add_par(doc, "")
 
   doc <- officer::body_add_par(doc, "Summary", style = "heading 2")
+  english_text <- abbreviate_repeated_binomials(english_text, taxa_lookup)$text
   doc <- add_formatted_par(doc, english_text, taxa_lookup, style = "Normal")
 
   summary_rows <- data.frame(

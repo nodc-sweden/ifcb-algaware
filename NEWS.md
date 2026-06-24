@@ -5,8 +5,11 @@
 - Abbreviate repeated species binomials across the whole Station reports
   section: a species written out in full at one station (e.g.
   *Nodularia spumigena*) is abbreviated (*N. spumigena*) at any later station,
-  following standard biological convention. The Swedish and English summaries
-  are unchanged.
+  following standard biological convention.
+- Also abbreviate repeated binomials within each summary (English and Swedish
+  treated separately): a species spelled out in full in the West Coast part or
+  the HAB sentence is abbreviated where it recurs in the Baltic part of the
+  same summary.
 - Order report sections consistently with West Coast before Baltic Sea
   throughout (heatmaps, relative-biovolume bars, station reports, image
   mosaics and the front-page mosaic overview), matching the order already

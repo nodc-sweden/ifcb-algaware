@@ -432,7 +432,11 @@ fix_page_numbering <- function(docx_path) {
     utils::unzip(docx_path, exdir = tmp_dir)
 
     doc_xml_path <- file.path(tmp_dir, "word", "document.xml")
-    xml <- readLines(doc_xml_path, warn = FALSE)
+    # OOXML is UTF-8; read and write it as UTF-8 explicitly so station names
+    # with Å/Ä/Ö survive the round-trip on non-UTF-8 locales.
+    in_con <- file(doc_xml_path, encoding = "UTF-8")
+    xml <- readLines(in_con, warn = FALSE)
+    close(in_con)
     xml_text <- paste(xml, collapse = "\n")
 
     sect_positions <- gregexpr("<w:sectPr", xml_text)[[1]]
@@ -445,7 +449,9 @@ fix_page_numbering <- function(docx_path) {
         '<w:pgNumType w:start="1"/>',
         substring(xml_text, insert_at + 1)
       )
-      writeLines(xml_text, doc_xml_path)
+      out_con <- file(doc_xml_path, encoding = "UTF-8")
+      writeLines(xml_text, out_con)
+      close(out_con)
 
       old_wd <- getwd()
       on.exit(setwd(old_wd), add = TRUE)

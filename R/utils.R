@@ -44,6 +44,23 @@ default_settings <- function() {
   )
 }
 
+#' Normalise character columns of a data frame to UTF-8
+#'
+#' After reading a text file with an explicit \code{encoding}, this re-encodes
+#' every character column to UTF-8 so downstream joins, matches and report
+#' output behave identically regardless of the R session's native locale
+#' (e.g. a non-UTF-8 Windows Server, where Å/Ä/Ö would otherwise be mangled
+#' and silently drop rows). Strings already in UTF-8 are left unchanged.
+#'
+#' @param df A data.frame.
+#' @return The data.frame with all character columns marked/encoded as UTF-8.
+#' @keywords internal
+as_utf8_columns <- function(df) {
+  char_cols <- vapply(df, is.character, logical(1))
+  df[char_cols] <- lapply(df[char_cols], enc2utf8)
+  df
+}
+
 #' Load SHARK station bundle (internal wrapper)
 #'
 #' Wraps the internal \code{SHARK4R:::load_station_bundle()} call to

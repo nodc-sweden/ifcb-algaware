@@ -337,7 +337,8 @@ mod_report_server <- function(id, rv, config, phyto_groups_reactive = NULL) {
             corrections_export <- enrich_corrections_for_export(
               rv$corrections, rv$custom_classes
             )
-            utils::write.csv(corrections_export, csv_file, row.names = FALSE)
+            utils::write.csv(corrections_export, csv_file, row.names = FALSE,
+                             fileEncoding = "UTF-8")
             corrections_path(csv_file)
           } else {
             corrections_path(NULL)
@@ -379,7 +380,8 @@ mod_report_server <- function(id, rv, config, phyto_groups_reactive = NULL) {
         corrections_export <- enrich_corrections_for_export(
           rv$corrections, rv$custom_classes
         )
-        utils::write.csv(corrections_export, file, row.names = FALSE)
+        utils::write.csv(corrections_export, file, row.names = FALSE,
+                         fileEncoding = "UTF-8")
       }
     )
 

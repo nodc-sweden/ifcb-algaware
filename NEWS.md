@@ -2,6 +2,9 @@
 
 ## Minor improvements and fixes
 
+- Name the downloaded Word report `Algaware_<Report No>.docx` using the
+  "Report No" entered in the Report tab, falling back to `Algaware_X.docx`
+  when no number is entered.
 - Abbreviate repeated species binomials across the whole Station reports
   section: a species written out in full at one station (e.g.
   *Nodularia spumigena*) is abbreviated (*N. spumigena*) at any later station,

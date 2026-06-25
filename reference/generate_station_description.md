@@ -11,7 +11,8 @@ generate_station_description(
   all_stations_summary = NULL,
   phyto_groups = NULL,
   provider = NULL,
-  unclassified_pct = NULL
+  unclassified_pct = NULL,
+  chl_measure = "fluorescence"
 )
 ```
 
@@ -41,6 +42,12 @@ generate_station_description(
 - unclassified_pct:
 
   Optional per-class unclassified percentage info used for context.
+
+- chl_measure:
+
+  How the active chlorophyll source is measured, `"fluorescence"`
+  (FerryBox/CTD) or `"concentration"` (LIMS bottle/hose filter samples).
+  Adjusts the chlorophyll terminology used.
 
 ## Value
 

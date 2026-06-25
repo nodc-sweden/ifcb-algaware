@@ -11,7 +11,8 @@ generate_swedish_summary(
   cruise_info = "",
   phyto_groups = NULL,
   provider = NULL,
-  unclassified_fractions = NULL
+  unclassified_fractions = NULL,
+  chl_measure = "fluorescence"
 )
 ```
 
@@ -42,6 +43,12 @@ generate_swedish_summary(
 
   Optional per-sample fractions of unclassified detections supplied to
   the prompt.
+
+- chl_measure:
+
+  How the active chlorophyll source is measured, `"fluorescence"`
+  (FerryBox/CTD) or `"concentration"` (LIMS bottle/hose filter samples).
+  Adjusts the chlorophyll terminology used.
 
 ## Value
 

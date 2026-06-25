@@ -35,7 +35,7 @@ footer {
 
     <a class="navbar-brand me-2" href="../index.html">algaware</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -84,7 +84,8 @@ footer {
 <span>  <span class="va">station_summary</span>,</span>
 <span>  taxa_lookup <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  unclassified_fractions <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  phyto_groups <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  phyto_groups <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  chl_measure <span class="op">=</span> <span class="st">"fluorescence"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -109,6 +110,12 @@ percentages used to annotate station lines.</p></dd>
 <dt id="arg-phyto-groups">phyto_groups<a class="anchor" aria-label="anchor" href="#arg-phyto-groups"></a></dt>
 <dd><p>Optional phytoplankton group table used to provide
 explicit group assignments in the prompt text.</p></dd>
+
+
+<dt id="arg-chl-measure">chl_measure<a class="anchor" aria-label="anchor" href="#arg-chl-measure"></a></dt>
+<dd><p>How the chlorophyll value is measured,
+<code>"fluorescence"</code> (FerryBox/CTD) or <code>"concentration"</code> (LIMS
+bottle/hose filter samples). Controls how the value is labelled.</p></dd>
 
 </dl></div>
     <div class="section level2">

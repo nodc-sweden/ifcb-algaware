@@ -9,7 +9,8 @@ format_station_data_for_prompt(
   station_data,
   taxa_lookup = NULL,
   unclassified_pct = NULL,
-  phyto_groups = NULL
+  phyto_groups = NULL,
+  chl_measure = "fluorescence"
 )
 ```
 
@@ -32,6 +33,12 @@ format_station_data_for_prompt(
 
   Optional phytoplankton group table used to provide explicit group
   assignments in the prompt text.
+
+- chl_measure:
+
+  How the chlorophyll value is measured, `"fluorescence"` (FerryBox/CTD)
+  or `"concentration"` (LIMS bottle/hose filter samples). Controls how
+  the value is labelled.
 
 ## Value
 

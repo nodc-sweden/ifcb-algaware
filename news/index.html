@@ -35,7 +35,7 @@ footer {
 
     <a class="navbar-brand me-2" href="../index.html">algaware</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -74,10 +74,12 @@ footer {
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="development version" id="algaware-development-version">algaware (development version)<a class="anchor" aria-label="anchor" href="#algaware-development-version"></a></h2>
+<h2 class="pkg-version" data-toc-text="0.2.0" id="algaware-020">algaware 0.2.0<a class="anchor" aria-label="anchor" href="#algaware-020"></a></h2>
 <div class="section level3">
-<h3 id="minor-improvements-and-fixes-development-version">Minor improvements and fixes<a class="anchor" aria-label="anchor" href="#minor-improvements-and-fixes-development-version"></a></h3>
-<ul><li>Abbreviate repeated species binomials across the whole Station reports section: a species written out in full at one station (e.g. <em>Nodularia spumigena</em>) is abbreviated (<em>N. spumigena</em>) at any later station, following standard biological convention.</li>
+<h3 id="minor-improvements-and-fixes-0-2-0">Minor improvements and fixes<a class="anchor" aria-label="anchor" href="#minor-improvements-and-fixes-0-2-0"></a></h3>
+<ul><li>Describe chlorophyll in the generated report text according to the selected chlorophyll source: FerryBox and CTD values are “chlorophyll fluorescence”, while LIMS bottle and hose (0-10 m integrated) values are “chlorophyll-a concentration” (measured on a filter). Previously the text always referred to fluorescence regardless of the source.</li>
+<li>Name the downloaded Word report <code>Algaware_&lt;Report No&gt;.docx</code> using the “Report No” entered in the Report tab, falling back to <code>Algaware_X.docx</code> when no number is entered.</li>
+<li>Abbreviate repeated species binomials across the whole Station reports section: a species written out in full at one station (e.g. <em>Nodularia spumigena</em>) is abbreviated (<em>N. spumigena</em>) at any later station, following standard biological convention.</li>
 <li>Also abbreviate repeated binomials within each summary (English and Swedish treated separately): a species spelled out in full in the West Coast part or the HAB sentence is abbreviated where it recurs in the Baltic part of the same summary.</li>
 <li>Order report sections consistently with West Coast before Baltic Sea throughout (heatmaps, relative-biovolume bars, station reports, image mosaics and the front-page mosaic overview), matching the order already used in the summary/abstract.</li>
 <li>Fix the generated Word report sometimes disappearing (failed download) when page numbering was post-processed. The report is no longer deleted before being rebuilt, and the rebuild uses the <code>zip</code> package instead of an external <code>zip</code> executable that may be missing on some servers.</li>

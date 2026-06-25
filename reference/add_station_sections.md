@@ -13,6 +13,7 @@ add_station_sections(
   phyto_groups = NULL,
   llm_provider = NULL,
   on_llm_progress = NULL,
-  unclassified_fractions = NULL
+  unclassified_fractions = NULL,
+  chl_measure = "fluorescence"
 )
 ```

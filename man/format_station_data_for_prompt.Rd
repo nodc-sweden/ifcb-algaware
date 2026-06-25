@@ -8,7 +8,8 @@ format_station_data_for_prompt(
   station_data,
   taxa_lookup = NULL,
   unclassified_pct = NULL,
-  phyto_groups = NULL
+  phyto_groups = NULL,
+  chl_measure = "fluorescence"
 )
 }
 \arguments{
@@ -22,6 +23,10 @@ detections at this station, used for context notes.}
 
 \item{phyto_groups}{Optional phytoplankton group table used to provide
 explicit group assignments in the prompt text.}
+
+\item{chl_measure}{How the chlorophyll value is measured,
+\code{"fluorescence"} (FerryBox/CTD) or \code{"concentration"} (LIMS
+bottle/hose filter samples). Controls how the value is labelled.}
 }
 \value{
 Character string describing the station data.

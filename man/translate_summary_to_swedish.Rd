@@ -4,13 +4,21 @@
 \alias{translate_summary_to_swedish}
 \title{Translate an English summary to Swedish}
 \usage{
-translate_summary_to_swedish(english_text, provider = NULL)
+translate_summary_to_swedish(
+  english_text,
+  provider = NULL,
+  chl_measure = "fluorescence"
+)
 }
 \arguments{
 \item{english_text}{Character string with the English summary to translate.}
 
 \item{provider}{LLM provider (\code{"openai"} or \code{"gemini"}).
 NULL auto-detects.}
+
+\item{chl_measure}{How the active chlorophyll source is measured,
+\code{"fluorescence"} (FerryBox/CTD) or \code{"concentration"} (LIMS
+bottle/hose filter samples). Adjusts the chlorophyll terminology used.}
 }
 \value{
 Character string with Swedish translation.

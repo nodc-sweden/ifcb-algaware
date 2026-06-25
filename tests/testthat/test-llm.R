@@ -347,6 +347,43 @@ test_that("format_station_data_for_prompt includes chl when present", {
   expect_true(grepl("3.14", result))
 })
 
+test_that("chl_measure_from_source maps sources to measurement type", {
+  expect_equal(algaware:::chl_measure_from_source("ferrybox"), "fluorescence")
+  expect_equal(algaware:::chl_measure_from_source("ctd"), "fluorescence")
+  expect_equal(algaware:::chl_measure_from_source("lims"), "concentration")
+  expect_equal(algaware:::chl_measure_from_source("lims_hose"), "concentration")
+  # Unknown or missing source falls back to fluorescence
+  expect_equal(algaware:::chl_measure_from_source("other"), "fluorescence")
+  expect_equal(algaware:::chl_measure_from_source(NULL), "fluorescence")
+})
+
+test_that("format_station_data_for_prompt labels chl by measurement type", {
+  station_data <- data.frame(
+    STATION_NAME_SHORT = "BY5",
+    STATION_NAME = "BY5 Bornholmsdjupet",
+    COAST = "EAST",
+    visit_date = as.Date("2024-03-15"),
+    name = "Taxon A",
+    biovolume_mm3_per_liter = 0.5,
+    carbon_ug_per_liter = 10,
+    counts_per_liter = 1000,
+    chl_mean = 3.14,
+    stringsAsFactors = FALSE
+  )
+
+  fluoresc <- algaware:::format_station_data_for_prompt(
+    station_data, chl_measure = "fluorescence"
+  )
+  expect_true(grepl("fluorescence", fluoresc))
+  expect_false(grepl("concentration", fluoresc))
+
+  conc <- algaware:::format_station_data_for_prompt(
+    station_data, chl_measure = "concentration"
+  )
+  expect_true(grepl("concentration", conc))
+  expect_false(grepl("fluorescence", conc))
+})
+
 test_that("format_station_data_for_prompt includes unclassified note when >80%", {
   station_data <- data.frame(
     STATION_NAME_SHORT = "BY5",

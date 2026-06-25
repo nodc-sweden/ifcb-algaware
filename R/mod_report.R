@@ -359,7 +359,9 @@ mod_report_server <- function(id, rv, config, phyto_groups_reactive = NULL) {
 
     output$download_report <- shiny::downloadHandler(
       filename = function() {
-        paste0("algaware_report_", format(Sys.Date(), "%Y%m%d"), ".docx")
+        report_no <- trimws(input$report_number %||% "")
+        suffix <- if (nzchar(report_no)) report_no else "X"
+        paste0("Algaware_", suffix, ".docx")
       },
       content = function(file) {
         rp <- report_path()

@@ -10,7 +10,8 @@ generate_station_description(
   all_stations_summary = NULL,
   phyto_groups = NULL,
   provider = NULL,
-  unclassified_pct = NULL
+  unclassified_pct = NULL,
+  chl_measure = "fluorescence"
 )
 }
 \arguments{
@@ -27,6 +28,10 @@ explicit group assignments in the prompt text.}
 NULL auto-detects.}
 
 \item{unclassified_pct}{Optional per-class unclassified percentage info used for context.}
+
+\item{chl_measure}{How the active chlorophyll source is measured,
+\code{"fluorescence"} (FerryBox/CTD) or \code{"concentration"} (LIMS
+bottle/hose filter samples). Adjusts the chlorophyll terminology used.}
 }
 \value{
 Character string with station description in English.

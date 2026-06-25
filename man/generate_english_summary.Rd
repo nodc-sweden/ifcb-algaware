@@ -10,7 +10,8 @@ generate_english_summary(
   cruise_info = "",
   phyto_groups = NULL,
   provider = NULL,
-  unclassified_fractions = NULL
+  unclassified_fractions = NULL,
+  chl_measure = "fluorescence"
 )
 }
 \arguments{
@@ -28,6 +29,10 @@ NULL auto-detects.}
 
 \item{unclassified_fractions}{Optional per-sample unclassified percentages
 for contextualizing the summary.}
+
+\item{chl_measure}{How the active chlorophyll source is measured,
+\code{"fluorescence"} (FerryBox/CTD) or \code{"concentration"} (LIMS
+bottle/hose filter samples). Adjusts the chlorophyll terminology used.}
 }
 \value{
 Character string with English summary.

@@ -100,16 +100,22 @@ bloom_alert_note <- function(station_summary, phyto_groups = NULL,
 #' @param provider LLM provider (\code{"openai"} or \code{"gemini"}).
 #'   NULL auto-detects.
 #' @param unclassified_fractions Optional per-sample fractions of unclassified detections supplied to the prompt.
+#' @param chl_measure How the active chlorophyll source is measured,
+#'   \code{"fluorescence"} (FerryBox/CTD) or \code{"concentration"} (LIMS
+#'   bottle/hose filter samples). Adjusts the chlorophyll terminology used.
 #' @return Character string with Swedish summary.
 #' @export
 generate_swedish_summary <- function(station_summary, taxa_lookup = NULL,
                                      cruise_info = "", phyto_groups = NULL,
                                      provider = NULL,
-                                     unclassified_fractions = NULL) {
+                                     unclassified_fractions = NULL,
+                                     chl_measure = "fluorescence") {
   guide <- load_writing_guide()
   cruise_data <- format_cruise_summary_for_prompt(station_summary, taxa_lookup,
                                                   unclassified_fractions = unclassified_fractions,
-                                                  phyto_groups = phyto_groups)
+                                                  phyto_groups = phyto_groups,
+                                                  chl_measure = chl_measure)
+  chl_terms <- chl_measure_terms(chl_measure)
   bloom_note <- bloom_alert_note(station_summary, phyto_groups, lang = "sv")
 
   system_prompt <- paste0(
@@ -131,7 +137,7 @@ generate_swedish_summary <- function(station_summary, taxa_lookup = NULL,
     "(plural) instead. Use 'potentiellt skadlig art' only when referring to a ",
     "specific species. ",
     "Use correct Swedish terminology: 'klorofyll' (not 'chlorophyll'), ",
-    "'klorofyllfluorescens' (not 'chlorophyll fluorescence'), ",
+    "'", chl_terms$sv, "' (not '", chl_terms$en, "'), ",
     "'biovolym' (not 'biovolume'), ",
     "'kiselalger' (not 'diatom\u00e9er' or 'diatomeer') for diatoms, ",
     "'v\u00e4xtplankton' (not 'fytoplankton'), ",
@@ -141,7 +147,7 @@ generate_swedish_summary <- function(station_summary, taxa_lookup = NULL,
     "Do not infer group membership from scientific names yourself. ",
     "Om ett potentiellt skadligt taxon dominerar biovolymen vid en station, ",
     "beskriv det som dominant \u2014 tona inte ned dess f\u00f6rekomst enbart p\u00e5 grund av att det \u00e4r potentiellt skadligt. ",
-    "Compare klorofyllfluorescens between stations and relate it to the ",
+    "Compare ", chl_terms$sv, " between stations and relate it to the ",
     "IFCB biovolume data where relevant. ",
     "If any station data lines contain 'WARNING EXCEEDED', you MUST explicitly ",
     "state in the summary that the abundance of the named taxon exceeds the ",
@@ -164,9 +170,14 @@ generate_swedish_summary <- function(station_summary, taxa_lookup = NULL,
 #' @param english_text Character string with the English summary to translate.
 #' @param provider LLM provider (\code{"openai"} or \code{"gemini"}).
 #'   NULL auto-detects.
+#' @param chl_measure How the active chlorophyll source is measured,
+#'   \code{"fluorescence"} (FerryBox/CTD) or \code{"concentration"} (LIMS
+#'   bottle/hose filter samples). Adjusts the chlorophyll terminology used.
 #' @return Character string with Swedish translation.
 #' @export
-translate_summary_to_swedish <- function(english_text, provider = NULL) {
+translate_summary_to_swedish <- function(english_text, provider = NULL,
+                                          chl_measure = "fluorescence") {
+  chl_terms <- chl_measure_terms(chl_measure)
   system_prompt <- paste0(
     "You are a translator specializing in marine biology reports for the Swedish ",
     "AlgAware programme (SMHI). Translate scientific phytoplankton monitoring text ",
@@ -178,7 +189,7 @@ translate_summary_to_swedish <- function(english_text, provider = NULL) {
     "Rules:\n",
     "- Translate every sentence; do not omit or condense any content.\n",
     "- Use correct Swedish scientific terminology: ",
-    "'klorofyllfluorescens' (not 'chlorophyll fluorescence'), ",
+    "'", chl_terms$sv, "' (not '", chl_terms$en, "'), ",
     "'biovolym' (not 'biovolume'), ",
     "'kiselalger' (not 'diatom\u00e9er' or 'diatomeer'), ",
     "'v\u00e4xtplankton' (not 'fytoplankton'), ",
@@ -207,16 +218,22 @@ translate_summary_to_swedish <- function(english_text, provider = NULL) {
 #'   NULL auto-detects.
 #' @param unclassified_fractions Optional per-sample unclassified percentages
 #'   for contextualizing the summary.
+#' @param chl_measure How the active chlorophyll source is measured,
+#'   \code{"fluorescence"} (FerryBox/CTD) or \code{"concentration"} (LIMS
+#'   bottle/hose filter samples). Adjusts the chlorophyll terminology used.
 #' @return Character string with English summary.
 #' @export
 generate_english_summary <- function(station_summary, taxa_lookup = NULL,
                                      cruise_info = "", phyto_groups = NULL,
                                      provider = NULL,
-                                     unclassified_fractions = NULL) {
+                                     unclassified_fractions = NULL,
+                                     chl_measure = "fluorescence") {
   guide <- load_writing_guide()
   cruise_data <- format_cruise_summary_for_prompt(station_summary, taxa_lookup,
                                                   unclassified_fractions = unclassified_fractions,
-                                                  phyto_groups = phyto_groups)
+                                                  phyto_groups = phyto_groups,
+                                                  chl_measure = chl_measure)
+  chl_terms <- chl_measure_terms(chl_measure)
   bloom_note <- bloom_alert_note(station_summary, phyto_groups, lang = "en")
 
   system_prompt <- paste0(
@@ -232,6 +249,9 @@ generate_english_summary <- function(station_summary, taxa_lookup = NULL,
     "Station data overview:\n", cruise_data, "\n\n",
     "Write in English. Follow the writing guide exactly, including the ",
     "harmful taxa terminology section. ",
+    "When referring to the chlorophyll values, call them '", chl_terms$en,
+    "' (this is how the values in the prompt data were measured); ",
+    "do not call them by any other chlorophyll term. ",
     "Use the provided phytoplankton group assignments in the prompt data. ",
     "Do not infer group membership from scientific names yourself. ",
     "If a potentially harmful taxon dominates by biovolume at a station, name it as ",
@@ -263,17 +283,23 @@ generate_english_summary <- function(station_summary, taxa_lookup = NULL,
 #' @param provider LLM provider (\code{"openai"} or \code{"gemini"}).
 #'   NULL auto-detects.
 #' @param unclassified_pct Optional per-class unclassified percentage info used for context.
+#' @param chl_measure How the active chlorophyll source is measured,
+#'   \code{"fluorescence"} (FerryBox/CTD) or \code{"concentration"} (LIMS
+#'   bottle/hose filter samples). Adjusts the chlorophyll terminology used.
 #' @return Character string with station description in English.
 #' @export
 generate_station_description <- function(station_data, taxa_lookup = NULL,
                                          all_stations_summary = NULL,
                                          phyto_groups = NULL,
                                          provider = NULL,
-                                         unclassified_pct = NULL) {
+                                         unclassified_pct = NULL,
+                                         chl_measure = "fluorescence") {
   guide <- load_writing_guide()
   station_text <- format_station_data_for_prompt(station_data, taxa_lookup,
                                                  unclassified_pct = unclassified_pct,
-                                                 phyto_groups = phyto_groups)
+                                                 phyto_groups = phyto_groups,
+                                                 chl_measure = chl_measure)
+  chl_terms <- chl_measure_terms(chl_measure)
 
   # Provide cruise-wide context so the LLM can make relative statements
   context <- ""
@@ -315,6 +341,9 @@ generate_station_description <- function(station_data, taxa_lookup = NULL,
     "Base your characterization of diversity (high/moderate/low) and abundance ",
     "(high/moderate/low) on the cruise context data above -- describe this station ",
     "relative to the other stations visited during this cruise. ",
+    "If you mention the chlorophyll value, call it '", chl_terms$en,
+    "' (this is how the value in the prompt data was measured); ",
+    "do not call it by any other chlorophyll term. ",
     "Use the provided phytoplankton group assignments in the prompt data. ",
     "Do not infer group membership from scientific names yourself. ",
     "Use the group names consistently throughout: if a taxon belongs to Silicoflagellates, ",

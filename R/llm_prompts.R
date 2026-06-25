@@ -1,3 +1,48 @@
+#' Describe how the active chlorophyll source is measured
+#'
+#' FerryBox and CTD report in-situ chlorophyll \emph{fluorescence}, whereas the
+#' LIMS bottle (\code{"lims"}) and hose (\code{"lims_hose"}, 0-10 m integrated)
+#' samples are chlorophyll-a \emph{concentrations} measured on a filter. The
+#' report text must describe the value accordingly, so the wording follows the
+#' source actually selected for the maps and figures.
+#'
+#' @param chl_map_source Active chlorophyll map source: \code{"ferrybox"},
+#'   \code{"ctd"}, \code{"lims"} or \code{"lims_hose"}.
+#' @return \code{"fluorescence"} or \code{"concentration"}.
+#' @keywords internal
+chl_measure_from_source <- function(chl_map_source = "ferrybox") {
+  switch(chl_map_source %||% "ferrybox",
+    ferrybox  = "fluorescence",
+    ctd       = "fluorescence",
+    lims      = "concentration",
+    lims_hose = "concentration",
+    "fluorescence"
+  )
+}
+
+#' Chlorophyll wording for prompts and instructions
+#'
+#' @param chl_measure Either \code{"fluorescence"} (FerryBox/CTD) or
+#'   \code{"concentration"} (LIMS bottle/hose filter samples).
+#' @return A list with \code{data_label} (prompt data line), and English
+#'   (\code{en}) and Swedish (\code{sv}) terms for the measurement.
+#' @keywords internal
+chl_measure_terms <- function(chl_measure = "fluorescence") {
+  if (identical(chl_measure, "concentration")) {
+    list(
+      data_label = "Chlorophyll-a concentration (mean)",
+      en         = "chlorophyll-a concentration",
+      sv         = "klorofyll-a-koncentration"
+    )
+  } else {
+    list(
+      data_label = "Chlorophyll fluorescence (mean)",
+      en         = "chlorophyll fluorescence",
+      sv         = "klorofyllfluorescens"
+    )
+  }
+}
+
 #' Attach collapsed text groups to station summary data
 #'
 #' @param x Station-level data frame with \code{name} and optionally
@@ -103,11 +148,15 @@ build_station_group_summary <- function(station_data, group_col, heading,
 #'   detections at this station, used for context notes.
 #' @param phyto_groups Optional phytoplankton group table used to provide
 #'   explicit group assignments in the prompt text.
+#' @param chl_measure How the chlorophyll value is measured,
+#'   \code{"fluorescence"} (FerryBox/CTD) or \code{"concentration"} (LIMS
+#'   bottle/hose filter samples). Controls how the value is labelled.
 #' @return Character string describing the station data.
 #' @keywords internal
 format_station_data_for_prompt <- function(station_data, taxa_lookup = NULL,
                                            unclassified_pct = NULL,
-                                           phyto_groups = NULL) {
+                                           phyto_groups = NULL,
+                                           chl_measure = "fluorescence") {
   station_data$.row_id_tmp <- seq_len(nrow(station_data))
   station_data <- attach_text_groups(station_data, phyto_groups)
   station_name <- station_data$STATION_NAME_SHORT[1]
@@ -132,7 +181,8 @@ format_station_data_for_prompt <- function(station_data, taxa_lookup = NULL,
       !all(is.na(station_data$chl_mean))) {
     chl_val <- station_data$chl_mean[1]
     if (!is.na(chl_val)) {
-      chl_info <- sprintf("Chlorophyll fluorescence (mean): %.2f", chl_val)
+      chl_info <- sprintf("%s: %.2f",
+                          chl_measure_terms(chl_measure)$data_label, chl_val)
     }
   }
 
@@ -283,11 +333,15 @@ format_station_data_for_prompt <- function(station_data, taxa_lookup = NULL,
 #'   percentages used to annotate station lines.
 #' @param phyto_groups Optional phytoplankton group table used to provide
 #'   explicit group assignments in the prompt text.
+#' @param chl_measure How the chlorophyll value is measured,
+#'   \code{"fluorescence"} (FerryBox/CTD) or \code{"concentration"} (LIMS
+#'   bottle/hose filter samples). Controls how the value is labelled.
 #' @return Character string with cruise-level overview.
 #' @keywords internal
 format_cruise_summary_for_prompt <- function(station_summary, taxa_lookup = NULL,
                                              unclassified_fractions = NULL,
-                                             phyto_groups = NULL) {
+                                             phyto_groups = NULL,
+                                             chl_measure = "fluorescence") {
   station_summary$.row_id_tmp <- seq_len(nrow(station_summary))
   station_summary <- attach_text_groups(station_summary, phyto_groups)
   visits <- unique(station_summary[, c("STATION_NAME_SHORT", "COAST",
@@ -397,7 +451,12 @@ format_cruise_summary_for_prompt <- function(station_summary, taxa_lookup = NULL
     if ("chl_mean" %in% names(sdata) && !all(is.na(sdata$chl_mean))) {
       chl_val <- sdata$chl_mean[1]
       if (!is.na(chl_val)) {
-        chl_note <- sprintf(" | Chl: %.2f", chl_val)
+        chl_abbr <- if (identical(chl_measure, "concentration")) {
+          "Chl-a conc."
+        } else {
+          "Chl fluoresc."
+        }
+        chl_note <- sprintf(" | %s: %.2f", chl_abbr, chl_val)
       }
     }
 

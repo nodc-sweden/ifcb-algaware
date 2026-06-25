@@ -105,7 +105,11 @@ generate_report <- function(output_path, station_summary,
   }
 
   # Enrich station_summary with the active chlorophyll source so LLM prompts
-  # receive the same data used for the chl map and report figures.
+  # receive the same data used for the chl map and report figures. The chl
+  # values from FerryBox/CTD are fluorescence; the LIMS bottle and hose
+  # (0-10 m integrated) values are concentrations measured on a filter, so the
+  # generated text must describe them accordingly.
+  chl_measure <- chl_measure_from_source(chl_map_source)
   chl_avg <- switch(chl_map_source,
     ctd       = if (!is.null(ctd_data))  compute_ctd_chl_avg(ctd_data)   else NULL,
     lims      = if (!is.null(lims_data)) compute_lims_chl_avg(lims_data)  else NULL,
@@ -240,7 +244,8 @@ generate_report <- function(output_path, station_summary,
       generate_english_summary(station_summary, taxa_lookup, cruise_info,
                                phyto_groups = phyto_groups,
                                provider = llm_provider,
-                               unclassified_fractions = unclassified_fractions),
+                               unclassified_fractions = unclassified_fractions,
+                               chl_measure = chl_measure),
       error = function(e) {
         warning("LLM English summary failed: ", e$message, call. = FALSE)
         "[Write English summary here. (LLM generation failed)]"
@@ -253,7 +258,8 @@ generate_report <- function(output_path, station_summary,
   if (use_llm) {
     report_progress("Swedish summary")
     swedish_text <- tryCatch(
-      translate_summary_to_swedish(english_text, provider = llm_provider),
+      translate_summary_to_swedish(english_text, provider = llm_provider,
+                                   chl_measure = chl_measure),
       error = function(e) {
         warning("LLM Swedish translation failed: ", e$message, call. = FALSE)
         "[Skriv sammanfattning pa svenska har. (LLM generation failed)]"
@@ -446,7 +452,8 @@ generate_report <- function(output_path, station_summary,
                                phyto_groups = phyto_groups,
                                llm_provider = llm_provider,
                                on_llm_progress = report_progress,
-                               unclassified_fractions = unclassified_fractions)
+                               unclassified_fractions = unclassified_fractions,
+                               chl_measure = chl_measure)
 
   ctd_full_for_report <- if (!is.null(ctd_data_full) && nrow(ctd_data_full) > 0) {
     ctd_data_full

@@ -117,7 +117,8 @@ add_station_sections <- function(doc, station_summary,
                                  phyto_groups = NULL,
                                  llm_provider = NULL,
                                  on_llm_progress = NULL,
-                                 unclassified_fractions = NULL) {
+                                 unclassified_fractions = NULL,
+                                 chl_measure = "fluorescence") {
   doc <- officer::body_add_break(doc)
   doc <- officer::body_add_par(doc, "Station reports", style = "heading 2")
 
@@ -160,7 +161,8 @@ add_station_sections <- function(doc, station_summary,
                                      station_summary,
                                      phyto_groups = phyto_groups,
                                      provider = llm_provider,
-                                     unclassified_pct = visit_unclass_pct),
+                                     unclassified_pct = visit_unclass_pct,
+                                     chl_measure = chl_measure),
         error = function(e) {
           warning("LLM station description failed for ",
                   visits$STATION_NAME_SHORT[i], ": ", e$message,

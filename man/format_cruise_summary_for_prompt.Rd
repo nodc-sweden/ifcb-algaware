@@ -8,7 +8,8 @@ format_cruise_summary_for_prompt(
   station_summary,
   taxa_lookup = NULL,
   unclassified_fractions = NULL,
-  phyto_groups = NULL
+  phyto_groups = NULL,
+  chl_measure = "fluorescence"
 )
 }
 \arguments{
@@ -22,6 +23,10 @@ percentages used to annotate station lines.}
 
 \item{phyto_groups}{Optional phytoplankton group table used to provide
 explicit group assignments in the prompt text.}
+
+\item{chl_measure}{How the chlorophyll value is measured,
+\code{"fluorescence"} (FerryBox/CTD) or \code{"concentration"} (LIMS
+bottle/hose filter samples). Controls how the value is labelled.}
 }
 \value{
 Character string with cruise-level overview.

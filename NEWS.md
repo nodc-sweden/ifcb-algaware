@@ -2,6 +2,11 @@
 
 ## Minor improvements and fixes
 
+- Describe chlorophyll in the generated report text according to the selected
+  chlorophyll source: FerryBox and CTD values are "chlorophyll fluorescence",
+  while LIMS bottle and hose (0-10 m integrated) values are "chlorophyll-a
+  concentration" (measured on a filter). Previously the text always referred
+  to fluorescence regardless of the source.
 - Name the downloaded Word report `Algaware_<Report No>.docx` using the
   "Report No" entered in the Report tab, falling back to `Algaware_X.docx`
   when no number is entered.

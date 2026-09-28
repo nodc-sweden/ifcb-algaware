@@ -1,6 +1,6 @@
 # Changelog
 
-## algaware (development version)
+## algaware 0.4.0
 
 ### Bug fixes
 

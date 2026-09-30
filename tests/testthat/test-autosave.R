@@ -32,12 +32,13 @@ test_that("autosave_corrections writes the enriched CSV under corrections/", {
   expect_true(file.exists(expected))
 
   df <- utils::read.csv(expected, stringsAsFactors = FALSE)
-  # Same 9-column schema as the manual "Download corrections" export
+  # Same schema as the manual "Download corrections" export
   expect_equal(
     names(df),
     c("sample_name", "roi_number", "original_class", "new_class",
       "custom_sci_name", "custom_sflag", "custom_aphia_id", "custom_hab",
-      "custom_italic", "custom_is_diatom")
+      "custom_italic", "custom_is_diatom", "record_type", "threshold_class",
+      "threshold_trained", "threshold_adjusted", "threshold_n_moved")
   )
   expect_equal(nrow(df), 2L)
   # Contains everything the import path requires
@@ -284,4 +285,125 @@ test_that("custom classes round-trip through autosave including is_diatom", {
   df <- utils::read.csv(result$path, stringsAsFactors = FALSE)
   rebuilt <- custom_classes_from_corrections(df, known_classes = character(0))
   expect_equal(rebuilt, custom)
+})
+
+# ---- Threshold adjustments in the autosave ----
+
+autosave_thresholds <- data.frame(class_name = "ClassA", trained = 0.5,
+                                  adjusted = 0.7, n_moved = 2L,
+                                  stringsAsFactors = FALSE)
+
+test_that("autosave_corrections saves threshold adjustments", {
+  storage <- withr::local_tempdir()
+  result <- autosave_corrections(make_corrections(1), empty_custom_classes,
+                                 storage, thresholds = autosave_thresholds)
+  expect_true(result$success)
+  df <- utils::read.csv(result$path, stringsAsFactors = FALSE)
+  expect_equal(df$record_type, c("correction", "threshold"))
+  expect_equal(df$threshold_adjusted[2], 0.7)
+})
+
+test_that("autosave_corrections saves thresholds without corrections", {
+  storage <- withr::local_tempdir()
+  result <- autosave_corrections(make_corrections(0), empty_custom_classes,
+                                 storage, thresholds = autosave_thresholds)
+  expect_true(result$success)
+  expect_equal(nrow(utils::read.csv(result$path)), 1L)
+})
+
+test_that("autosave_corrections writes an empty file only when allowed", {
+  storage <- withr::local_tempdir()
+  skipped <- autosave_corrections(make_corrections(0), empty_custom_classes,
+                                  storage)
+  expect_false(skipped$success)
+
+  result <- autosave_corrections(make_corrections(0), empty_custom_classes,
+                                 storage, allow_empty = TRUE)
+  expect_true(result$success)
+  df <- utils::read.csv(result$path)
+  expect_equal(nrow(df), 0L)
+  expect_true("record_type" %in% names(df))
+})
+
+test_that("threshold changes are auto-saved, including a reset to trained", {
+  storage <- withr::local_tempdir()
+  original <- data.frame(
+    sample_name = "S1", roi_number = 1:2, class_name = c("ClassA", "ClassA"),
+    class_auto = c("ClassA", "ClassA"), score = c(0.9, 0.6),
+    stringsAsFactors = FALSE
+  )
+  rv <- shiny::reactiveValues(
+    data_loaded = TRUE,
+    corrections = make_corrections(0),
+    custom_classes = empty_custom_classes,
+    classifications_original = original,
+    thresholds_trained = c(ClassA = 0.5),
+    threshold_adjustments = numeric(0),
+    current_class_idx = 1L,
+    current_region = "EAST",
+    selected_images = character(0),
+    invalidated_classes = character(0)
+  )
+  config <- shiny::reactiveValues(
+    local_storage_path = storage, db_folder = "", annotator = ""
+  )
+
+  shiny::testServer(mod_validation_server,
+                    args = list(rv = rv, config = config), {
+    target <- file.path(
+      storage, "corrections",
+      paste0("algaware_corrections_", format(Sys.Date(), "%Y%m%d"), ".csv")
+    )
+    session$flushReact()
+    expect_false(file.exists(target))
+
+    rv$threshold_adjustments <- c(ClassA = 0.7)
+    session$flushReact()
+    df <- utils::read.csv(target, stringsAsFactors = FALSE)
+    expect_equal(df$threshold_class, "ClassA")
+    expect_equal(df$threshold_n_moved, 1L)
+
+    # Resetting must not leave the stale adjustment in the recovery file
+    rv$threshold_adjustments <- numeric(0)
+    session$flushReact()
+    expect_equal(nrow(utils::read.csv(target)), 0L)
+  })
+})
+
+test_that("loading another cruise does not blank the previous recovery file", {
+  storage <- withr::local_tempdir()
+  rv <- shiny::reactiveValues(
+    data_loaded = TRUE,
+    corrections = make_corrections(2),
+    custom_classes = empty_custom_classes,
+    threshold_adjustments = numeric(0),
+    matched_metadata_all = data.frame(pid = "cruise_A"),
+    current_class_idx = 1L,
+    current_region = "EAST",
+    selected_images = character(0),
+    invalidated_classes = character(0)
+  )
+  config <- shiny::reactiveValues(
+    local_storage_path = storage, db_folder = "", annotator = ""
+  )
+
+  shiny::testServer(mod_validation_server,
+                    args = list(rv = rv, config = config), {
+    target <- file.path(
+      storage, "corrections",
+      paste0("algaware_corrections_", format(Sys.Date(), "%Y%m%d"), ".csv")
+    )
+    session$flushReact()
+    rv$current_class_idx <- 2L
+    session$flushReact()
+    expect_equal(nrow(utils::read.csv(target)), 2L)
+
+    # What the data loader does in one go for a new cruise
+    rv$matched_metadata_all <- data.frame(pid = "cruise_B")
+    rv$corrections <- make_corrections(0)
+    rv$threshold_adjustments <- numeric(0)
+    rv$current_class_idx <- 1L
+    session$flushReact()
+    expect_equal(nrow(utils::read.csv(target)), 2L)
+  })
 })

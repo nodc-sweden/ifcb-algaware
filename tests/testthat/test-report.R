@@ -220,3 +220,30 @@ test_that("transform_ooxml_part preserves non-ASCII bytes regardless of locale",
   }
   run_roundtrip()
 })
+
+# ---- build_summary_rows ----
+
+test_that("build_summary_rows lists adjusted class thresholds", {
+  thresholds <- data.frame(class_name = "Unicells", trained = 0.7224,
+                           adjusted = 0.82, n_moved = 379L,
+                           stringsAsFactors = FALSE)
+  rows <- build_summary_rows(classifier_name = "ResNet50",
+                             threshold_adjustments = thresholds)
+  expect_equal(rows$Parameter[1], "Classification model (PyTorch)")
+  expect_match(rows$Parameter[2], "Adjusted class thresholds")
+  expect_equal(rows$Value[2], "Unicells (0.72 → 0.82)")
+})
+
+test_that("build_summary_rows omits the threshold row without adjustments", {
+  rows <- build_summary_rows(total_bio_images = 12345,
+                             classifier_name = "ResNet50")
+  expect_equal(rows$Parameter, c("Biological images analysed",
+                                 "Classification model (PyTorch)"))
+  expect_equal(rows$Value[1], "12,345")
+})
+
+test_that("build_summary_rows returns an empty table with nothing to show", {
+  rows <- build_summary_rows()
+  expect_equal(nrow(rows), 0)
+  expect_named(rows, c("Parameter", "Value"))
+})

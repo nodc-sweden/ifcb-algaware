@@ -251,12 +251,15 @@ format_taxon_labels <- function(scientific_names, taxa_lookup,
 #'   \code{custom_italic}, \code{custom_is_diatom}.
 #' @keywords internal
 enrich_corrections_for_export <- function(corrections, custom_classes) {
-  corrections$custom_sci_name  <- NA_character_
-  corrections$custom_sflag     <- NA_character_
-  corrections$custom_aphia_id  <- NA_integer_
-  corrections$custom_hab       <- NA
-  corrections$custom_italic    <- NA
-  corrections$custom_is_diatom <- NA
+  # rep() so an empty corrections log (e.g. an export holding only threshold
+  # adjustments) keeps its zero rows instead of erroring
+  n <- nrow(corrections)
+  corrections$custom_sci_name  <- rep(NA_character_, n)
+  corrections$custom_sflag     <- rep(NA_character_, n)
+  corrections$custom_aphia_id  <- rep(NA_integer_, n)
+  corrections$custom_hab       <- rep(NA, n)
+  corrections$custom_italic    <- rep(NA, n)
+  corrections$custom_is_diatom <- rep(NA, n)
 
   if (is.null(custom_classes) || nrow(custom_classes) == 0) {
     return(corrections)

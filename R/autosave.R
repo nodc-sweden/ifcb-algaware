@@ -1,7 +1,8 @@
 #' Auto-save the corrections log to the local storage path
 #'
-#' Writes the same enriched corrections CSV that the "Download corrections"
-#' button produces (see \code{enrich_corrections_for_export()}) to
+#' Writes the same corrections CSV that the "Download corrections" button
+#' produces -- corrections plus any class threshold adjustments (see
+#' \code{build_corrections_export()}) -- to
 #' \code{<storage_path>/corrections/algaware_corrections_<YYYYMMDD>.csv},
 #' so that work lost to a crash -- or to closing the app without
 #' downloading -- can be recovered with the existing "Import corrections"
@@ -16,6 +17,12 @@
 #' @param custom_classes Data frame of custom classes
 #'   (from \code{rv$custom_classes}).
 #' @param storage_path The local storage path (from settings).
+#' @param thresholds Optional data.frame of threshold adjustments from
+#'   \code{threshold_summary()}.
+#' @param allow_empty Write the file even when there are no corrections and
+#'   no threshold adjustments. Used after an earlier save in the session, so
+#'   undoing everything (e.g. resetting all thresholds) is not left out of
+#'   the recovery file.
 #' @param backup_existing Set \code{TRUE} on a session's first save: an
 #'   already-existing target file must then come from an earlier session
 #'   (e.g. one that crashed), so it is set aside as
@@ -27,9 +34,12 @@
 #'   nothing to save or no storage path is configured.
 #' @keywords internal
 autosave_corrections <- function(corrections, custom_classes, storage_path,
-                                 backup_existing = FALSE) {
+                                 backup_existing = FALSE, thresholds = NULL,
+                                 allow_empty = FALSE) {
+  has_content <- (is.data.frame(corrections) && nrow(corrections) > 0) ||
+    (is.data.frame(thresholds) && nrow(thresholds) > 0)
   if (is.null(corrections) || !is.data.frame(corrections) ||
-      nrow(corrections) == 0 ||
+      (!has_content && !allow_empty) ||
       !is.character(storage_path) || length(storage_path) != 1L ||
       is.na(storage_path) || !nzchar(storage_path)) {
     return(list(success = FALSE, path = NULL, error = NULL))
@@ -57,7 +67,8 @@ autosave_corrections <- function(corrections, custom_classes, storage_path,
       }
     }
 
-    enriched <- enrich_corrections_for_export(corrections, custom_classes)
+    enriched <- build_corrections_export(corrections, custom_classes,
+                                         thresholds)
     tmp <- tempfile("algaware_autosave_", tmpdir = autosave_dir,
                     fileext = ".csv")
     # Clean up the temp file however this function exits; a no-op once it

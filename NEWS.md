@@ -12,8 +12,17 @@
   corrections always take precedence. Adjusted classes are listed with a
   reset link each, so a class emptied by a high threshold can still be
   restored. The slider is disabled when the H5 files lack thresholds or
-  come from different classifiers. Threshold adjustments are not yet saved
-  in the corrections export or autosave.
+  come from different classifiers.
+- Threshold adjustments are saved in the corrections CSV ("Download
+  corrections", the report's corrections export and the autosave) as extra
+  rows marked by a new `record_type` column (`"correction"` or
+  `"threshold"`), with the trained and applied threshold and the number of
+  images moved. "Import corrections" restores them together with the
+  corrections, replacing the session's adjustments; thresholds saved for a
+  different classifier are skipped with a note. Files from earlier versions
+  import as before, with all thresholds at their trained values.
+- Adjusted class thresholds are listed in the report's data summary table,
+  next to the classification model.
 - The gallery has a "Sort by score" toggle that shows the lowest classifier
   scores first, to review borderline images.
 - `read_h5_classifications()` now also returns `class_auto`, the

@@ -8,7 +8,9 @@ autosave_corrections(
   corrections,
   custom_classes,
   storage_path,
-  backup_existing = FALSE
+  backup_existing = FALSE,
+  thresholds = NULL,
+  allow_empty = FALSE
 )
 }
 \arguments{
@@ -24,6 +26,14 @@ already-existing target file must then come from an earlier session
 (e.g. one that crashed), so it is set aside as
 \code{..._prev.csv} instead of being overwritten. Later saves in the
 same session overwrite in place.}
+
+\item{thresholds}{Optional data.frame of threshold adjustments from
+\code{threshold_summary()}.}
+
+\item{allow_empty}{Write the file even when there are no corrections and
+no threshold adjustments. Used after an earlier save in the session, so
+undoing everything (e.g. resetting all thresholds) is not left out of
+the recovery file.}
 }
 \value{
 A list with \code{success} (logical), \code{path} (the file
@@ -32,8 +42,9 @@ or NULL). Returns \code{success = FALSE} without writing when there is
 nothing to save or no storage path is configured.
 }
 \description{
-Writes the same enriched corrections CSV that the "Download corrections"
-button produces (see \code{enrich_corrections_for_export()}) to
+Writes the same corrections CSV that the "Download corrections" button
+produces -- corrections plus any class threshold adjustments (see
+\code{build_corrections_export()}) -- to
 \code{<storage_path>/corrections/algaware_corrections_<YYYYMMDD>.csv},
 so that work lost to a crash -- or to closing the app without
 downloading -- can be recovered with the existing "Import corrections"

@@ -464,6 +464,60 @@ copy_classification_files <- function(classification_path, sample_ids,
   invisible(copied)
 }
 
+#' List H5 classification files, optionally restricted to given samples
+#'
+#' @param h5_dir Directory containing .h5 files (searched recursively).
+#' @param sample_ids Optional character vector of sample PIDs to keep.
+#' @return Character vector of full file paths.
+#' @keywords internal
+list_h5_files <- function(h5_dir, sample_ids = NULL) {
+  h5_files <- list.files(h5_dir, pattern = "_class.*\\.h5$",
+                         full.names = TRUE, recursive = TRUE)
+  if (!is.null(sample_ids)) {
+    h5_samples <- sub("_class.*\\.h5$", "", basename(h5_files))
+    h5_files <- h5_files[h5_samples %in% sample_ids]
+  }
+  h5_files
+}
+
+#' Empty classification data.frame with the standard columns
+#'
+#' @return A zero-row data.frame as returned by
+#'   \code{read_h5_classifications()}.
+#' @keywords internal
+empty_classifications <- function() {
+  data.frame(
+    sample_name = character(0),
+    roi_number = integer(0),
+    class_name = character(0),
+    class_auto = character(0),
+    score = numeric(0),
+    stringsAsFactors = FALSE
+  )
+}
+
+#' Read the top-scoring (unthresholded) class per ROI from an open H5 file
+#'
+#' Uses \code{class_name_auto} when present. Older files without it fall back
+#' to the highest-scoring entry of \code{class_labels}; files without either
+#' give \code{NA}.
+#'
+#' @param h5 An open \code{hdf5r::H5File}.
+#' @param output_scores Score matrix (classes x ROIs) already read from
+#'   \code{h5}.
+#' @return Character vector with one class per ROI.
+#' @keywords internal
+read_auto_classes <- function(h5, output_scores) {
+  if (h5$exists("class_name_auto")) {
+    return(as.character(h5[["class_name_auto"]]$read()))
+  }
+  if (h5$exists("class_labels")) {
+    class_labels <- h5[["class_labels"]]$read()
+    return(class_labels[apply(output_scores, 2, which.max)])
+  }
+  rep(NA_character_, ncol(output_scores))
+}
+
 #' Read classifications from H5 files
 #'
 #' Reads thresholded class assignments from H5 classification files produced
@@ -471,6 +525,10 @@ copy_classification_files <- function(classification_path, sample_ids,
 #' \itemize{
 #'   \item \code{roi_numbers}: integer vector of ROI (Region of Interest) IDs
 #'   \item \code{class_name}: character vector of predicted class per ROI
+#'     after applying the per-class thresholds (\code{"unclassified"} when the
+#'     top score is below the threshold of the top class)
+#'   \item \code{class_name_auto}: the top-scoring class per ROI, before
+#'     thresholding
 #'   \item \code{output_scores}: matrix of class probabilities (classes x ROIs);
 #'     the maximum score per ROI is used as the confidence value
 #' }
@@ -479,26 +537,12 @@ copy_classification_files <- function(classification_path, sample_ids,
 #' @param sample_ids Optional character vector of sample PIDs to read.
 #'   If NULL, reads all .h5 files in the directory.
 #' @return A data.frame with columns: sample_name, roi_number, class_name,
-#'   score.
+#'   class_auto (top-scoring class before thresholding, \code{NA} when the
+#'   file does not provide it), score.
 #' @export
 read_h5_classifications <- function(h5_dir, sample_ids = NULL) {
-  h5_files <- list.files(h5_dir, pattern = "_class.*\\.h5$",
-                         full.names = TRUE, recursive = TRUE)
-
-  if (!is.null(sample_ids)) {
-    h5_samples <- sub("_class.*\\.h5$", "", basename(h5_files))
-    h5_files <- h5_files[h5_samples %in% sample_ids]
-  }
-
-  if (length(h5_files) == 0) {
-    return(data.frame(
-      sample_name = character(0),
-      roi_number = integer(0),
-      class_name = character(0),
-      score = numeric(0),
-      stringsAsFactors = FALSE
-    ))
-  }
+  h5_files <- list_h5_files(h5_dir, sample_ids)
+  if (length(h5_files) == 0) return(empty_classifications())
 
   results <- lapply(h5_files, function(h5_path) {
     tryCatch({
@@ -516,6 +560,7 @@ read_h5_classifications <- function(h5_dir, sample_ids = NULL) {
         sample_name = sample_name,
         roi_number = as.integer(roi_numbers),
         class_name = class_names,
+        class_auto = read_auto_classes(h5, output_scores),
         score = scores,
         stringsAsFactors = FALSE
       )
@@ -527,12 +572,56 @@ read_h5_classifications <- function(h5_dir, sample_ids = NULL) {
   })
 
   valid_results <- Filter(Negate(is.null), results)
-  if (length(valid_results) == 0) {
-    return(data.frame(sample_name = character(0), roi_number = integer(0),
-                      class_name = character(0), score = numeric(0),
-                      stringsAsFactors = FALSE))
-  }
+  if (length(valid_results) == 0) return(empty_classifications())
   do.call(rbind, valid_results)
+}
+
+#' Read the trained per-class thresholds from H5 classification files
+#'
+#' Reads \code{class_labels} and \code{thresholds} from each H5 file. All
+#' files must carry identical thresholds (the same classifier), since the
+#' threshold adjustment feature works on one threshold per class.
+#'
+#' @param h5_dir Directory containing .h5 files.
+#' @param sample_ids Optional character vector of sample PIDs to read.
+#'   If NULL, reads all .h5 files in the directory.
+#' @return A named numeric vector (class name -> trained threshold), or
+#'   \code{NULL} when there are no files, any file lacks the thresholds, or
+#'   the files disagree (with a warning in that last case).
+#' @export
+read_thresholds <- function(h5_dir, sample_ids = NULL) {
+  h5_files <- list_h5_files(h5_dir, sample_ids)
+  if (length(h5_files) == 0) return(NULL)
+
+  per_file <- lapply(h5_files, read_thresholds_file)
+  if (any(vapply(per_file, is.null, logical(1)))) return(NULL)
+
+  reference <- per_file[[1]]
+  same <- vapply(per_file, identical, logical(1), reference)
+  if (!all(same)) {
+    warning("Class thresholds differ between H5 files (mixed classifiers?); ",
+            "threshold adjustment is disabled.", call. = FALSE)
+    return(NULL)
+  }
+  reference
+}
+
+#' Read the trained thresholds of a single H5 file
+#'
+#' @param h5_path Path to an H5 classification file.
+#' @return A named numeric vector, or \code{NULL} if the file cannot be read
+#'   or lacks \code{class_labels}/\code{thresholds}.
+#' @keywords internal
+read_thresholds_file <- function(h5_path) {
+  tryCatch({
+    h5 <- hdf5r::H5File$new(h5_path, "r")
+    on.exit(h5$close_all(), add = TRUE)
+    if (!h5$exists("class_labels") || !h5$exists("thresholds")) return(NULL)
+    class_labels <- h5[["class_labels"]]$read()
+    thresholds <- as.numeric(h5[["thresholds"]]$read())
+    if (length(class_labels) != length(thresholds)) return(NULL)
+    stats::setNames(thresholds, class_labels)
+  }, error = function(e) NULL)
 }
 
 #' Read classifier name from an H5 classification file

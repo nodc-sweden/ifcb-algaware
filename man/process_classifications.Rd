@@ -32,7 +32,8 @@ A named list, or NULL if no H5 classifications were found.
 \description{
 Reads H5 classification files, computes biovolume data for each classified
 image, aggregates results by station visit, and extracts the classifier name
-from the first H5 file. Non-biological classes are excluded from biovolume
+from the first H5 file and the trained per-class thresholds (\code{NULL}
+when the files lack them or disagree). Non-biological classes are excluded from biovolume
 but kept in the classification data frame for gallery display.
 }
 \keyword{internal}

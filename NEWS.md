@@ -1,3 +1,25 @@
+# algaware (development version)
+
+## New features
+
+- The Validate sidebar has a new "Class threshold" slider for adjusting the
+  classifier threshold of the class shown in the gallery. Raising it moves
+  images scoring below the new threshold to `"unclassified"`; lowering it
+  returns unclassified images whose top-scoring class it is. A live preview
+  counts the images that would move and dims them in the gallery before you
+  click "Apply". Thresholds apply per class across all loaded samples, the
+  trained thresholds are read from the H5 classification files, and manual
+  corrections always take precedence. Adjusted classes are listed with a
+  reset link each, so a class emptied by a high threshold can still be
+  restored. The slider is disabled when the H5 files lack thresholds or
+  come from different classifiers. Threshold adjustments are not yet saved
+  in the corrections export or autosave.
+- The gallery has a "Sort by score" toggle that shows the lowest classifier
+  scores first, to review borderline images.
+- `read_h5_classifications()` now also returns `class_auto`, the
+  top-scoring class before thresholding, and the new `read_thresholds()`
+  reads the trained per-class thresholds.
+
 # algaware 0.4.0
 
 ## Bug fixes

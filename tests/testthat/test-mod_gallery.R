@@ -67,3 +67,20 @@ test_that("match_pending_echo handles an empty queue and NA selection", {
   expect_false(match_pending_echo(c("A", "B"), NA_character_)$is_echo)
   expect_true(match_pending_echo(c(NA_character_, "B"), NA_character_)$is_echo)
 })
+
+# ---- order_images ----
+
+test_that("order_images sorts by ascending score when requested", {
+  imgs <- data.frame(roi_number = 1:3, score = c(0.9, 0.2, 0.5))
+  expect_equal(order_images(imgs, TRUE)$roi_number, c(2L, 3L, 1L))
+})
+
+test_that("order_images keeps the original order by default", {
+  imgs <- data.frame(roi_number = 1:3, score = c(0.9, 0.2, 0.5))
+  expect_equal(order_images(imgs, FALSE)$roi_number, 1:3)
+})
+
+test_that("order_images tolerates a missing score column", {
+  imgs <- data.frame(roi_number = 1:3)
+  expect_equal(order_images(imgs, TRUE)$roi_number, 1:3)
+})

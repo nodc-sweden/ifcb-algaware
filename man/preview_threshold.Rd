@@ -30,7 +30,9 @@ preview_threshold(
 \value{
 A list with integer counts \code{n_current} (images currently in
 the class), \code{n_removed} (would move to unclassified) and
-\code{n_added} (would join the class from unclassified).
+\code{n_added} (would join the class from unclassified), plus the image
+IDs (\code{"<sample_name>_<roi_number>"}, as used by the gallery) of the
+moving images in \code{removed} and \code{added}.
 }
 \description{
 Compares the working labels under the current adjustments with those

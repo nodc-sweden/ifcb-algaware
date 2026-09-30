@@ -671,28 +671,19 @@ mod_validation_server <- function(id, rv, config) {
       shiny::req(df, rv$classifications_original)
 
       orig <- rv$classifications_original
-
-      # Apply all corrections to a fresh copy of original
       keys_orig <- paste0(orig$sample_name, "_", orig$roi_number)
       keys_imp  <- paste0(df$sample_name,   "_", df$roi_number)
-      match_idx <- match(keys_imp, keys_orig)
-      valid     <- !is.na(match_idx)
+      valid     <- keys_imp %in% keys_orig
 
-      result <- orig
-      result$class_name[match_idx[valid]] <- df$new_class[valid]
-
-      rv$classifications_all <- result
-      # `classifications_original` is the full load-time snapshot, so re-apply
-      # the current sample exclusions when deriving the active slice.
-      # Assigning the full set here used to resurrect excluded samples in
-      # rv$classifications, inflating the report's image totals.
-      active <- if (!is.null(rv$matched_metadata_all)) {
-        setdiff(unique(rv$matched_metadata_all$pid), rv$excluded_samples)
-      } else {
-        unique(result$sample_name)
-      }
-      rv$classifications <- result[result$sample_name %in% active, ,
-                                   drop = FALSE]
+      # Rebuild from the load-time snapshot: current threshold adjustments,
+      # then the imported corrections. `classifications_original` holds every
+      # sample, so the current exclusions are re-applied for the active slice
+      # (assigning the full set used to resurrect excluded samples in
+      # rv$classifications, inflating the report's image totals).
+      composed <- compose_classifications(orig, rv$threshold_adjustments, df,
+                                          active_sample_ids(rv))
+      rv$classifications_all <- composed$all
+      rv$classifications <- composed$active
 
       # Rebuild corrections log (drop custom metadata columns)
       rv$corrections <- df[, c("sample_name", "roi_number",

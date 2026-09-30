@@ -163,7 +163,9 @@ replace_named <- function(x, name, value) {
 #'   (e.g. the current region). \code{NULL} counts all samples.
 #' @return A list with integer counts \code{n_current} (images currently in
 #'   the class), \code{n_removed} (would move to unclassified) and
-#'   \code{n_added} (would join the class from unclassified).
+#'   \code{n_added} (would join the class from unclassified), plus the image
+#'   IDs (\code{"<sample_name>_<roi_number>"}, as used by the gallery) of the
+#'   moving images in \code{removed} and \code{added}.
 #' @keywords internal
 preview_threshold <- function(original, adjustments, corrections, class_name,
                               value, samples = NULL) {
@@ -176,10 +178,13 @@ preview_threshold <- function(original, adjustments, corrections, class_name,
 
   was <- before$class_name %in% class_name
   now <- after$class_name %in% class_name
+  ids <- paste0(before$sample_name, "_", before$roi_number)
   list(
     n_current = sum(was),
     n_removed = sum(was & !now),
-    n_added = sum(!was & now)
+    n_added = sum(!was & now),
+    removed = ids[was & !now],
+    added = ids[!was & now]
   )
 }
 

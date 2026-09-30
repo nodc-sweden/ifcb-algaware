@@ -169,19 +169,34 @@ test_that("set_threshold_adjustment rejects invalid input", {
 
 # ---- preview_threshold ----
 
+preview_counts <- function(x) x[c("n_current", "n_removed", "n_added")]
+
 test_that("preview_threshold counts images leaving and joining the class", {
   cls <- make_classifications()
   raised <- preview_threshold(cls, NULL, NULL, "A", 0.7)
-  expect_equal(raised, list(n_current = 3L, n_removed = 2L, n_added = 0L))
+  expect_equal(preview_counts(raised),
+               list(n_current = 3L, n_removed = 2L, n_added = 0L))
 
   lowered <- preview_threshold(cls, NULL, NULL, "A", 0.3)
-  expect_equal(lowered, list(n_current = 3L, n_removed = 0L, n_added = 1L))
+  expect_equal(preview_counts(lowered),
+               list(n_current = 3L, n_removed = 0L, n_added = 1L))
+})
+
+test_that("preview_threshold returns the image IDs that would move", {
+  cls <- make_classifications()
+  raised <- preview_threshold(cls, NULL, NULL, "A", 0.7)
+  expect_equal(raised$removed, c("S1_2", "S2_6"))
+  expect_equal(raised$added, character(0))
+
+  lowered <- preview_threshold(cls, NULL, NULL, "A", 0.3)
+  expect_equal(lowered$added, "S1_3")
 })
 
 test_that("preview_threshold is relative to existing adjustments", {
   cls <- make_classifications()
   result <- preview_threshold(cls, c(A = 0.7), NULL, "A", 0.95)
-  expect_equal(result, list(n_current = 1L, n_removed = 1L, n_added = 0L))
+  expect_equal(preview_counts(result),
+               list(n_current = 1L, n_removed = 1L, n_added = 0L))
 })
 
 test_that("preview_threshold does not count manually corrected ROIs", {
@@ -196,7 +211,8 @@ test_that("preview_threshold does not count manually corrected ROIs", {
 test_that("preview_threshold restricts counts to the given samples", {
   result <- preview_threshold(make_classifications(), NULL, NULL, "A", 0.7,
                               samples = "S2")
-  expect_equal(result, list(n_current = 1L, n_removed = 1L, n_added = 0L))
+  expect_equal(preview_counts(result),
+               list(n_current = 1L, n_removed = 1L, n_added = 0L))
 })
 
 # ---- threshold_summary ----

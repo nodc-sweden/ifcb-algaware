@@ -2,7 +2,7 @@
 % Please edit documentation in R/data_download.R
 \name{read_auto_classes}
 \alias{read_auto_classes}
-\title{Read the top-scoring (unthresholded) class per ROI from an open H5 file}
+\title{Read the top-scoring class per ROI, before thresholding, from an H5 file}
 \usage{
 read_auto_classes(h5, output_scores)
 }

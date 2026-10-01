@@ -245,7 +245,7 @@ mod_thresholds_server <- function(id, rv) {
           class = "small text-muted mb-1",
           paste0("Trained: ", format_threshold(trained)),
           if (is_adjusted) {
-            shiny::strong(paste0(" · Applied: ", format_threshold(current)))
+            shiny::strong(paste0(" \u00b7 Applied: ", format_threshold(current)))
           }
         ),
         shiny::div(
@@ -290,7 +290,7 @@ mod_thresholds_server <- function(id, rv) {
         shiny::div(
           class = "d-flex justify-content-between align-items-center small",
           shiny::span(paste0(cls, ": ", format_threshold(trained[[cls]]),
-                             " → ", format_threshold(adjustments[[cls]]))),
+                             " \u2192 ", format_threshold(adjustments[[cls]]))),
           shiny::tags$a(
             href = "#", title = "Reset to trained threshold",
             onclick = sprintf(

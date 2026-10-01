@@ -496,7 +496,7 @@ empty_classifications <- function() {
   )
 }
 
-#' Read the top-scoring (unthresholded) class per ROI from an open H5 file
+#' Read the top-scoring class per ROI, before thresholding, from an H5 file
 #'
 #' Uses \code{class_name_auto} when present. Older files without it fall back
 #' to the highest-scoring entry of \code{class_labels}; files without either

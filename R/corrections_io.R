@@ -158,7 +158,7 @@ current_threshold_table <- function(rv) {
 format_threshold_adjustments <- function(thresholds) {
   if (is.null(thresholds) || nrow(thresholds) == 0) return(NULL)
   paste0(thresholds$class_name, " (", format_threshold(thresholds$trained),
-         " → ", format_threshold(thresholds$adjusted), ")",
+         " \u2192 ", format_threshold(thresholds$adjusted), ")",
          collapse = "; ")
 }
 
@@ -200,7 +200,7 @@ import_preview_ui <- function(corrections, thresholds, file_name, n_current,
         "Relabels: ",
         shiny::tags$ul(lapply(seq_len(nrow(agg)), function(i) {
           shiny::tags$li(paste0(agg$roi_number[i], "x ",
-                                agg$original_class[i], " → ",
+                                agg$original_class[i], " \u2192 ",
                                 agg$new_class[i]))
         }))
       )

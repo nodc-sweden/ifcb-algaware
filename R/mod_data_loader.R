@@ -113,7 +113,8 @@ download_all_data <- function(config, sample_ids, storage) {
 #'
 #' Reads H5 classification files, computes biovolume data for each classified
 #' image, aggregates results by station visit, and extracts the classifier name
-#' from the first H5 file. Non-biological classes are excluded from biovolume
+#' from the first H5 file and the trained per-class thresholds (\code{NULL}
+#' when the files lack them or disagree). Non-biological classes are excluded from biovolume
 #' but kept in the classification data frame for gallery display.
 #'
 #' @param config Reactive values with settings (\code{non_biological_classes},
@@ -172,6 +173,7 @@ process_classifications <- function(config, dirs, sample_ids, matched,
   station_summary <- aggregate_station_data(biovolume_data, matched)
 
   classifier_name <- read_classifier_name(dirs$class_dir)
+  thresholds_trained <- read_thresholds(dirs$class_dir, sample_ids)
 
   list(
     classifications_raw = classifications,
@@ -180,6 +182,7 @@ process_classifications <- function(config, dirs, sample_ids, matched,
     taxa_lookup = taxa_lookup,
     station_summary = station_summary,
     classifier_name = classifier_name,
+    thresholds_trained = thresholds_trained,
     biovolume_cache = biovolume_cache,
     diatom_status = diatom_status
   )
@@ -615,6 +618,7 @@ mod_data_loader_server <- function(id, config, rv) {
           rv$invalidated_classes      <- proc$non_bio_classes
           rv$taxa_lookup <- proc$taxa_lookup
           rv$classifier_name <- proc$classifier_name
+          rv$thresholds_trained <- proc$thresholds_trained
           rv$biovolume_cache <- proc$biovolume_cache
           rv$diatom_status <- proc$diatom_status
           rv$excluded_samples <- character(0)
@@ -713,13 +717,15 @@ mod_data_loader_server <- function(id, config, rv) {
 
 #' Reset per-cruise validation state
 #'
-#' Clears the corrections log, user-added custom classes and the gallery
-#' selection when new data is loaded, so corrections made on one cruise are
-#' never carried into -- and exported or auto-saved together with -- the next
-#' cruise loaded in the same session. Column structure is preserved.
+#' Clears the corrections log, user-added custom classes, class threshold
+#' adjustments and the gallery selection when new data is loaded, so
+#' corrections made on one cruise are never carried into -- and exported or
+#' auto-saved together with -- the next cruise loaded in the same session.
+#' Column structure is preserved.
 #'
 #' @param rv \code{shiny::reactiveValues} (or a list-like object) holding
-#'   \code{corrections}, \code{custom_classes} and \code{selected_images}.
+#'   \code{corrections}, \code{custom_classes}, \code{selected_images},
+#'   \code{threshold_adjustments} and \code{threshold_dimmed}.
 #' @return \code{rv}, invisibly, after modification.
 #' @keywords internal
 reset_corrections_state <- function(rv) {
@@ -730,5 +736,7 @@ reset_corrections_state <- function(rv) {
     rv$custom_classes <- rv$custom_classes[0, , drop = FALSE]
   }
   rv$selected_images <- character(0)
+  rv$threshold_adjustments <- numeric(0)
+  rv$threshold_dimmed <- character(0)
   invisible(rv)
 }

@@ -96,6 +96,14 @@ mod_gallery_ui <- function(id) {
                            selected = "100", width = "80px")
       ),
 
+      # Score sort (lowest first, to review borderline images)
+      shiny::div(
+        class = "toolbar-select",
+        title = "Show the lowest classifier scores first",
+        shiny::checkboxInput(ns("sort_by_score"), "Sort by score",
+                             value = FALSE)
+      ),
+
       # Pagination
       shiny::actionButton(ns("prev_page"), "",
                           icon = shiny::icon("chevron-left"),
@@ -173,6 +181,18 @@ paginate_images <- function(imgs, page, page_size) {
   imgs[start:end, , drop = FALSE]
 }
 
+#' Order gallery images, optionally by ascending classifier score
+#'
+#' @param imgs Data.frame of images, possibly with a \code{score} column.
+#' @param by_score If \code{TRUE}, sort by ascending score so borderline
+#'   images come first.
+#' @return \code{imgs}, reordered when requested and possible.
+#' @keywords internal
+order_images <- function(imgs, by_score) {
+  if (!isTRUE(by_score) || !"score" %in% names(imgs)) return(imgs)
+  imgs[order(imgs$score), , drop = FALSE]
+}
+
 #' Gallery Module Server
 #'
 #' @param id Module namespace ID.
@@ -231,11 +251,21 @@ mod_gallery_server <- function(id, rv, config) {
         rv$westcoast_samples
       }
 
-      rv$classifications[
+      order_images(rv$classifications[
         rv$classifications$class_name == current_class &
         rv$classifications$sample_name %in% region_samples,
-      ]
+      ], input$sort_by_score)
     })
+
+    shiny::observeEvent(input$sort_by_score, page(1L), ignoreInit = TRUE)
+
+    # Dim the images a previewed class threshold would move to unclassified
+    # (published by mod_thresholds_server). gallery.js re-applies the dimming
+    # after each re-render, like the selection highlights.
+    shiny::observeEvent(rv$threshold_dimmed, {
+      session$sendCustomMessage("thresholdDim",
+                                list(ids = as.list(rv$threshold_dimmed)))
+    }, ignoreNULL = FALSE)
 
     # Paginated images
     paginated <- shiny::reactive({

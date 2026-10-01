@@ -11,6 +11,8 @@
 //   "updatePixelsPerMicron"  push the camera calibration factor for measuring
 //   "toggleMeasureBtn"       style the Measure button as active/inactive
 //   "syncSelection"          replace the selected set (select-page / clear-all)
+//   "thresholdDim"           replace the set of images dimmed by a previewed
+//                            class threshold (mod_thresholds.R)
 //
 // JS -> R  (Shiny.setInputValue(<name>, ...), read as input$<...> in R):
 //   "gallery-toggle_image"   {img}     a single image was clicked
@@ -211,13 +213,32 @@ $(document).ready(function() {
     applySelection();
   });
 
+  // Images a previewed class threshold would move to unclassified. Like the
+  // selection, the server pushes the full set on every change.
+  var dimmedIds = [];
+
+  function applyDimming() {
+    $('.image-card').each(function() {
+      $(this).toggleClass('below-threshold',
+                          dimmedIds.indexOf($(this).data('img')) >= 0);
+    });
+  }
+
+  Shiny.addCustomMessageHandler('thresholdDim', function(msg) {
+    dimmedIds = msg.ids || [];
+    applyDimming();
+  });
+
   // Re-apply highlights after the gallery re-renders: renderUI replaces the
   // DOM, wiping .selected classes even though the images are still selected
   // server-side. shiny:value fires just before the output is swapped in, so
   // defer with setTimeout until the new DOM exists.
   $(document).on('shiny:value', function(e) {
     if (e.name === 'gallery-image_gallery') {
-      setTimeout(applySelection, 0);
+      setTimeout(function() {
+        applySelection();
+        applyDimming();
+      }, 0);
     }
   });
 

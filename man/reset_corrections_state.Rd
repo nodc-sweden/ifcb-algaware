@@ -8,15 +8,17 @@ reset_corrections_state(rv)
 }
 \arguments{
 \item{rv}{\code{shiny::reactiveValues} (or a list-like object) holding
-\code{corrections}, \code{custom_classes} and \code{selected_images}.}
+\code{corrections}, \code{custom_classes}, \code{selected_images},
+\code{threshold_adjustments} and \code{threshold_dimmed}.}
 }
 \value{
 \code{rv}, invisibly, after modification.
 }
 \description{
-Clears the corrections log, user-added custom classes and the gallery
-selection when new data is loaded, so corrections made on one cruise are
-never carried into -- and exported or auto-saved together with -- the next
-cruise loaded in the same session. Column structure is preserved.
+Clears the corrections log, user-added custom classes, class threshold
+adjustments and the gallery selection when new data is loaded, so
+corrections made on one cruise are never carried into -- and exported or
+auto-saved together with -- the next cruise loaded in the same session.
+Column structure is preserved.
 }
 \keyword{internal}

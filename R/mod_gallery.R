@@ -193,6 +193,22 @@ order_images <- function(imgs, by_score) {
   imgs[order(imgs$score), , drop = FALSE]
 }
 
+#' Dimmed image IDs among the images of the current gallery page
+#'
+#' @param imgs Data.frame of the page's images (\code{sample_name},
+#'   \code{roi_number}), or \code{NULL} when no page is shown.
+#' @param dimmed Character vector of image IDs to dim
+#'   (\code{"<sample_name>_<roi_number>"}).
+#' @return The IDs of the page's images that are in \code{dimmed}.
+#' @keywords internal
+page_dimmed_ids <- function(imgs, dimmed) {
+  if (is.null(imgs) || nrow(imgs) == 0 || length(dimmed) == 0) {
+    return(character(0))
+  }
+  ids <- paste0(imgs$sample_name, "_", imgs$roi_number)
+  ids[ids %in% dimmed]
+}
+
 #' Gallery Module Server
 #'
 #' @param id Module namespace ID.
@@ -259,19 +275,22 @@ mod_gallery_server <- function(id, rv, config) {
 
     shiny::observeEvent(input$sort_by_score, page(1L), ignoreInit = TRUE)
 
-    # Dim the images a previewed class threshold would move to unclassified
-    # (published by mod_thresholds_server). gallery.js re-applies the dimming
-    # after each re-render, like the selection highlights.
-    shiny::observeEvent(rv$threshold_dimmed, {
-      session$sendCustomMessage("thresholdDim",
-                                list(ids = as.list(rv$threshold_dimmed)))
-    }, ignoreNULL = FALSE)
-
     # Paginated images
     paginated <- shiny::reactive({
       imgs <- current_images()
       shiny::req(nrow(imgs) > 0)
       paginate_images(imgs, page(), as.integer(input$page_size))
+    })
+
+    # Dim the images a previewed class threshold would move to unclassified
+    # (published by mod_thresholds_server). Only the IDs on the current page
+    # are sent: the full set can hold tens of thousands of images.
+    # gallery.js re-applies the dimming after each re-render, like the
+    # selection highlights.
+    shiny::observe({
+      imgs <- tryCatch(paginated(), error = function(e) NULL)
+      ids <- page_dimmed_ids(imgs, rv$threshold_dimmed)
+      session$sendCustomMessage("thresholdDim", list(ids = as.list(ids)))
     })
 
     # ---- PNG extraction ----

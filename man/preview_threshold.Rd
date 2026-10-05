@@ -39,4 +39,9 @@ Compares the working labels under the current adjustments with those
 under the proposed threshold, both with manual corrections applied, so
 manually corrected images are never counted.
 }
+\details{
+Convenience wrapper around \code{preview_context()} and
+\code{preview_from_context()}; the app keeps the context between slider
+moves instead.
+}
 \keyword{internal}

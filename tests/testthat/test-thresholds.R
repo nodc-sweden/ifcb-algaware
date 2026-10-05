@@ -231,3 +231,106 @@ test_that("threshold_summary returns an empty frame with no adjustments", {
   expect_equal(names(result),
                c("class_name", "trained", "adjusted", "n_moved"))
 })
+
+# ---- preview_threshold: candidate-row shortcut ----
+
+test_that("preview_threshold counts images relabelled into the class by hand", {
+  # ROI 4 (top class B) was manually moved to A: it belongs to A's current
+  # count but no A threshold can move it
+  corrections <- data.frame(sample_name = "S1", roi_number = 4L,
+                            original_class = "B", new_class = "A",
+                            stringsAsFactors = FALSE)
+  result <- preview_threshold(make_classifications(), NULL, corrections,
+                              "A", 0.99)
+  expect_equal(result$n_current, 4L)
+  expect_equal(result$n_removed, 3L)
+  expect_false("S1_4" %in% result$removed)
+})
+
+test_that("preview_threshold matches a full recomposition", {
+  # Reference: recompose every row, as preview_threshold() did before it was
+  # restricted to the rows a class threshold can affect
+  full_preview <- function(original, adjustments, corrections, cls, value) {
+    before <- compose_classifications(original, adjustments, corrections)$all
+    after <- compose_classifications(
+      original, replace_named(adjustments, cls, value), corrections
+    )$all
+    was <- before$class_name %in% cls
+    now <- after$class_name %in% cls
+    ids <- paste0(before$sample_name, "_", before$roi_number)
+    list(n_current = sum(was), n_removed = sum(was & !now),
+         n_added = sum(!was & now), removed = ids[was & !now],
+         added = ids[!was & now])
+  }
+
+  set.seed(42)
+  n <- 400
+  classes <- c("A", "B", "C")
+  auto <- sample(classes, n, replace = TRUE)
+  score <- stats::runif(n)
+  original <- data.frame(
+    sample_name = sample(c("S1", "S2", "S3"), n, replace = TRUE),
+    roi_number = seq_len(n),
+    class_name = ifelse(score >= 0.5, auto, "unclassified"),
+    class_auto = auto, score = score, stringsAsFactors = FALSE
+  )
+  picked <- sample(n, 60)
+  corrections <- data.frame(
+    sample_name = original$sample_name[picked],
+    roi_number = original$roi_number[picked],
+    original_class = original$class_name[picked],
+    new_class = sample(c(classes, "unclassified"), 60, replace = TRUE),
+    stringsAsFactors = FALSE
+  )
+  adjustments <- c(B = 0.7)
+
+  for (cls in classes) {
+    for (value in c(0.2, 0.5, 0.8)) {
+      expect_equal(
+        preview_threshold(original, adjustments, corrections, cls, value),
+        full_preview(original, adjustments, corrections, cls, value)
+      )
+    }
+  }
+})
+
+# ---- correction matching on numeric keys ----
+
+test_that("apply_corrections ignores corrections without a sample or ROI", {
+  # Threshold rows of an imported file carry NA here; they must not land on
+  # rows of samples that have no corrections (whose keys are also NA)
+  cls <- make_classifications()
+  corrections <- data.frame(sample_name = c("S1", NA),
+                            roi_number = c(NA, 2L),
+                            original_class = "A", new_class = "Z",
+                            stringsAsFactors = FALSE)
+  expect_equal(apply_corrections(cls, corrections), cls)
+})
+
+test_that("apply_corrections agrees with matching on text keys", {
+  set.seed(7)
+  n <- 500
+  cls <- data.frame(
+    sample_name = sample(paste0("D2026092", 1:6, "T0000_IFCB134"), n,
+                         replace = TRUE),
+    roi_number = sample(1:400, n, replace = TRUE),
+    class_name = "A", stringsAsFactors = FALSE
+  )
+  cls <- cls[!duplicated(cls[c("sample_name", "roi_number")]), ]
+  corrections <- data.frame(
+    sample_name = sample(c(unique(cls$sample_name), "D_unknown"), 300,
+                         replace = TRUE),
+    roi_number = sample(1:450, 300, replace = TRUE),
+    new_class = sample(c("B", "C", "unclassified"), 300, replace = TRUE),
+    stringsAsFactors = FALSE
+  )
+
+  keys <- paste0(cls$sample_name, "_", cls$roi_number)
+  idx <- match(paste0(corrections$sample_name, "_", corrections$roi_number),
+               keys)
+  expected <- cls
+  expected$class_name[idx[!is.na(idx)]] <- corrections$new_class[!is.na(idx)]
+
+  expect_equal(apply_corrections(cls, corrections), expected)
+  expect_equal(correction_row_index(cls, corrections), idx)
+})

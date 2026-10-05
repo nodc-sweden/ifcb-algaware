@@ -125,23 +125,35 @@ mod_thresholds_server <- function(id, rv) {
     }
 
     # Threshold the slider asks for, or NULL when there is nothing to adjust
-    requested_value <- function(target) {
-      if (!target$available || is.null(input$threshold)) return(NULL)
-      resolve_slider_value(input$threshold, effective_threshold(target$class),
-                           step)
+    requested_value <- function(target, slider = input$threshold) {
+      if (!target$available || is.null(slider)) return(NULL)
+      resolve_slider_value(slider, effective_threshold(target$class), step)
     }
 
-    preview <- shiny::debounce(shiny::reactive({
+    # Debounce the slider value, not the preview: a debounced computation
+    # still runs for every value reported during a drag (only its result is
+    # held back), which made the count lag far behind on a large cruise.
+    settled_slider <- shiny::debounce(shiny::reactive(input$threshold), 300)
+
+    # The slider-independent part of the preview, computed once per class
+    # and state. Lazy: only evaluated once the slider leaves the threshold
+    # in effect, so browsing classes costs nothing.
+    preview_base <- shiny::reactive({
       target <- current_target()
-      value <- requested_value(target)
+      shiny::req(target$available)
+      preview_context(rv$classifications_original, rv$threshold_adjustments,
+                      rv$corrections, target$class,
+                      samples = active_sample_ids(rv))
+    })
+
+    preview <- shiny::reactive({
+      target <- current_target()
+      value <- requested_value(target, settled_slider())
       if (is.null(value) || value == effective_threshold(target$class)) {
         return(NULL)
       }
-      preview_threshold(rv$classifications_original,
-                        rv$threshold_adjustments, rv$corrections,
-                        target$class, value,
-                        samples = active_sample_ids(rv))
-    }), 300)
+      preview_from_context(preview_base(), value)
+    })
 
     shiny::observe({
       p <- preview()
@@ -186,10 +198,7 @@ mod_thresholds_server <- function(id, rv) {
       value <- requested_value(target)
       if (is.null(value)) return()
 
-      counts <- preview_threshold(
-        rv$classifications_original, rv$threshold_adjustments,
-        rv$corrections, target$class, value, samples = active_sample_ids(rv)
-      )
+      counts <- preview_from_context(preview_base(), value)
       new_adjustments <- set_threshold_adjustment(
         rv$threshold_adjustments, target$class, value, rv$thresholds_trained,
         tolerance = step / 2

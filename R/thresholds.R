@@ -25,11 +25,8 @@ apply_thresholds <- function(classifications, adjustments) {
   }
 
   auto <- classifications$class_auto
-  stored <- classifications$class_name
-  rule_based <- !is.na(auto) & !is.na(stored) &
-    (stored == auto | stored == "unclassified")
   threshold <- unname(adjustments[auto])
-  affected <- rule_based & !is.na(threshold)
+  affected <- follows_threshold_rule(classifications) & !is.na(threshold)
   if (!any(affected)) return(classifications)
 
   result <- classifications
@@ -39,6 +36,21 @@ apply_thresholds <- function(classifications, adjustments) {
     "unclassified"
   )
   result
+}
+
+#' Rows whose stored label came from the classifier's threshold rule
+#'
+#' @param classifications A data.frame with \code{class_name} and
+#'   \code{class_auto} columns.
+#' @return Logical vector: \code{TRUE} where the stored label is the
+#'   top-scoring class or \code{"unclassified"}, so a threshold change may
+#'   relabel the row. All \code{FALSE} without a \code{class_auto} column.
+#' @keywords internal
+follows_threshold_rule <- function(classifications) {
+  auto <- classifications$class_auto
+  stored <- classifications$class_name
+  if (is.null(auto)) return(rep(FALSE, nrow(classifications)))
+  !is.na(auto) & !is.na(stored) & (stored == auto | stored == "unclassified")
 }
 
 #' Apply a corrections log to classifications
@@ -56,21 +68,42 @@ apply_thresholds <- function(classifications, adjustments) {
 #'   \code{class_name}.
 #' @keywords internal
 apply_corrections <- function(classifications, corrections) {
-  if (is.null(corrections) || nrow(corrections) == 0) {
-    return(classifications)
-  }
-
-  keys <- paste0(classifications$sample_name, "_",
-                 classifications$roi_number)
-  correction_keys <- paste0(corrections$sample_name, "_",
-                            corrections$roi_number)
-  idx <- match(correction_keys, keys)
+  idx <- correction_row_index(classifications, corrections)
   valid <- !is.na(idx)
   if (!any(valid)) return(classifications)
 
   result <- classifications
   result$class_name[idx[valid]] <- corrections$new_class[valid]
   result
+}
+
+#' Row of each correction in a classifications table
+#'
+#' Matches on numeric keys (sample index and ROI number) instead of pasted
+#' text keys, which dominated the run time on a full cruise.
+#'
+#' @param classifications A data.frame with \code{sample_name} and
+#'   \code{roi_number} columns.
+#' @param corrections A data.frame with \code{sample_name} and
+#'   \code{roi_number} columns, or \code{NULL}.
+#' @return Integer vector with one element per correction: the row it
+#'   applies to, or \code{NA} when the ROI is not in
+#'   \code{classifications}. Empty when there are no corrections.
+#' @keywords internal
+correction_row_index <- function(classifications, corrections) {
+  if (is.null(corrections) || nrow(corrections) == 0) return(integer(0))
+
+  # ROI numbers stay far below the multiplier, so keys are unique and exact
+  samples <- unique(corrections$sample_name)
+  row_keys <- match(classifications$sample_name, samples) * 1e7 +
+    classifications$roi_number
+  correction_keys <- match(corrections$sample_name, samples) * 1e7 +
+    corrections$roi_number
+
+  idx <- match(correction_keys, row_keys)
+  # A correction without a sample or ROI must not match rows with NA keys
+  idx[is.na(correction_keys)] <- NA_integer_
+  idx
 }
 
 #' Build the working classifications from the load-time snapshot
@@ -154,6 +187,10 @@ replace_named <- function(x, name, value) {
 #' under the proposed threshold, both with manual corrections applied, so
 #' manually corrected images are never counted.
 #'
+#' Convenience wrapper around \code{preview_context()} and
+#' \code{preview_from_context()}; the app keeps the context between slider
+#' moves instead.
+#'
 #' @param original The load-time classifications.
 #' @param adjustments Current named numeric vector of adjustments.
 #' @param corrections Corrections log data.frame, or \code{NULL}.
@@ -169,23 +206,105 @@ replace_named <- function(x, name, value) {
 #' @keywords internal
 preview_threshold <- function(original, adjustments, corrections, class_name,
                               value, samples = NULL) {
-  if (!is.null(samples)) {
-    original <- original[original$sample_name %in% samples, , drop = FALSE]
-  }
-  proposed <- replace_named(adjustments, class_name, value)
-  before <- compose_classifications(original, adjustments, corrections)$all
-  after <- compose_classifications(original, proposed, corrections)$all
+  context <- preview_context(original, adjustments, corrections, class_name,
+                             samples)
+  preview_from_context(context, value)
+}
 
-  was <- before$class_name %in% class_name
-  now <- after$class_name %in% class_name
-  ids <- paste0(before$sample_name, "_", before$roi_number)
+#' Everything about a class's preview that does not depend on the slider
+#'
+#' Finding the rows a class can hold and applying the current thresholds and
+#' corrections to them takes a noticeable fraction of a second on a full
+#' cruise. None of it changes while the slider moves, so it is done once per
+#' class and reused for every slider value.
+#'
+#' @inheritParams preview_threshold
+#' @return A list with, per candidate row, \code{sample_name},
+#'   \code{roi_number}, \code{score}, \code{was} (currently labelled with the
+#'   class) and \code{follows} (the label follows this class's threshold:
+#'   top class is the class, stored label came from the threshold rule, and
+#'   no manual correction).
+#' @keywords internal
+preview_context <- function(original, adjustments, corrections, class_name,
+                            samples = NULL) {
+  candidates <- threshold_candidates(original, corrections, class_name)
+  if (!is.null(samples)) {
+    candidates <- candidates[candidates$sample_name %in% samples, ,
+                             drop = FALSE]
+  }
+  current <- apply_thresholds(candidates, adjustments)$class_name
+  follows <- follows_threshold_rule(candidates) &
+    candidates$class_auto %in% class_name
+
+  # A manual correction fixes the label whatever the threshold
+  idx <- correction_row_index(candidates, corrections)
+  corrected <- idx[!is.na(idx)]
+  current[corrected] <- corrections$new_class[!is.na(idx)]
+  follows[corrected] <- FALSE
+
+  list(
+    sample_name = candidates$sample_name,
+    roi_number = candidates$roi_number,
+    score = candidates$score,
+    was = current %in% class_name,
+    follows = follows
+  )
+}
+
+#' Preview one threshold value from a prepared context
+#'
+#' @param context A list from \code{preview_context()}.
+#' @param value Proposed threshold.
+#' @return A list as returned by \code{preview_threshold()}.
+#' @keywords internal
+preview_from_context <- function(context, value) {
+  was <- context$was
+  now <- was
+  reaches <- context$score[context$follows] >= value
+  now[context$follows] <- !is.na(reaches) & reaches
+
+  # Built for the moving images only; paste0() on empty input gives "_"
+  image_ids <- function(rows) {
+    if (!any(rows)) return(character(0))
+    paste0(context$sample_name[rows], "_", context$roi_number[rows])
+  }
   list(
     n_current = sum(was),
     n_removed = sum(was & !now),
     n_added = sum(!was & now),
-    removed = ids[was & !now],
-    added = ids[!was & now]
+    removed = image_ids(was & !now),
+    added = image_ids(!was & now)
   )
+}
+
+#' Rows that can carry a class before or after a threshold change
+#'
+#' An image can only be labelled with a class if it is the image's
+#' top-scoring class, its stored label, or the target of a manual
+#' correction. All other rows are irrelevant to a preview of that class.
+#' The correction match is deliberately loose (sample and ROI number matched
+#' separately, avoiding a key for every row); extra rows are harmless.
+#'
+#' @param original The load-time classifications.
+#' @param corrections Corrections log data.frame, or \code{NULL}.
+#' @param class_name Class of interest.
+#' @return The subset of \code{original} that may be labelled
+#'   \code{class_name}, in the original row order.
+#' @keywords internal
+threshold_candidates <- function(original, corrections, class_name) {
+  is_class <- function(x) !is.na(x) & x == class_name
+  keep <- is_class(original$class_name)
+  if (!is.null(original$class_auto)) {
+    keep <- keep | is_class(original$class_auto)
+  }
+  if (!is.null(corrections) && nrow(corrections) > 0) {
+    into <- corrections[corrections$new_class %in% class_name, , drop = FALSE]
+    if (nrow(into) > 0) {
+      keep <- keep | (original$sample_name %in% into$sample_name &
+                        original$roi_number %in% into$roi_number)
+    }
+  }
+  original[keep, , drop = FALSE]
 }
 
 #' Summarise threshold adjustments for export and reporting

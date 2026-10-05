@@ -172,3 +172,28 @@ test_that("the preview marks the images that would leave the class", {
     expect_length(rv$threshold_adjustments, 0)
   })
 })
+
+test_that("a burst of slider values computes a single preview", {
+  # While dragging, the slider reports many values; only the one it settles
+  # on may be computed, or the server falls behind on a large cruise
+  calls <- 0L
+  real_preview <- preview_from_context
+  testthat::local_mocked_bindings(
+    preview_from_context = function(...) {
+      calls <<- calls + 1L
+      real_preview(...)
+    }
+  )
+  rv <- make_threshold_rv()
+  shiny::testServer(mod_thresholds_server, args = list(rv = rv), {
+    # Consume the initial flush, which in the app happens before the slider
+    # exists (otherwise the first value counts as the debouncer's start value)
+    session$flushReact()
+    session$setInputs(threshold = 0.6)
+    session$setInputs(threshold = 0.9)
+    session$setInputs(threshold = 0.7)
+    session$elapse(1000)
+    expect_equal(calls, 1L)
+    expect_setequal(rv$threshold_dimmed, c("S1_2", "S2_6"))
+  })
+})

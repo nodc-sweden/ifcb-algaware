@@ -603,8 +603,7 @@ mod_validation_server <- function(id, rv, config) {
       )
       if (is.null(df)) return()
 
-      required <- c("sample_name", "roi_number", "original_class", "new_class")
-      missing_cols <- setdiff(required, names(df))
+      missing_cols <- missing_import_columns(df)
       if (length(missing_cols) > 0) {
         shiny::showNotification(
           paste0("File is missing required columns: ",

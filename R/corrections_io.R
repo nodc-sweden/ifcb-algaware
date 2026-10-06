@@ -59,6 +59,25 @@ split_corrections_import <- function(df) {
   )
 }
 
+#' Columns an imported corrections file lacks
+#'
+#' The correction columns are always required. A file with threshold rows
+#' must also have the columns \code{adjustments_from_import()} reads, which
+#' a hand-edited or truncated file may have lost.
+#'
+#' @param df Data.frame read from a corrections CSV.
+#' @return Character vector of the missing column names, empty when the file
+#'   can be imported.
+#' @keywords internal
+missing_import_columns <- function(df) {
+  required <- c("sample_name", "roi_number", "original_class", "new_class")
+  if (nrow(split_corrections_import(df)$thresholds) > 0) {
+    required <- c(required, "threshold_class", "threshold_trained",
+                  "threshold_adjusted")
+  }
+  setdiff(required, names(df))
+}
+
 #' Turn imported threshold rows into threshold adjustments
 #'
 #' A row is only applied when its class exists in the loaded classifier and

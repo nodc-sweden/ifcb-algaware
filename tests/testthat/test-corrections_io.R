@@ -88,6 +88,36 @@ test_that("split_corrections_import separates threshold rows after a CSV roundtr
   expect_equal(result$thresholds$threshold_class, c("A", "B"))
 })
 
+# ---- missing_import_columns ----
+
+test_that("missing_import_columns accepts a file from before thresholds", {
+  expect_equal(missing_import_columns(make_io_corrections()), character(0))
+})
+
+test_that("missing_import_columns accepts a full export after a CSV roundtrip", {
+  df <- roundtrip_csv(build_corrections_export(make_io_corrections(), NULL,
+                                               io_thresholds))
+  expect_equal(missing_import_columns(df), character(0))
+})
+
+test_that("missing_import_columns reports missing correction columns", {
+  df <- make_io_corrections()[, c("sample_name", "roi_number")]
+  expect_equal(missing_import_columns(df), c("original_class", "new_class"))
+})
+
+test_that("missing_import_columns requires threshold columns for threshold rows", {
+  df <- build_corrections_export(make_io_corrections(), NULL, io_thresholds)
+  df <- df[, setdiff(names(df), c("threshold_class", "threshold_adjusted"))]
+  expect_equal(missing_import_columns(df),
+               c("threshold_class", "threshold_adjusted"))
+})
+
+test_that("missing_import_columns ignores threshold columns without threshold rows", {
+  df <- make_io_corrections()
+  df$record_type <- "correction"
+  expect_equal(missing_import_columns(df), character(0))
+})
+
 # ---- adjustments_from_import ----
 
 test_that("adjustments_from_import restores valid adjustments", {

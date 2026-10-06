@@ -197,3 +197,22 @@ test_that("importing a thresholds-only file restores the thresholds", {
                  c("A", "A", "unclassified"))
   })
 })
+
+test_that("a file with threshold rows but no threshold columns is rejected", {
+  # e.g. a hand-edited export: must be refused, not end the session.
+  # testServer() reports an error in an observer as a warning.
+  rv <- make_import_rv()
+  export <- build_corrections_export(
+    import_correction, NULL,
+    data.frame(class_name = "B", trained = 0.5, adjusted = 0.85,
+               n_moved = 1L, stringsAsFactors = FALSE)
+  )
+  export <- export[, !startsWith(names(export), "threshold_")]
+  expect_no_warning(run_import(rv, export))
+  shiny::isolate({
+    expect_equal(rv$threshold_adjustments, c(A = 0.7))
+    expect_equal(nrow(rv$corrections), 0L)
+    expect_equal(rv$classifications_all$class_name,
+                 c("A", "unclassified", "B"))
+  })
+})

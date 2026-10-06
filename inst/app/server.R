@@ -18,6 +18,7 @@ server <- function(input, output, session) {
     # -- Data loading stage (set by mod_data_loader) --
     dashboard_metadata  = NULL,          # Raw metadata from IFCB Dashboard API
     cruise_numbers      = character(0),  # Available cruise IDs for dropdown
+    load_count          = 0L,            # Number of data loads this session (see reset_corrections_state())
     matched_metadata_all = NULL,         # Full matched metadata before exclusions
     matched_metadata    = NULL,          # Metadata filtered & matched to stations
     classifications_raw_all = NULL,      # Full original AI predictions

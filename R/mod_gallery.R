@@ -492,7 +492,9 @@ mod_gallery_server <- function(id, rv, config) {
       page(1L)
     })
 
-    shiny::observeEvent(rv$matched_metadata_all, {
+    # The load counter, not the loaded data: reloading the same cruise
+    # assigns identical data, which invalidates nothing.
+    shiny::observeEvent(rv$load_count, {
       page(1L)
     })
 

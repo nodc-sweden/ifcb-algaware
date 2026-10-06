@@ -179,6 +179,14 @@ test_that("reset_corrections_state clears threshold adjustments", {
   })
 })
 
+test_that("reset_corrections_state counts the loads", {
+  rv <- shiny::reactiveValues()
+  shiny::isolate(reset_corrections_state(rv))
+  expect_equal(shiny::isolate(rv$load_count), 1L)
+  shiny::isolate(reset_corrections_state(rv))
+  expect_equal(shiny::isolate(rv$load_count), 2L)
+})
+
 test_that("reset_corrections_state tolerates missing fields", {
   rv <- shiny::reactiveValues()
   expect_no_error(shiny::isolate(reset_corrections_state(rv)))

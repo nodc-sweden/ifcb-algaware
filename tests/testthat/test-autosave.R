@@ -400,10 +400,55 @@ test_that("loading another cruise does not blank the previous recovery file", {
 
     # What the data loader does in one go for a new cruise
     rv$matched_metadata_all <- data.frame(pid = "cruise_B")
-    rv$corrections <- make_corrections(0)
-    rv$threshold_adjustments <- numeric(0)
+    reset_corrections_state(rv)
     rv$current_class_idx <- 1L
     session$flushReact()
     expect_equal(nrow(utils::read.csv(target)), 2L)
+  })
+})
+
+test_that("reloading the same cruise does not blank the recovery file", {
+  storage <- withr::local_tempdir()
+  rv <- shiny::reactiveValues(
+    data_loaded = TRUE,
+    corrections = make_corrections(2),
+    custom_classes = empty_custom_classes,
+    threshold_adjustments = numeric(0),
+    matched_metadata_all = data.frame(pid = "cruise_A"),
+    current_class_idx = 1L,
+    current_region = "EAST",
+    selected_images = character(0),
+    invalidated_classes = character(0)
+  )
+  config <- shiny::reactiveValues(
+    local_storage_path = storage, db_folder = "", annotator = ""
+  )
+
+  shiny::testServer(mod_validation_server,
+                    args = list(rv = rv, config = config), {
+    target <- file.path(
+      storage, "corrections",
+      paste0("algaware_corrections_", format(Sys.Date(), "%Y%m%d"), ".csv")
+    )
+    session$flushReact()
+    rv$current_class_idx <- 2L
+    session$flushReact()
+    expect_equal(nrow(utils::read.csv(target)), 2L)
+
+    # The metadata is identical to what is already loaded, so assigning it
+    # invalidates nothing: only the load counter tells this is a new load
+    rv$matched_metadata_all <- data.frame(pid = "cruise_A")
+    reset_corrections_state(rv)
+    rv$current_class_idx <- 1L
+    session$flushReact()
+    expect_equal(nrow(utils::read.csv(target)), 2L)
+
+    # The first save after the reload sets the earlier file aside
+    rv$corrections <- make_corrections(1)
+    rv$current_class_idx <- 2L
+    session$flushReact()
+    expect_equal(nrow(utils::read.csv(target)), 1L)
+    prev <- sub("\\.csv$", "_prev.csv", target)
+    expect_equal(nrow(utils::read.csv(prev)), 2L)
   })
 })

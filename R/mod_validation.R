@@ -710,6 +710,8 @@ mod_validation_server <- function(id, rv, config) {
     # downloading) can be restored with "Import corrections". Saves only when
     # either changed since the last write; a failed write warns once per
     # session and never blocks validation.
+    # autosave_last holds the state last written and the data load it
+    # belongs to (rv$load_count).
     autosave_last <- NULL
     autosave_warned <- FALSE
 
@@ -720,24 +722,32 @@ mod_validation_server <- function(id, rv, config) {
       state <- list(corrections = corrections,
                     adjustments = rv$threshold_adjustments)
       has_content <- nrow(corrections) > 0 || length(state$adjustments) > 0
+      # A newly loaded cruise starts a fresh corrections log (see
+      # reset_corrections_state()), so nothing written before the current
+      # load counts as saved: the state is not compared against the previous
+      # load's rows, and that load's file is never overwritten.
+      load_id <- rv$load_count
+      first_save <- is.null(autosave_last) ||
+        !identical(autosave_last$load, load_id)
       # Nothing to save yet, or nothing changed since the last save. Once
-      # something was saved, an emptied state is still written, so undoing
-      # everything is reflected in the recovery file.
-      if ((!has_content && is.null(autosave_last)) ||
-          identical(state, autosave_last)) {
+      # something was saved in this load, an emptied state is still written,
+      # so undoing everything is reflected in the recovery file.
+      unchanged <- !first_save && identical(state, autosave_last$state)
+      if ((first_save && !has_content) || unchanged) {
         return(invisible(NULL))
       }
 
-      # First save of this session: an existing file on disk is from an
-      # earlier session (possibly the crash being recovered from), so have
-      # the helper set it aside as ..._prev.csv instead of clobbering it.
+      # First save of this load: an existing file on disk is from an earlier
+      # session (possibly the crash being recovered from) or an earlier load,
+      # so have the helper set it aside as ..._prev.csv instead of clobbering
+      # it.
       result <- autosave_corrections(corrections, rv$custom_classes,
                                      config$local_storage_path,
-                                     backup_existing = is.null(autosave_last),
+                                     backup_existing = first_save,
                                      thresholds = current_threshold_table(rv),
                                      allow_empty = TRUE)
       if (result$success) {
-        autosave_last <<- state
+        autosave_last <<- list(load = load_id, state = state)
       } else if (notify && !autosave_warned && !is.null(result$error)) {
         autosave_warned <<- TRUE
         shiny::showNotification(
@@ -753,17 +763,6 @@ mod_validation_server <- function(id, rv, config) {
                              rv$threshold_adjustments), {
       do_autosave()
     }, ignoreInit = TRUE)
-
-    # A newly loaded cruise starts a fresh corrections log (see
-    # reset_corrections_state()), so forget what was last written: the next
-    # save must not compare against the previous cruise's rows, and it sets
-    # the file from that cruise aside as ..._prev.csv instead of overwriting.
-    # priority = 1: must run before the autosave observer in the same flush,
-    # or the new cruise's empty state would be written over the previous
-    # cruise's recovery file.
-    shiny::observeEvent(rv$matched_metadata_all, {
-      autosave_last <<- NULL
-    }, ignoreInit = TRUE, priority = 1)
 
     # Flush on clean session end so work done in the last visited class is
     # not lost when the app is closed without downloading. Does not fire on

@@ -723,9 +723,16 @@ mod_data_loader_server <- function(id, config, rv) {
 #' auto-saved together with -- the next cruise loaded in the same session.
 #' Column structure is preserved.
 #'
+#' Also counts the load in \code{rv$load_count}. Per-load state kept
+#' elsewhere (the state last written by the auto-save, the gallery page)
+#' keys on that counter rather than on the loaded data changing, because
+#' loading the same cruise again assigns identical data and so invalidates
+#' nothing.
+#'
 #' @param rv \code{shiny::reactiveValues} (or a list-like object) holding
 #'   \code{corrections}, \code{custom_classes}, \code{selected_images},
-#'   \code{threshold_adjustments} and \code{threshold_dimmed}.
+#'   \code{threshold_adjustments}, \code{threshold_dimmed} and
+#'   \code{load_count}.
 #' @return \code{rv}, invisibly, after modification.
 #' @keywords internal
 reset_corrections_state <- function(rv) {
@@ -738,5 +745,6 @@ reset_corrections_state <- function(rv) {
   rv$selected_images <- character(0)
   rv$threshold_adjustments <- numeric(0)
   rv$threshold_dimmed <- character(0)
+  rv$load_count <- (rv$load_count %||% 0L) + 1L
   invisible(rv)
 }

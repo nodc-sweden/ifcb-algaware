@@ -31,15 +31,26 @@ active_sample_ids <- function(rv) {
   setdiff(unique(rv$matched_metadata_all$pid), rv$excluded_samples)
 }
 
-#' Keep the current class index within the region's class list
+#' Point the current class index back at a class after the class list changed
+#'
+#' The gallery addresses its class by position in the region's sorted class
+#' list, so a class appearing or disappearing ahead of it (e.g. a class
+#' emptied by a threshold being reset) would otherwise switch the gallery to
+#' a neighbouring class.
 #'
 #' @param rv Reactive values used by \code{get_region_context()}.
-#' @return \code{NULL}, invisibly.
+#' @param class_name The class shown before the change, or \code{NULL}.
+#' @return \code{NULL}, invisibly. When the class is gone, the index is only
+#'   kept within the class list.
 #' @keywords internal
-clamp_current_class_idx <- function(rv) {
-  ctx <- get_region_context(rv)
-  rv$current_class_idx <- max(1L, min(rv$current_class_idx,
-                                      length(ctx$classes)))
+restore_current_class <- function(rv, class_name) {
+  classes <- get_region_context(rv)$classes
+  idx <- match(class_name, classes)
+  rv$current_class_idx <- if (length(idx) == 1 && !is.na(idx)) {
+    idx
+  } else {
+    max(1L, min(rv$current_class_idx, length(classes)))
+  }
   invisible(NULL)
 }
 
@@ -124,16 +135,49 @@ mod_thresholds_server <- function(id, rv) {
       }
     }
 
-    # Threshold the slider asks for, or NULL when there is nothing to adjust
-    requested_value <- function(target, slider = input$threshold) {
-      if (!target$available || is.null(slider)) return(NULL)
-      resolve_slider_value(slider, effective_threshold(target$class), step)
-    }
+    # The slider on screen, or NULL when the class has no threshold to
+    # adjust. Each rendering gets an input id of its own: the slider is
+    # rebuilt whenever the class or its threshold changes, and the browser
+    # only reports the new slider's position after a round trip. Under one
+    # fixed id the previous slider's value would meanwhile be read as a
+    # request for the new class, previewing (or applying) a threshold nobody
+    # asked for. An id no slider has reported under has no value at all.
+    slider_serial <- 0L
+    slider <- shiny::reactive({
+      target <- current_target()
+      if (!target$available) return(NULL)
+      slider_serial <<- slider_serial + 1L
+      list(
+        id = paste0("threshold_", slider_serial),
+        class = target$class,
+        trained = target$trained[[target$class]],
+        effective = effective_threshold(target$class),
+        is_adjusted = target$class %in% names(rv$threshold_adjustments)
+      )
+    })
+
+    # What the slider on screen reports, tagged with its id
+    slider_report <- shiny::reactive({
+      s <- slider()
+      if (is.null(s)) return(NULL)
+      list(id = s$id, value = input[[s$id]])
+    })
 
     # Debounce the slider value, not the preview: a debounced computation
     # still runs for every value reported during a drag (only its result is
     # held back), which made the count lag far behind on a large cruise.
-    settled_slider <- shiny::debounce(shiny::reactive(input$threshold), 300)
+    # The debounced report lags behind a change of slider too, hence the id.
+    settled_report <- shiny::debounce(slider_report, 300)
+
+    # Threshold a report asks of slider `s`, or NULL when there is nothing
+    # to adjust or the report is from another slider
+    requested_value <- function(s, report) {
+      if (is.null(s) || is.null(report$value) ||
+          !identical(report$id, s$id)) {
+        return(NULL)
+      }
+      resolve_slider_value(report$value, s$effective, step)
+    }
 
     # The slider-independent part of the preview, computed once per class
     # and state. Lazy: only evaluated once the slider leaves the threshold
@@ -147,11 +191,9 @@ mod_thresholds_server <- function(id, rv) {
     })
 
     preview <- shiny::reactive({
-      target <- current_target()
-      value <- requested_value(target, settled_slider())
-      if (is.null(value) || value == effective_threshold(target$class)) {
-        return(NULL)
-      }
+      s <- slider()
+      value <- requested_value(s, settled_report())
+      if (is.null(value) || value == s$effective) return(NULL)
       preview_from_context(preview_base(), value)
     })
 
@@ -166,6 +208,7 @@ mod_thresholds_server <- function(id, rv) {
       if (same_adjustments(new_adjustments, rv$threshold_adjustments)) {
         return(FALSE)
       }
+      viewed_class <- get_region_context(rv)$current_class
       composed <- compose_classifications(
         rv$classifications_original, new_adjustments, rv$corrections,
         active_sample_ids(rv)
@@ -176,7 +219,7 @@ mod_thresholds_server <- function(id, rv) {
       rv$threshold_dimmed <- character(0)
       rv$selected_images <- character(0)
       rv$summaries_stale <- TRUE
-      clamp_current_class_idx(rv)
+      restore_current_class(rv, viewed_class)
       TRUE
     }
 
@@ -194,19 +237,19 @@ mod_thresholds_server <- function(id, rv) {
     }
 
     shiny::observeEvent(input$apply, {
-      target <- current_target()
-      value <- requested_value(target)
+      s <- slider()
+      value <- requested_value(s, slider_report())
       if (is.null(value)) return()
 
       counts <- preview_from_context(preview_base(), value)
       new_adjustments <- set_threshold_adjustment(
-        rv$threshold_adjustments, target$class, value, rv$thresholds_trained,
+        rv$threshold_adjustments, s$class, value, rv$thresholds_trained,
         tolerance = step / 2
       )
       if (!commit_adjustments(new_adjustments)) return()
 
       shiny::showNotification(
-        paste0("Threshold for '", target$class, "' set to ",
+        paste0("Threshold for '", s$class, "' set to ",
                format_threshold(value), ": ", counts$n_removed,
                " image(s) moved to unclassified, ", counts$n_added,
                " returned."),
@@ -242,19 +285,18 @@ mod_thresholds_server <- function(id, rv) {
         return(shiny::p(class = "text-muted small mb-0",
                         "No trained threshold for this class."))
       }
-      trained <- target$trained[[target$class]]
-      current <- effective_threshold(target$class)
-      is_adjusted <- target$class %in% names(rv$threshold_adjustments)
+      s <- slider()
 
       shiny::tagList(
-        shiny::sliderInput(ns("threshold"), NULL, min = 0, max = 1,
-                           value = current, step = step, ticks = FALSE,
+        shiny::sliderInput(ns(s$id), NULL, min = 0, max = 1,
+                           value = s$effective, step = step, ticks = FALSE,
                            width = "100%"),
         shiny::p(
           class = "small text-muted mb-1",
-          paste0("Trained: ", format_threshold(trained)),
-          if (is_adjusted) {
-            shiny::strong(paste0(" \u00b7 Applied: ", format_threshold(current)))
+          paste0("Trained: ", format_threshold(s$trained)),
+          if (s$is_adjusted) {
+            shiny::strong(paste0(" \u00b7 Applied: ",
+                                 format_threshold(s$effective)))
           }
         ),
         shiny::div(

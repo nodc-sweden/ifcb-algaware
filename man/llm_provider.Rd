@@ -7,8 +7,9 @@
 llm_provider()
 }
 \value{
-Character string: \code{"openai"}, \code{"gemini"}, or \code{"none"}.
-When both keys are set, OpenAI is preferred.
+Character string: \code{"openai"}, \code{"gemini"},
+\code{"claude"}, or \code{"none"}. When several keys are set, the first
+in that order is preferred.
 }
 \description{
 Detect the default LLM provider

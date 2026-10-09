@@ -42,7 +42,7 @@ described in [Standard Cruise Workflow](workflow.html).
 
 ## 1. AI-generated report text
 
-When an OpenAI or Google Gemini API key is configured, AlgAware-IFCB generates
+When an OpenAI, Google Gemini or Anthropic Claude API key is configured, AlgAware-IFCB generates
 Swedish and English summaries and individual station descriptions automatically
 when <span class="btn-badge badge-primary">Make Report</span> is clicked. The
 text is written directly into the Word document — there is no preview or editing

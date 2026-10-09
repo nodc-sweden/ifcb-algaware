@@ -309,34 +309,45 @@ add_formatted_par <- function(doc, text, taxa_lookup = NULL,
   doc
 }
 
+#' API key environment variable per LLM provider
+#'
+#' Order defines provider precedence when several keys are set.
+#'
+#' @return Named character vector mapping provider name to environment
+#'   variable name.
+#' @keywords internal
+llm_api_key_vars <- function() {
+  c(openai = "OPENAI_API_KEY",
+    gemini = "GEMINI_API_KEY",
+    claude = "ANTHROPIC_API_KEY")
+}
+
 #' Check if LLM text generation is available
 #'
-#' @return TRUE if OPENAI_API_KEY or GEMINI_API_KEY is set, FALSE otherwise.
+#' @return TRUE if OPENAI_API_KEY, GEMINI_API_KEY or ANTHROPIC_API_KEY is
+#'   set, FALSE otherwise.
 #' @export
 llm_available <- function() {
-  nzchar(Sys.getenv("OPENAI_API_KEY", "")) ||
-    nzchar(Sys.getenv("GEMINI_API_KEY", ""))
+  length(llm_providers()) > 0
 }
 
 #' List available LLM providers
 #'
-#' @return Character vector of provider names with valid API keys.
+#' @return Character vector of provider names with valid API keys, in
+#'   precedence order (\code{"openai"}, \code{"gemini"}, \code{"claude"}).
 #' @export
 llm_providers <- function() {
-  providers <- character(0)
-  if (nzchar(Sys.getenv("OPENAI_API_KEY", ""))) {
-    providers <- c(providers, "openai")
-  }
-  if (nzchar(Sys.getenv("GEMINI_API_KEY", ""))) {
-    providers <- c(providers, "gemini")
-  }
-  providers
+  key_vars <- llm_api_key_vars()
+  has_key <- vapply(key_vars, function(v) nzchar(Sys.getenv(v, "")),
+                    logical(1))
+  names(key_vars)[has_key]
 }
 
 #' Detect the default LLM provider
 #'
-#' @return Character string: \code{"openai"}, \code{"gemini"}, or \code{"none"}.
-#'   When both keys are set, OpenAI is preferred.
+#' @return Character string: \code{"openai"}, \code{"gemini"},
+#'   \code{"claude"}, or \code{"none"}. When several keys are set, the first
+#'   in that order is preferred.
 #' @export
 llm_provider <- function() {
   providers <- llm_providers()
@@ -346,16 +357,19 @@ llm_provider <- function() {
 
 #' Get the model name for a provider
 #'
-#' Uses the environment variable \code{OPENAI_MODEL} or \code{GEMINI_MODEL}
-#' if set, otherwise falls back to built-in defaults.
+#' Uses the environment variable \code{OPENAI_MODEL}, \code{GEMINI_MODEL}
+#' or \code{ANTHROPIC_MODEL} if set, otherwise falls back to built-in
+#' defaults.
 #'
-#' @param provider Character string: \code{"openai"} or \code{"gemini"}.
-#'   Defaults to the active provider.
+#' @param provider Character string: \code{"openai"}, \code{"gemini"} or
+#'   \code{"claude"}. Defaults to the active provider.
 #' @return Character string with the model name.
 #' @export
 llm_model_name <- function(provider = llm_provider()) {
-  defaults <- c(openai = "gpt-5.1", gemini = "gemini-2.5-flash-lite")
-  env_vars <- c(openai = "OPENAI_MODEL", gemini = "GEMINI_MODEL")
+  defaults <- c(openai = "gpt-5.1", gemini = "gemini-2.5-flash-lite",
+                claude = "claude-opus-5-5")
+  env_vars <- c(openai = "OPENAI_MODEL", gemini = "GEMINI_MODEL",
+                claude = "ANTHROPIC_MODEL")
 
   if (!provider %in% names(defaults)) return("none")
 

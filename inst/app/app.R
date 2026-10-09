@@ -21,7 +21,7 @@
 #   database.R         - SQLite annotation storage (ClassiPyR-compatible)
 #   plots.R            - Heatmaps, maps, stacked bar charts
 #   mosaics.R          - Adaptive image mosaic layout
-#   llm.R              - OpenAI text generation for reports
+#   llm.R              - LLM text generation for reports (OpenAI/Gemini/Claude)
 #   report.R           - Word document assembly (officer package)
 #   stations.R         - Spatial matching of samples to monitoring stations
 #   utils.R            - Settings persistence, helper functions

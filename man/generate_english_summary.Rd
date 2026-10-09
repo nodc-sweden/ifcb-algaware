@@ -24,7 +24,7 @@ generate_english_summary(
 \item{phyto_groups}{Optional phytoplankton group table used to provide
 explicit group assignments in the prompt text.}
 
-\item{provider}{LLM provider (\code{"openai"} or \code{"gemini"}).
+\item{provider}{LLM provider (\code{"openai"}, \code{"gemini"} or \code{"claude"}).
 NULL auto-detects.}
 
 \item{unclassified_fractions}{Optional per-sample unclassified percentages

@@ -11,16 +11,18 @@ call_llm(system_prompt, user_prompt, provider = NULL, temperature = 0.3)
 
 \item{user_prompt}{User prompt string.}
 
-\item{provider}{Character string: \code{"openai"} or \code{"gemini"}.
-NULL (default) auto-detects.}
+\item{provider}{Character string: \code{"openai"}, \code{"gemini"} or
+\code{"claude"}. NULL (default) auto-detects.}
 
-\item{temperature}{Sampling temperature (default: 0.3).}
+\item{temperature}{Sampling temperature (default: 0.3). Not sent to
+Claude, which rejects sampling parameters.}
 }
 \value{
 Character string with the generated text.
 }
 \description{
-Dispatches to \code{call_openai} or \code{call_gemini}. When
-\code{provider} is NULL, auto-detects from available API keys.
+Dispatches to \code{call_openai}, \code{call_gemini} or
+\code{call_claude}. When \code{provider} is NULL, auto-detects from
+available API keys.
 }
 \keyword{internal}

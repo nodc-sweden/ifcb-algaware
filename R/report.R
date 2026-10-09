@@ -16,7 +16,7 @@
 #' @param classifier_name Optional character string with the classifier model
 #'   name used for automated classification.
 #' @param use_llm Logical; if TRUE and an LLM API key is configured
-#'   (OPENAI_API_KEY or GEMINI_API_KEY), generate report text using an
+#'   (OPENAI_API_KEY, GEMINI_API_KEY or ANTHROPIC_API_KEY), generate report text using an
 #'   LLM. Default FALSE uses placeholder text.
 #' @param annotator Character string with the analyst name for the
 #'   introduction statement.
@@ -29,7 +29,7 @@
 #' @param n_station_samples Optional integer; total number of IFCB samples
 #'   matched to AlgAware stations.
 #' @param llm_provider Optional character string; LLM provider to use
-#'   (\code{"openai"} or \code{"gemini"}). NULL auto-detects.
+#'   (\code{"openai"}, \code{"gemini"} or \code{"claude"}). NULL auto-detects.
 #' @param on_llm_progress Optional callback function called before each LLM
 #'   request with arguments \code{(step, total, detail)} for progress
 #'   reporting.

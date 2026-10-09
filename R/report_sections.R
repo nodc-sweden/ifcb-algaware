@@ -134,7 +134,7 @@ add_station_sections <- function(doc, station_summary,
                          visits$STATION_NAME), ]
 
   # Generate all descriptions up front. The station prompts are independent
-  # of each other, so providers that allow it (OpenAI) run them in parallel:
+  # of each other, so providers that allow it (OpenAI, Claude) run them in parallel:
   # n sequential round trips collapse into roughly the latency of the
   # slowest one. Assembly below stays sequential because the binomial
   # abbreviation threads document order through the sections.

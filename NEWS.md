@@ -2,6 +2,11 @@
 
 ## New features
 
+- Anthropic Claude is available as a third LLM provider for AI-generated
+  report text. Set `ANTHROPIC_API_KEY` to enable it (default model
+  `claude-opus-5-5`, override with `ANTHROPIC_MODEL`). Like OpenAI, Claude
+  generates the station descriptions in parallel. When several keys are
+  set, the provider is selectable in the Report tab.
 - The Validate sidebar has a new "Class threshold" slider for adjusting the
   classifier threshold of the class shown in the gallery. Raising it moves
   images scoring below the new threshold to `"unclassified"`; lowering it

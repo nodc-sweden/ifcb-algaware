@@ -7,13 +7,14 @@
 llm_model_name(provider = llm_provider())
 }
 \arguments{
-\item{provider}{Character string: \code{"openai"} or \code{"gemini"}.
-Defaults to the active provider.}
+\item{provider}{Character string: \code{"openai"}, \code{"gemini"} or
+\code{"claude"}. Defaults to the active provider.}
 }
 \value{
 Character string with the model name.
 }
 \description{
-Uses the environment variable \code{OPENAI_MODEL} or \code{GEMINI_MODEL}
-if set, otherwise falls back to built-in defaults.
+Uses the environment variable \code{OPENAI_MODEL}, \code{GEMINI_MODEL}
+or \code{ANTHROPIC_MODEL} if set, otherwise falls back to built-in
+defaults.
 }

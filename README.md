@@ -5,24 +5,19 @@
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 [![pkgdown](https://img.shields.io/badge/docs-pkgdown-brightgreen.svg)](https://nodc-sweden.github.io/ifcb-algaware/)
 
-An interactive R/Shiny application for processing, validating, and reporting
-phytoplankton data from Imaging FlowCytobot (IFCB) instruments. Developed for
-Swedish marine monitoring at SMHI.
+AlgAware-IFCB is the R/Shiny app used at SMHI to turn Imaging FlowCytobot
+(IFCB) data from a monitoring cruise into the AlgAware phytoplankton report.
+You load a cruise from the IFCB Dashboard, go through the classifier's
+predictions in an image gallery and correct what it got wrong. The app then
+builds a Word report with maps, heatmaps, image mosaics and a description of
+each station.
 
-AlgAware-IFCB integrates with the IFCB Dashboard for automated data retrieval,
-provides an interactive image gallery for reviewing and correcting AI classifier
-predictions, and generates Word reports with phytoplankton group composition
-maps, image-count maps, chlorophyll maps, heatmaps, image mosaics, and CTD
-fluorescence profiles.
-
-> **Intended use:** This application is developed for internal use at SMHI as
-> part of the Swedish national marine monitoring programme. It may be adapted
-> for use at other institutes operating IFCB instruments, though configuration
-> and data infrastructure will need to be adjusted accordingly.
+The app is written for the Swedish national marine monitoring programme and
+assumes the SMHI setup: samples from R/V Svea, an IFCB Dashboard on the internal
+network and the twelve AlgAware stations. Other institutes running an IFCB can
+adapt it, but the station files and data paths will need changing.
 
 ## Installation
-
-Install the latest release from GitHub including all optional dependencies:
 
 ```r
 # install.packages("remotes")
@@ -31,163 +26,96 @@ remotes::install_github("nodc-sweden/ifcb-algaware",
                         ref = remotes::github_release())
 ```
 
-The `dependencies = TRUE` flag installs both required and suggested packages.
-Suggested packages enable optional features:
+`dependencies = TRUE` also installs the suggested packages. The CTD figures
+need `oce` and `patchwork`, and the maps need `rnaturalearthdata`. On Linux a
+few system libraries have to be installed first. They are listed in the
+[installation guide](https://nodc-sweden.github.io/ifcb-algaware/articles/installation.html).
 
-| Package | Feature |
-|---------|---------|
-| `oce` | Parsing SeaBird CTD `.cnv` files |
-| `patchwork` | Multi-panel CTD regional figures in the report |
-| `yaml` | Reading standard monitoring station definitions |
-
-Install suggested packages individually if needed:
-
-```r
-install.packages(c("oce", "patchwork", "yaml"))
-```
-
-## Usage
+## Using the app
 
 ```r
 library(algaware)
 launch_app()
 ```
 
-The application opens in your default browser.
+The app opens in your browser. The first time, fill in the Settings panel.
+After that a cruise goes roughly like this:
 
-## Features
+1. Fetch metadata from the Dashboard and pick a cruise number or a date range.
+   The app matches bins to stations and downloads what it needs. Files are
+   cached locally, so loading the same cruise again is quick.
+2. Step through every class in the gallery, for the Baltic Sea and for the
+   West Coast. Relabel or unclassify the images that are wrong. A class you
+   leave alone counts as accepted.
+3. If you have them, load CTD casts and LIMS chlorophyll in the CTD tab, and
+   choose images for the front-page mosaics.
+4. Make the report and download the `.docx`. Download the corrections log as
+   well and archive it with the report.
 
-### Data Loading
+The [workflow guide](https://nodc-sweden.github.io/ifcb-algaware/articles/workflow.html)
+covers each step with screenshots. Cruise numbers only appear once the year's
+metadata file has been uploaded to the Dashboard, which is described in
+[its own guide](https://nodc-sweden.github.io/ifcb-algaware/articles/ifcb-dashboard-metadata.html).
 
-- Fetch metadata from any IFCB Dashboard instance
-- Filter by cruise number or date range
-- Automatic spatial matching of IFCB bins to monitoring stations in the Baltic Area
-- Download raw data, features, and HDF5 classification files
-- FerryBox chlorophyll integration (optional)
+Manual annotations are saved to an SQLite file in the same format as
+ClassiPyR, so the two tools can share a database.
 
-### Image Gallery and Validation
+## Data the app reads
 
-- Browse classified images by taxon and region (Baltic Sea / West Coast)
-- Searchable class dropdown for quick navigation across 100+ classes
-- Visual tags for HAB species and non-biological classes
-- Select individual images or entire pages
-- Relabel selected images or entire classes
-- Unclassify misclassified taxa
-- Store manual annotations to SQLite (compatible with ClassiPyR)
-- Measurement tool for on-screen size estimation
+| Data | Where it comes from | Required |
+|------|---------------------|----------|
+| Sample metadata, raw files (`.roi`, `.adc`, `.hdr`) and feature files | IFCB Dashboard | yes |
+| Classifier output (`.h5`) | Classification Path in Settings | yes |
+| FerryBox chlorophyll fluorescence (`.txt`) | FerryBox Data Path in Settings | no |
+| CTD casts (`.cnv`) | Folder given in the CTD tab | no |
+| LIMS chlorophyll export (`data.txt`) | File chosen in the CTD tab | no |
 
-### CTD & Chlorophyll Data
+Downloads are cached under the Local Storage Path, which defaults to
+`./algaware_data`. Settings are edited in the app and saved to `settings.json`
+in the R user config directory (`tools::R_user_dir("algaware", "config")`).
+The installation guide has the full list of settings.
 
-- Load SeaBird CTD `.cnv` files from a cruise folder
-- Load LIMS discrete chlorophyll bottle data
-- Per-station fluorescence profiles (0–50 m, deduplicated casts)
-- Chlorophyll time series with smooth spline historical statistics (1991–2020 climatology)
-- Regional multi-panel figures (one row per station, profile + time series) included in the report
+## AI-written report text
 
-### Visualizations
+The Swedish and English summaries and the station descriptions can be drafted
+by a language model. This is switched off unless one of these environment
+variables is set:
 
-- **Maps**: Phytoplankton group composition pies (Diatoms, Dinoflagellates, Cyanobacteria, Cryptophytes, Mesodinium spp., Silicoflagellates, Other), image count, and chlorophyll (CTD fluorescence + LIMS bottle) distribution across stations
-- **Heatmaps**: Biovolume by taxon and station visit
-- **Stacked bar charts**: Relative biovolume composition (top 15 taxa)
-- **Summary table**: Interactive, sortable station-level data
+| Variable | Provider | Default model |
+|----------|----------|---------------|
+| `OPENAI_API_KEY` | OpenAI | `gpt-5.1` |
+| `GEMINI_API_KEY` | Google Gemini | `gemini-2.5-flash-lite` |
+| `ANTHROPIC_API_KEY` | Anthropic Claude | `claude-opus-5-5` |
 
-### Report Generation
+Override the model with `OPENAI_MODEL`, `GEMINI_MODEL` or `ANTHROPIC_MODEL`.
+When several keys are set, OpenAI is used by default and the provider can be
+switched in the Report tab.
 
-- Automated Word document (`.docx`) with all plots and station sections
-- AI-generated summaries and station descriptions via OpenAI or Google Gemini
-- Front page with phytoplankton group composition pie map and narrative caption
-- Front-page mosaic designer with interactive taxon and image selection
-- Image mosaics for top taxa per region (adaptive layout for chains vs. compact organisms)
-- CTD regional figures with fluorescence profiles and Chl-a time series
-- HAB species annotations throughout
-- Classifier model attribution
-- Corrections log export (CSV)
+The app sends station-level summaries (taxa, biovolume, cell counts, mean
+chlorophyll) together with the writing guide in
+`inst/extdata/report_writing_guide.md`. It does not send images, positions or
+depths. Without a key, the report has placeholder text where the summaries
+would be.
 
-## Configuration
+## Adapting it
 
-Settings are persisted in `~/.config/R/algaware/settings.json` and can be
-edited through the in-app Settings panel:
+The station lists, the taxa lookup (names, AphiaIDs, HAB flags), the
+phytoplankton groups, the Word template and the writing guide are plain files
+under `inst/`. The
+[installation guide](https://nodc-sweden.github.io/ifcb-algaware/articles/installation.html#bundled-configuration-files)
+and [Customising the Report](https://nodc-sweden.github.io/ifcb-algaware/articles/report-customisation.html)
+explain what each file does and how to edit it.
 
-| Setting | Description | Default |
-|---------|-------------|---------|
-| Dashboard URL | IFCB Dashboard base URL | -- |
-| Dashboard Dataset | Dataset name | -- |
-| Classification Path | Directory with HDF5 classifier output | -- |
-| FerryBox Data Path | Directory with FerryBox CSV files | -- |
-| Local Storage Path | Where downloaded data is cached | `./algaware_data` |
-| Database Folder | Directory for annotations.sqlite | -- |
-| Non-biological Classes | Comma-separated list of classes excluded from analysis | `detritus,Air_bubbles,Beads,Debris,mix,mixed` |
-| Pixels per Micron | IFCB camera calibration factor | `2.77` |
-
-Extra monitoring stations can be added from the SHARK station register through
-the Settings panel.
-
-### LLM Configuration
-
-Set one of the following environment variables to enable AI-generated report
-text (summaries and station descriptions):
-
-| Variable | Provider |
-|----------|----------|
-| `OPENAI_API_KEY` | OpenAI (default: gpt-5.1) |
-| `GEMINI_API_KEY` | Google Gemini (default: gemini-2.5-flash-lite) |
-
-Override the model with `OPENAI_MODEL` or `GEMINI_MODEL`. When both keys are
-set, OpenAI is used by default.
-
-## Bundled Data
-
-| File | Description |
-|------|-------------|
-| `inst/extdata/taxa_lookup.csv` | Phytoplankton taxa with WoRMS AphiaID references and HAB status flags |
-| `inst/extdata/standard_stations.yaml` | Standard monitoring stations with regional assignments |
-| `inst/extdata/station_mapper.txt` | Synonym mapper for raw station names to canonical names |
-| `inst/extdata/annual_1991-2020_statistics_chl20m.txt` | Historical 0–20 m Chl-a monthly statistics (1991–2020) |
-| `inst/extdata/report_writing_guide.md` | LLM system prompt and style guide for report text generation |
-| `inst/config/phyto_groups.yaml` | Phytoplankton group definitions (class/phylum/genus mappings for WoRMS lookup) |
-| `inst/stations/algaware_stations.tsv` | 12 AlgAware monitoring stations (6 Baltic Sea, 6 West Coast) |
-| `inst/templates/report_template.docx` | Word document template for generated reports |
-
-## Project Structure
-
-```
-algaware/
-├── R/
-│   ├── run_app.R              # launch_app() entry point
-│   ├── mod_settings.R         # Settings module
-│   ├── mod_data_loader.R      # Data loading pipeline
-│   ├── mod_gallery.R          # Image gallery browser
-│   ├── mod_validation.R       # Annotation and relabeling
-│   ├── mod_frontpage.R        # Front-page mosaic designer
-│   ├── mod_ctd.R              # CTD & chlorophyll data module
-│   ├── mod_samples.R          # Sample selection module
-│   ├── mod_report.R           # Report generation module
-│   ├── ctd.R                  # CTD/LIMS parsing and Chl-a averaging
-│   ├── ctd_plots.R            # CTD fluorescence profiles and time series
-│   ├── data_download.R        # Dashboard API integration
-│   ├── data_processing.R      # Biovolume and aggregation
-│   ├── database.R             # SQLite operations
-│   ├── plots.R                # Maps, heatmaps, bar charts
-│   ├── mosaics.R              # Adaptive image mosaics
-│   ├── taxa.R                 # Taxon label formatting and class resolution
-│   ├── stations.R             # Station matching
-│   ├── report.R               # Word document builder
-│   ├── llm.R                  # LLM integration (OpenAI/Gemini)
-│   └── utils.R                # Settings and utilities
-├── inst/
-│   ├── app/                   # Shiny app (ui.R, server.R)
-│   ├── config/                # Editable configuration files (phyto_groups.yaml)
-│   ├── extdata/               # Bundled data files
-│   ├── stations/              # Station definitions
-│   └── templates/             # Report template
-└── tests/testthat/            # Test suite
-```
-
-## Testing
+## Development
 
 ```r
 devtools::test()
 ```
+
+The exported functions are documented in the
+[reference](https://nodc-sweden.github.io/ifcb-algaware/reference/index.html).
+Report bugs in the
+[issue tracker](https://github.com/nodc-sweden/ifcb-algaware/issues).
 
 ## License
 

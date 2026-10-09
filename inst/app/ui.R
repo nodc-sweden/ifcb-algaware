@@ -108,7 +108,8 @@ ui <- bslib::page_sidebar(
         icon = shiny::icon("check-circle"),
         conditionalPanel(
           condition = "output.data_loaded",
-          mod_validation_ui("validation")
+          mod_validation_ui("validation"),
+          mod_thresholds_ui("thresholds")
         ),
         conditionalPanel(
           condition = "!output.data_loaded",

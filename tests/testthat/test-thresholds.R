@@ -1,0 +1,336 @@
+# Synthetic classifications following the ifcb-classify rule with trained
+# thresholds A = 0.5, B = 0.5: class_name is class_auto when score >= its
+# threshold, otherwise "unclassified".
+make_classifications <- function() {
+  data.frame(
+    sample_name = c("S1", "S1", "S1", "S1", "S2", "S2"),
+    roi_number = 1:6,
+    class_name = c("A", "A", "unclassified", "B", "unclassified", "A"),
+    class_auto = c("A", "A", "A", "B", "B", "A"),
+    score = c(0.9, 0.6, 0.4, 0.8, 0.3, 0.55),
+    stringsAsFactors = FALSE
+  )
+}
+
+trained <- c(A = 0.5, B = 0.5)
+
+# ---- apply_thresholds ----
+
+test_that("apply_thresholds returns input unchanged with no adjustments", {
+  cls <- make_classifications()
+  expect_identical(apply_thresholds(cls, numeric(0)), cls)
+  expect_identical(apply_thresholds(cls, NULL), cls)
+})
+
+test_that("apply_thresholds raising a threshold unclassifies low scores", {
+  result <- apply_thresholds(make_classifications(), c(A = 0.7))
+  expect_equal(result$class_name,
+               c("A", "unclassified", "unclassified", "B", "unclassified",
+                 "unclassified"))
+})
+
+test_that("apply_thresholds lowering a threshold reclaims from unclassified", {
+  result <- apply_thresholds(make_classifications(), c(A = 0.3))
+  # ROI 3 (auto A, 0.4) returns to A; ROI 5 (auto B, 0.3) is untouched
+  expect_equal(result$class_name,
+               c("A", "A", "A", "B", "unclassified", "A"))
+})
+
+test_that("apply_thresholds keeps a score exactly at the threshold", {
+  result <- apply_thresholds(make_classifications(), c(A = 0.6))
+  expect_equal(result$class_name[2], "A")
+})
+
+test_that("apply_thresholds leaves other classes untouched", {
+  cls <- make_classifications()
+  result <- apply_thresholds(cls, c(B = 0.99))
+  expect_equal(result$class_name[cls$class_auto != "B"],
+               cls$class_name[cls$class_auto != "B"])
+  expect_equal(result$class_name[4], "unclassified")
+})
+
+test_that("apply_thresholds skips rows with missing class_auto", {
+  cls <- make_classifications()
+  cls$class_auto[2] <- NA_character_
+  result <- apply_thresholds(cls, c(A = 0.99))
+  expect_equal(result$class_name[2], "A")
+})
+
+test_that("apply_thresholds skips rows not following the threshold rule", {
+  # A stored label that is neither class_auto nor "unclassified" did not come
+  # from the threshold rule, so a threshold change must not overwrite it
+  cls <- make_classifications()
+  cls$class_name[1] <- "C"
+  result <- apply_thresholds(cls, c(A = 0.99))
+  expect_equal(result$class_name[1], "C")
+})
+
+test_that("apply_thresholds returns input unchanged without class_auto", {
+  cls <- make_classifications()
+  cls$class_auto <- NULL
+  expect_identical(apply_thresholds(cls, c(A = 0.99)), cls)
+})
+
+# ---- apply_corrections ----
+
+test_that("apply_corrections relabels matching ROIs", {
+  corrections <- data.frame(sample_name = "S1", roi_number = 2L,
+                            original_class = "A", new_class = "B",
+                            stringsAsFactors = FALSE)
+  result <- apply_corrections(make_classifications(), corrections)
+  expect_equal(result$class_name[2], "B")
+  expect_equal(result$class_name[-2], make_classifications()$class_name[-2])
+})
+
+test_that("apply_corrections uses the last correction for a repeated ROI", {
+  corrections <- data.frame(sample_name = c("S1", "S1"),
+                            roi_number = c(2L, 2L),
+                            original_class = c("A", "B"),
+                            new_class = c("B", "C"),
+                            stringsAsFactors = FALSE)
+  result <- apply_corrections(make_classifications(), corrections)
+  expect_equal(result$class_name[2], "C")
+})
+
+test_that("apply_corrections ignores corrections for unknown ROIs", {
+  corrections <- data.frame(sample_name = "S9", roi_number = 1L,
+                            original_class = "A", new_class = "B",
+                            stringsAsFactors = FALSE)
+  cls <- make_classifications()
+  expect_equal(apply_corrections(cls, corrections), cls)
+})
+
+test_that("apply_corrections returns input unchanged with no corrections", {
+  cls <- make_classifications()
+  expect_identical(apply_corrections(cls, NULL), cls)
+  expect_identical(apply_corrections(cls, data.frame(
+    sample_name = character(0), roi_number = integer(0),
+    original_class = character(0), new_class = character(0)
+  )), cls)
+})
+
+# ---- compose_classifications ----
+
+test_that("compose_classifications lets manual corrections override thresholds", {
+  corrections <- data.frame(sample_name = "S1", roi_number = 2L,
+                            original_class = "A", new_class = "A",
+                            stringsAsFactors = FALSE)
+  result <- compose_classifications(make_classifications(), c(A = 0.7),
+                                    corrections)
+  # ROI 2 (score 0.6) would drop below 0.7, but it was confirmed by hand
+  expect_equal(result$all$class_name[2], "A")
+  expect_equal(result$all$class_name[6], "unclassified")
+})
+
+test_that("compose_classifications filters the active slice", {
+  result <- compose_classifications(make_classifications(), NULL, NULL,
+                                    active_samples = "S2")
+  expect_equal(nrow(result$all), 6)
+  expect_equal(unique(result$active$sample_name), "S2")
+})
+
+test_that("compose_classifications with nothing to apply is identity", {
+  cls <- make_classifications()
+  result <- compose_classifications(cls, NULL, NULL)
+  expect_identical(result$all, cls)
+  expect_identical(result$active, cls)
+})
+
+# ---- set_threshold_adjustment ----
+
+test_that("set_threshold_adjustment adds an adjustment", {
+  result <- set_threshold_adjustment(numeric(0), "A", 0.7, trained)
+  expect_equal(result, c(A = 0.7))
+})
+
+test_that("set_threshold_adjustment replaces an existing adjustment", {
+  result <- set_threshold_adjustment(c(A = 0.7, B = 0.6), "A", 0.8, trained)
+  expect_equal(result, c(A = 0.8, B = 0.6))
+})
+
+test_that("set_threshold_adjustment drops a value equal to the trained one", {
+  result <- set_threshold_adjustment(c(A = 0.7, B = 0.6), "A", 0.5, trained)
+  expect_equal(result, c(B = 0.6))
+})
+
+test_that("set_threshold_adjustment treats NULL value as reset", {
+  result <- set_threshold_adjustment(c(A = 0.7), "A", NULL, trained)
+  expect_length(result, 0)
+})
+
+test_that("set_threshold_adjustment rejects invalid input", {
+  expect_error(set_threshold_adjustment(numeric(0), "Z", 0.7, trained),
+               "no trained threshold")
+  expect_error(set_threshold_adjustment(numeric(0), "A", 1.5, trained),
+               "between 0 and 1")
+  expect_error(set_threshold_adjustment(numeric(0), "A", NA_real_, trained),
+               "between 0 and 1")
+})
+
+# ---- preview_threshold ----
+
+preview_counts <- function(x) x[c("n_current", "n_removed", "n_added")]
+
+test_that("preview_threshold counts images leaving and joining the class", {
+  cls <- make_classifications()
+  raised <- preview_threshold(cls, NULL, NULL, "A", 0.7)
+  expect_equal(preview_counts(raised),
+               list(n_current = 3L, n_removed = 2L, n_added = 0L))
+
+  lowered <- preview_threshold(cls, NULL, NULL, "A", 0.3)
+  expect_equal(preview_counts(lowered),
+               list(n_current = 3L, n_removed = 0L, n_added = 1L))
+})
+
+test_that("preview_threshold returns the image IDs that would move", {
+  cls <- make_classifications()
+  raised <- preview_threshold(cls, NULL, NULL, "A", 0.7)
+  expect_equal(raised$removed, c("S1_2", "S2_6"))
+  expect_equal(raised$added, character(0))
+
+  lowered <- preview_threshold(cls, NULL, NULL, "A", 0.3)
+  expect_equal(lowered$added, "S1_3")
+})
+
+test_that("preview_threshold is relative to existing adjustments", {
+  cls <- make_classifications()
+  result <- preview_threshold(cls, c(A = 0.7), NULL, "A", 0.95)
+  expect_equal(preview_counts(result),
+               list(n_current = 1L, n_removed = 1L, n_added = 0L))
+})
+
+test_that("preview_threshold does not count manually corrected ROIs", {
+  corrections <- data.frame(sample_name = "S1", roi_number = 2L,
+                            original_class = "A", new_class = "A",
+                            stringsAsFactors = FALSE)
+  result <- preview_threshold(make_classifications(), NULL, corrections,
+                              "A", 0.7)
+  expect_equal(result$n_removed, 1L)
+})
+
+test_that("preview_threshold restricts counts to the given samples", {
+  result <- preview_threshold(make_classifications(), NULL, NULL, "A", 0.7,
+                              samples = "S2")
+  expect_equal(preview_counts(result),
+               list(n_current = 1L, n_removed = 1L, n_added = 0L))
+})
+
+# ---- threshold_summary ----
+
+test_that("threshold_summary lists adjusted classes with moved counts", {
+  result <- threshold_summary(trained, c(A = 0.7), make_classifications())
+  expect_equal(result$class_name, "A")
+  expect_equal(result$trained, 0.5)
+  expect_equal(result$adjusted, 0.7)
+  expect_equal(result$n_moved, 2L)
+})
+
+test_that("threshold_summary returns an empty frame with no adjustments", {
+  result <- threshold_summary(trained, numeric(0), make_classifications())
+  expect_equal(nrow(result), 0)
+  expect_equal(names(result),
+               c("class_name", "trained", "adjusted", "n_moved"))
+})
+
+# ---- preview_threshold: candidate-row shortcut ----
+
+test_that("preview_threshold counts images relabelled into the class by hand", {
+  # ROI 4 (top class B) was manually moved to A: it belongs to A's current
+  # count but no A threshold can move it
+  corrections <- data.frame(sample_name = "S1", roi_number = 4L,
+                            original_class = "B", new_class = "A",
+                            stringsAsFactors = FALSE)
+  result <- preview_threshold(make_classifications(), NULL, corrections,
+                              "A", 0.99)
+  expect_equal(result$n_current, 4L)
+  expect_equal(result$n_removed, 3L)
+  expect_false("S1_4" %in% result$removed)
+})
+
+test_that("preview_threshold matches a full recomposition", {
+  # Reference: recompose every row, as preview_threshold() did before it was
+  # restricted to the rows a class threshold can affect
+  full_preview <- function(original, adjustments, corrections, cls, value) {
+    before <- compose_classifications(original, adjustments, corrections)$all
+    after <- compose_classifications(
+      original, replace_named(adjustments, cls, value), corrections
+    )$all
+    was <- before$class_name %in% cls
+    now <- after$class_name %in% cls
+    ids <- paste0(before$sample_name, "_", before$roi_number)
+    list(n_current = sum(was), n_removed = sum(was & !now),
+         n_added = sum(!was & now), removed = ids[was & !now],
+         added = ids[!was & now])
+  }
+
+  set.seed(42)
+  n <- 400
+  classes <- c("A", "B", "C")
+  auto <- sample(classes, n, replace = TRUE)
+  score <- stats::runif(n)
+  original <- data.frame(
+    sample_name = sample(c("S1", "S2", "S3"), n, replace = TRUE),
+    roi_number = seq_len(n),
+    class_name = ifelse(score >= 0.5, auto, "unclassified"),
+    class_auto = auto, score = score, stringsAsFactors = FALSE
+  )
+  picked <- sample(n, 60)
+  corrections <- data.frame(
+    sample_name = original$sample_name[picked],
+    roi_number = original$roi_number[picked],
+    original_class = original$class_name[picked],
+    new_class = sample(c(classes, "unclassified"), 60, replace = TRUE),
+    stringsAsFactors = FALSE
+  )
+  adjustments <- c(B = 0.7)
+
+  for (cls in classes) {
+    for (value in c(0.2, 0.5, 0.8)) {
+      expect_equal(
+        preview_threshold(original, adjustments, corrections, cls, value),
+        full_preview(original, adjustments, corrections, cls, value)
+      )
+    }
+  }
+})
+
+# ---- correction matching on numeric keys ----
+
+test_that("apply_corrections ignores corrections without a sample or ROI", {
+  # Threshold rows of an imported file carry NA here; they must not land on
+  # rows of samples that have no corrections (whose keys are also NA)
+  cls <- make_classifications()
+  corrections <- data.frame(sample_name = c("S1", NA),
+                            roi_number = c(NA, 2L),
+                            original_class = "A", new_class = "Z",
+                            stringsAsFactors = FALSE)
+  expect_equal(apply_corrections(cls, corrections), cls)
+})
+
+test_that("apply_corrections agrees with matching on text keys", {
+  set.seed(7)
+  n <- 500
+  cls <- data.frame(
+    sample_name = sample(paste0("D2026092", 1:6, "T0000_IFCB134"), n,
+                         replace = TRUE),
+    roi_number = sample(1:400, n, replace = TRUE),
+    class_name = "A", stringsAsFactors = FALSE
+  )
+  cls <- cls[!duplicated(cls[c("sample_name", "roi_number")]), ]
+  corrections <- data.frame(
+    sample_name = sample(c(unique(cls$sample_name), "D_unknown"), 300,
+                         replace = TRUE),
+    roi_number = sample(1:450, 300, replace = TRUE),
+    new_class = sample(c("B", "C", "unclassified"), 300, replace = TRUE),
+    stringsAsFactors = FALSE
+  )
+
+  keys <- paste0(cls$sample_name, "_", cls$roi_number)
+  idx <- match(paste0(corrections$sample_name, "_", corrections$roi_number),
+               keys)
+  expected <- cls
+  expected$class_name[idx[!is.na(idx)]] <- corrections$new_class[!is.na(idx)]
+
+  expect_equal(apply_corrections(cls, corrections), expected)
+  expect_equal(correction_row_index(cls, corrections), idx)
+})

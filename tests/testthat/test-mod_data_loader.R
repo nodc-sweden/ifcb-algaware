@@ -167,6 +167,26 @@ test_that("reset_corrections_state empties corrections and custom classes but ke
   })
 })
 
+test_that("reset_corrections_state clears threshold adjustments", {
+  rv <- shiny::reactiveValues(
+    threshold_adjustments = c(A = 0.7),
+    threshold_dimmed = c("S1_1", "S1_2")
+  )
+  shiny::isolate(reset_corrections_state(rv))
+  shiny::isolate({
+    expect_length(rv$threshold_adjustments, 0)
+    expect_equal(rv$threshold_dimmed, character(0))
+  })
+})
+
+test_that("reset_corrections_state counts the loads", {
+  rv <- shiny::reactiveValues()
+  shiny::isolate(reset_corrections_state(rv))
+  expect_equal(shiny::isolate(rv$load_count), 1L)
+  shiny::isolate(reset_corrections_state(rv))
+  expect_equal(shiny::isolate(rv$load_count), 2L)
+})
+
 test_that("reset_corrections_state tolerates missing fields", {
   rv <- shiny::reactiveValues()
   expect_no_error(shiny::isolate(reset_corrections_state(rv)))

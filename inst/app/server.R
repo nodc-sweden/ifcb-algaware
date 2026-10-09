@@ -11,12 +11,14 @@ server <- function(input, output, session) {
   #   1. mod_data_loader  -> sets most rv fields after fetching & processing
   #   2. mod_gallery      -> reads classifications, writes selected_images
   #   3. mod_validation   -> reads/writes classifications & corrections
+  #      mod_thresholds   -> adjusts class thresholds, recomposes classifications
   #   4. mod_report       -> reads all fields to generate the Word report
   # ---------------------------------------------------------------------------
   rv <- reactiveValues(
     # -- Data loading stage (set by mod_data_loader) --
     dashboard_metadata  = NULL,          # Raw metadata from IFCB Dashboard API
     cruise_numbers      = character(0),  # Available cruise IDs for dropdown
+    load_count          = 0L,            # Number of data loads this session (see reset_corrections_state())
     matched_metadata_all = NULL,         # Full matched metadata before exclusions
     matched_metadata    = NULL,          # Metadata filtered & matched to stations
     classifications_raw_all = NULL,      # Full original AI predictions
@@ -38,6 +40,9 @@ server <- function(input, output, session) {
     image_counts        = NULL,          # Per-sample image counts (cruise-wide)
     cruise_info         = "",            # Human-readable cruise description
     classifier_name     = NULL,          # Name of the AI classifier model
+    thresholds_trained  = NULL,          # Named vector: class -> trained threshold (NULL = unavailable)
+    threshold_adjustments = numeric(0),  # Named vector: class -> adjusted threshold
+    threshold_dimmed    = character(0),  # Image IDs a previewed threshold would unclassify
     biovolume_cache     = NULL,          # Per-ROI biovolumes + sample volumes (immutable per load)
     diatom_status       = NULL,          # Cached per-class WoRMS diatom lookups
 
@@ -113,6 +118,7 @@ server <- function(input, output, session) {
   mod_data_loader_server("data_loader", config, rv)
   mod_gallery_server("gallery", rv, config)
   mod_validation_server("validation", rv, config)
+  mod_thresholds_server("thresholds", rv)
   mod_samples_server("samples", rv, config)
   mod_frontpage_server("frontpage", rv, config)
   # `phyto_group_assignments` is defined further down; wrap in a closure so the

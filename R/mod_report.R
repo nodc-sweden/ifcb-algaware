@@ -319,6 +319,7 @@ mod_report_server <- function(id, rv, config, phyto_groups_reactive = NULL) {
             taxa_lookup = taxa_lookup,
             cruise_info = rv$cruise_info,
             classifier_name = rv$classifier_name,
+            threshold_adjustments = current_threshold_table(rv),
             use_llm = use_llm,
             annotator = config$annotator,
             image_counts = rv$image_counts,
@@ -349,11 +350,13 @@ mod_report_server <- function(id, rv, config, phyto_groups_reactive = NULL) {
 
           report_path(out_file)
 
-          # Export corrections log if any corrections were made
-          if (nrow(rv$corrections) > 0) {
+          # Export corrections log if any corrections or threshold
+          # adjustments were made
+          threshold_table <- current_threshold_table(rv)
+          if (nrow(rv$corrections) > 0 || !is.null(threshold_table)) {
             csv_file <- sub("\\.docx$", "_corrections.csv", out_file)
-            corrections_export <- enrich_corrections_for_export(
-              rv$corrections, rv$custom_classes
+            corrections_export <- build_corrections_export(
+              rv$corrections, rv$custom_classes, threshold_table
             )
             utils::write.csv(corrections_export, csv_file, row.names = FALSE,
                              fileEncoding = "UTF-8")
@@ -393,12 +396,13 @@ mod_report_server <- function(id, rv, config, phyto_groups_reactive = NULL) {
         paste0("algaware_corrections_", format(Sys.Date(), "%Y%m%d"), ".csv")
       },
       content = function(file) {
-        # Build the corrections CSV on demand from the session log so it can be
-        # downloaded any time after corrections are made, without first
-        # generating the Word report.
-        shiny::req(nrow(rv$corrections) > 0)
-        corrections_export <- enrich_corrections_for_export(
-          rv$corrections, rv$custom_classes
+        # Build the corrections CSV (corrections plus threshold adjustments)
+        # on demand from the session state so it can be downloaded any time
+        # after changes are made, without first generating the Word report.
+        threshold_table <- current_threshold_table(rv)
+        shiny::req(nrow(rv$corrections) > 0 || !is.null(threshold_table))
+        corrections_export <- build_corrections_export(
+          rv$corrections, rv$custom_classes, threshold_table
         )
         utils::write.csv(corrections_export, file, row.names = FALSE,
                          fileEncoding = "UTF-8")

@@ -1,7 +1,7 @@
 # Call an LLM provider
 
-Dispatches to `call_openai` or `call_gemini`. When `provider` is NULL,
-auto-detects from available API keys.
+Dispatches to `call_openai`, `call_gemini` or `call_claude`. When
+`provider` is NULL, auto-detects from available API keys.
 
 ## Usage
 
@@ -21,12 +21,13 @@ call_llm(system_prompt, user_prompt, provider = NULL, temperature = 0.3)
 
 - provider:
 
-  Character string: `"openai"` or `"gemini"`. NULL (default)
+  Character string: `"openai"`, `"gemini"` or `"claude"`. NULL (default)
   auto-detects.
 
 - temperature:
 
-  Sampling temperature (default: 0.3).
+  Sampling temperature (default: 0.3). Not sent to Claude, which rejects
+  sampling parameters.
 
 ## Value
 

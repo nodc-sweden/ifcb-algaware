@@ -10,3 +10,5 @@
   Report](https://nodc-sweden.github.io/ifcb-algaware/articles/report-customisation.md):
 - [Uploading Metadata to the IFCB
   Dashboard](https://nodc-sweden.github.io/ifcb-algaware/articles/ifcb-dashboard-metadata.md):
+- [System
+  Overview](https://nodc-sweden.github.io/ifcb-algaware/articles/system-overview.md):

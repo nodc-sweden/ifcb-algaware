@@ -1,7 +1,7 @@
 # Call an LLM provider for a batch of independent prompts
 
-For providers that support it (OpenAI), all requests are performed
-concurrently with
+For providers that support it (OpenAI, Claude), all requests are
+performed concurrently with
 [`httr2::req_perform_parallel()`](https://httr2.r-lib.org/reference/req_perform_parallel.html),
 collapsing n sequential round trips into roughly the latency of the
 slowest one. Other providers fall back to a sequential loop (Gemini
@@ -22,7 +22,7 @@ call_llm_batch(prompts, provider = NULL, temperature = 0.3, on_progress = NULL)
 
 - provider:
 
-  Character string: `"openai"` or `"gemini"`. NULL (default)
+  Character string: `"openai"`, `"gemini"` or `"claude"`. NULL (default)
   auto-detects.
 
 - temperature:

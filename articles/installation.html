@@ -66,6 +66,7 @@ footer {
     <li><a class="dropdown-item" href="../articles/workflow.html">Standard AlgAware Workflow</a></li>
     <li><a class="dropdown-item" href="../articles/report-customisation.html">Customising the Report</a></li>
     <li><a class="dropdown-item" href="../articles/ifcb-dashboard-metadata.html">Uploading Metadata to the IFCB Dashboard</a></li>
+    <li><a class="dropdown-item" href="../articles/system-overview.html">System Overview</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -180,7 +181,7 @@ data.</p>
 <tr class="odd">
 <td><strong>Dashboard URL</strong></td>
 <td>Base URL of the IFCB Dashboard instance</td>
-<td><code>http://ifcb-dashboard-utv.smhi.se/</code></td>
+<td><code>https://ifcb.example.com/</code></td>
 </tr>
 <tr class="even">
 <td><strong>Dashboard Dataset</strong></td>
@@ -195,7 +196,7 @@ files</td>
 </tr>
 <tr class="even">
 <td><strong>FerryBox Data Path</strong></td>
-<td>Folder with FerryBox <code>.csv</code> files (optional)</td>
+<td>Folder with FerryBox <code>.txt</code> files (optional)</td>
 <td><code>C:/Users/name/ferrybox</code></td>
 </tr>
 <tr class="odd">
@@ -223,27 +224,66 @@ subfolder)</td>
 </tbody>
 </table>
 <p>Click <strong>Save Settings</strong> when done. Settings are stored
-in <code>~/.config/R/algaware/settings.json</code> and reloaded
-automatically next time you launch the app.</p>
+in a <code>settings.json</code> file in the R user configuration
+directory and reloaded automatically next time you launch the app. The
+location depends on your operating system:</p>
+<table class="table">
+<colgroup>
+<col width="44%">
+<col width="55%">
+</colgroup>
+<thead><tr class="header">
+<th>System</th>
+<th>Location</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>Windows</td>
+<td><code>%APPDATA%/R/config/R/algaware/settings.json</code></td>
+</tr>
+<tr class="even">
+<td>macOS</td>
+<td><code>~/Library/Preferences/org.R-project.R/R/algaware/settings.json</code></td>
+</tr>
+<tr class="odd">
+<td>Linux</td>
+<td><code>~/.config/R/algaware/settings.json</code></td>
+</tr>
+</tbody>
+</table>
+<p>To print the folder on your own machine, run:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">tools</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/tools/userdir.html" class="external-link">R_user_dir</a></span><span class="op">(</span><span class="st">"algaware"</span>, <span class="st">"config"</span><span class="op">)</span></span></code></pre></div>
 <div class="section level3">
 <h3 id="adding-monitoring-stations-from-shark">Adding monitoring stations from SHARK<a class="anchor" aria-label="anchor" href="#adding-monitoring-stations-from-shark"></a>
 </h3>
 <p>If your cruise visited stations not yet in the built-in list, you can
-add them from the SHARK station register:</p>
+add them from the SHARK station register under <strong>Extra
+Stations</strong> in the Settings panel:</p>
 <ol style="list-style-type: decimal">
-<li>In the Settings panel, click <strong>Load stations from
-SHARK</strong>.</li>
-<li>The app downloads the current station list from SHARK and merges it
-with the built-in AlgAware stations.</li>
-<li>Newly added stations will appear in all spatial-matching and
-reporting functions.</li>
+<li>Start typing in <strong>Station Name</strong> and pick the station
+from the list.</li>
+<li>Choose the <strong>Coast</strong>: <code>EAST</code> for the Baltic
+Sea or <code>WEST</code> for the West Coast.</li>
+<li>Enter a <strong>Short Name</strong> to use in plots and the report.
+If you leave it empty, the full station name is used.</li>
+<li>Click <strong>Add Station</strong>. The station is saved straight
+away and is listed below the button, where it can also be removed.</li>
 </ol>
+<p>Added stations are used for bin matching and in the report the next
+time you load data.</p>
+<p>The station register is not downloaded. It is read from a copy that
+ships with the <code>SHARK4R</code> package, so the app only knows the
+stations in your installed version. If a station is missing, update
+<code>SHARK4R</code>. If the <code>NODC_CONFIG</code> environment
+variable points to a folder containing a <code>station.txt</code> file,
+that file is used instead of the packaged copy.</p>
 <blockquote>
 <p><strong>Note for package maintainers:</strong> Stations that should
-be permanently bundled in the package (rather than fetched at runtime)
-need to be added to <code>inst/stations/algaware_stations.tsv</code>.
-See the section <a href="#bundled-configuration-files">Bundled
-configuration files</a> below.</p>
+be permanently bundled in the package (rather than added by each user in
+Settings) need to be added to
+<code>inst/stations/algaware_stations.tsv</code>. See the section <a href="#bundled-configuration-files">Bundled configuration files</a>
+below.</p>
 </blockquote>
 <hr>
 </div>
@@ -252,27 +292,31 @@ configuration files</a> below.</p>
 <h2 id="configure-llm-api-keys-optional">5. Configure LLM API keys (optional)<a class="anchor" aria-label="anchor" href="#configure-llm-api-keys-optional"></a>
 </h2>
 <p>AlgAware-IFCB can generate Swedish and English report text
-automatically using OpenAI (GPT-4.1) or Google Gemini. This requires an
-API key from the respective provider and the <code>httr2</code> package
-(installed with <code>dependencies = TRUE</code>).</p>
+automatically using OpenAI, Google Gemini or Anthropic Claude. This
+requires an API key from the respective provider and the
+<code>httr2</code> package (installed with
+<code>dependencies = TRUE</code>).</p>
 <div class="section level3">
 <h3 id="set-up-the-key-in-rstudio">Set up the key in RStudio<a class="anchor" aria-label="anchor" href="#set-up-the-key-in-rstudio"></a>
 </h3>
 <p>Open your <code>.Renviron</code> file by running:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">usethis</span><span class="fu">::</span><span class="fu">edit_r_environ</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p>Add one of the following lines (replace the placeholder with your
 actual key):</p>
 <pre><code><span><span class="va">OPENAI_API_KEY</span><span class="op">=</span><span class="va">sk</span><span class="op">-</span><span class="va">proj</span><span class="op">-</span><span class="va">xxxxxxxxxxxxxxxxxxxxxxxx</span></span></code></pre>
 <p>or</p>
 <pre><code><span><span class="va">GEMINI_API_KEY</span><span class="op">=</span><span class="va">AIzaxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</span></span></code></pre>
+<p>or</p>
+<pre><code><span><span class="va">ANTHROPIC_API_KEY</span><span class="op">=</span><span class="va">sk</span><span class="op">-</span><span class="va">ant</span><span class="op">-</span><span class="va">xxxxxxxxxxxxxxxxxxxxxxxx</span></span></code></pre>
 <p>Save the file, then restart R (Session → Restart R in RStudio). The
 key will be available to AlgAware-IFCB every time you launch the
 app.</p>
-<p>If both keys are set, OpenAI is used by default. Override the model
-by adding:</p>
+<p>If several keys are set, OpenAI is used by default and the provider
+can be switched in the Report tab. Override the model by adding:</p>
 <pre><code><span><span class="va">OPENAI_MODEL</span><span class="op">=</span><span class="va">gpt</span><span class="op">-</span><span class="fl">4.1</span></span>
-<span><span class="va">GEMINI_MODEL</span><span class="op">=</span><span class="va">gemini</span><span class="op">-</span><span class="fl">2.5</span><span class="op">-</span><span class="va">flash</span><span class="op">-</span><span class="va">lite</span></span></code></pre>
+<span><span class="va">GEMINI_MODEL</span><span class="op">=</span><span class="va">gemini</span><span class="op">-</span><span class="fl">2.5</span><span class="op">-</span><span class="va">flash</span><span class="op">-</span><span class="va">lite</span></span>
+<span><span class="va">ANTHROPIC_MODEL</span><span class="op">=</span><span class="va">claude</span><span class="op">-</span><span class="va">opus</span><span class="op">-</span><span class="fl">5</span><span class="op">-</span><span class="fl">5</span></span></code></pre>
 <blockquote>
 <p><strong>Security:</strong> Never share your <code>.Renviron</code>
 file or paste your API key into chat or email.</p>
@@ -325,10 +369,10 @@ with <code>devtools::install()</code>.</p>
 <p>Lists all standard Swedish monitoring stations (not just AlgAware)
 used for CTD profile matching and the regional chlorophyll time series.
 Stations are grouped by region:</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="fu">standard_stations</span><span class="kw">:</span></span>
-<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="at">  </span><span class="fu">station_list</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">"FLADEN"</span><span class="kw">,</span><span class="at"> </span><span class="st">"ANHOLT E"</span><span class="kw">,</span><span class="at"> ...</span><span class="kw">]</span></span>
-<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a><span class="at">  </span><span class="fu">FLADEN</span><span class="kw">:</span><span class="at"> </span><span class="st">"The Kattegat and The Sound"</span></span>
-<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a><span class="at">  </span><span class="fu">ANHOLT E</span><span class="kw">:</span><span class="at"> </span><span class="st">"The Kattegat and The Sound"</span></span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="fu">standard_stations</span><span class="kw">:</span></span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a><span class="at">  </span><span class="fu">station_list</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">"FLADEN"</span><span class="kw">,</span><span class="at"> </span><span class="st">"ANHOLT E"</span><span class="kw">,</span><span class="at"> ...</span><span class="kw">]</span></span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a><span class="at">  </span><span class="fu">FLADEN</span><span class="kw">:</span><span class="at"> </span><span class="st">"The Kattegat and The Sound"</span></span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a><span class="at">  </span><span class="fu">ANHOLT E</span><span class="kw">:</span><span class="at"> </span><span class="st">"The Kattegat and The Sound"</span></span></code></pre></div>
 <p>To add a station to a CTD region, add its name to
 <code>station_list</code> <strong>and</strong> add a
 <code>StationName: "Region name"</code> line. Existing region names are:

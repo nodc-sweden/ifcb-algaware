@@ -10,4 +10,5 @@ llm_available()
 
 ## Value
 
-TRUE if OPENAI_API_KEY or GEMINI_API_KEY is set, FALSE otherwise.
+TRUE if OPENAI_API_KEY, GEMINI_API_KEY or ANTHROPIC_API_KEY is set,
+FALSE otherwise.

@@ -10,4 +10,5 @@ llm_providers()
 
 ## Value
 
-Character vector of provider names with valid API keys.
+Character vector of provider names with valid API keys, in precedence
+order (`"openai"`, `"gemini"`, `"claude"`).

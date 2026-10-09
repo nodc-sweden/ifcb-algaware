@@ -411,7 +411,7 @@ used both in the interactive map on the **Maps** tab and in the report.
 ### FerryBox
 
 - **Source:** Continuous chlorophyll sensor data from the FerryBox
-  system, read from CSV files in your FerryBox Data Path.
+  system, read from `.txt` files in your FerryBox Data Path.
 - **How it is calculated:** The FerryBox timestamp closest to each IFCB
   sample time is matched, and the mean chlorophyll value is computed per
   station.

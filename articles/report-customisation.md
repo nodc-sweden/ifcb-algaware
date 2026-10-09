@@ -13,11 +13,11 @@ Workflow](https://nodc-sweden.github.io/ifcb-algaware/articles/workflow.md).
 
 ## 1. AI-generated report text
 
-When an OpenAI or Google Gemini API key is configured, AlgAware-IFCB
-generates Swedish and English summaries and individual station
-descriptions automatically when Make Report is clicked. The text is
-written directly into the Word document — there is no preview or editing
-step inside the app.
+When an OpenAI, Google Gemini or Anthropic Claude API key is configured,
+AlgAware-IFCB generates Swedish and English summaries and individual
+station descriptions automatically when Make Report is clicked. The text
+is written directly into the Word document — there is no preview or
+editing step inside the app.
 
 After downloading the report, open the `.docx` file in Word and edit the
 text there. Species names are already italicised and HAB species are

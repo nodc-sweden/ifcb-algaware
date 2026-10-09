@@ -1,0 +1,163 @@
+# System Overview
+
+AlgAware-IFCB (R package `algaware`) is a single-user Shiny application
+started locally from R with
+[`launch_app()`](https://nodc-sweden.github.io/ifcb-algaware/reference/launch_app.md).
+It runs on the analyst’s own machine; nothing is hosted centrally and no
+user accounts exist. The app loads IFCB data for one cruise, lets the
+analyst validate classifier predictions, and produces a Word report. AI
+text generation is optional and only used in the report step.
+
+    IFCB Dashboard ──► local storage ──► in-memory session state ──► report (.docx)
+    HDF5 classifier output ─┘                 │        ▲                │
+    FerryBox / CTD / LIMS files ──────────────┘        │                └─ LLM API (optional,
+                                            SQLite annotations               station-level
+                                            + corrections CSV                aggregates only,
+                                                                             no depth data)
+
+## Data touched
+
+### Inputs
+
+| Source | Content | Access |
+|----|----|----|
+| IFCB Dashboard (configured URL) | Sample metadata export (CSV: sample id, time, position, cruise, skip flags); image counts per sample; raw bin files `.roi` `.adc` `.hdr`; feature CSVs | HTTP via `iRfcb` (`/api/export_metadata/<dataset>`, per-sample file URLs, 10 parallel downloads by default) |
+| Classification folder (configured path) | HDF5 files per sample: `roi_numbers`, `class_name`, `output_scores`, `classifier_name` | Local filesystem, copied into local storage |
+| FerryBox folder (optional) | Tab-delimited `.txt` exports from the R/V Svea FerryBox, with numeric parameter codes as column headers; the app uses chlorophyll fluorescence (8063) and its QC flag (88063) | Local filesystem via `iRfcb` |
+| CTD folder (optional) | SeaBird `.cnv` casts (fluorescence profiles) | Local filesystem via `oce` |
+| LIMS file (optional) | Tab-delimited discrete chlorophyll bottle/hose data | Local filesystem |
+| Bundled in package | Taxa lookup (name, AphiaID, HAB flag, warning level, diatom flag), station list, station synonym mapper, phytoplankton group config, 1991–2020 chlorophyll climatology, Word template, LLM writing guide | `inst/` |
+| SHARK station register | Station names and positions | Shipped inside the `SHARK4R` package; no network |
+| WoRMS (World Register of Marine Species) | Taxonomic group and diatom status per class | Network, via `SHARK4R` / `iRfcb`; sends scientific names and AphiaIDs only |
+| Natural Earth | Coastline for maps | From installed `rnaturalearthdata` package; no download |
+
+### Persistent storage written by the app
+
+| Location | Content |
+|----|----|
+| `<local_storage>/raw/` | Downloaded `.roi` `.adc` `.hdr` bin files |
+| `<local_storage>/features/` | Downloaded feature CSVs |
+| `<local_storage>/classified/` | Copies of HDF5 classifier files |
+| `<local_storage>/metadata_cache.rds` | Last dashboard metadata export (incremental refresh) |
+| `<local_storage>/corrections/algaware_corrections_<date>.csv` | Autosaved corrections log (see below) |
+| `<db_folder>/annotations.sqlite` | Manual annotations, shared format with ClassiPyR. Tables: `annotations` (sample, ROI, class, annotator, timestamp, is_manual), `class_lists`, `class_taxonomy`, `global_class_list` |
+| `settings.json` in the R user config directory (`tools::R_user_dir("algaware", "config")`; `~/.config/R/algaware/` on Linux) | Paths, dashboard URL/dataset, annotator name, report settings. No credentials |
+
+### Session-only and temporary data
+
+- All loaded tables (metadata, per-ROI classifications, biovolume cache,
+  station summaries, corrections) live in Shiny reactive values and are
+  discarded when the session ends.
+- Gallery PNGs, mosaics and the generated `.docx` are written under R’s
+  [`tempdir()`](https://rdrr.io/r/base/tempfile.html). Gallery images
+  and the report are removed when the browser session ends; extracted
+  mosaic images stay until the R process exits.
+- Downloads offered to the user: the report `.docx` and a corrections
+  CSV (sample, ROI, original class, new class, plus any custom class
+  definitions).
+
+## Network endpoints
+
+| Destination | Purpose | Auth |
+|----|----|----|
+| Configured IFCB Dashboard | Metadata, image counts, raw and feature files | None (as configured) |
+| WoRMS REST API | Taxonomic lookups; results cached in memory while R is running | None |
+| `https://api.openai.com/v1/chat/completions` | Report text (OpenAI) | `Authorization: Bearer` |
+| `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions` | Report text (Google Gemini) | `Authorization: Bearer` |
+| `https://api.anthropic.com/v1/messages` | Report text (Anthropic Claude) | `x-api-key` |
+
+No other outbound traffic occurs. There is no telemetry.
+
+## LLM integration
+
+**When.** Only if an API key environment variable is set *and* the
+analyst leaves “AI text generation” ticked in the Report tab. Without it
+the report is still produced with placeholder text. A failed LLM call
+also falls back to a placeholder, never aborts the report.
+
+**Calls per report.**
+
+| Call | Count | Input |
+|----|----|----|
+| English summary | 1 | Cruise-wide station overview |
+| Swedish summary | 1 | Translation of the generated English summary (not regenerated from data) |
+| Station description | 1 per station visit | That station’s data plus one-line context for all other stations |
+
+Station descriptions run concurrently (max 5 in flight) for OpenAI and
+Claude; sequentially with a 15 s spacing for Gemini.
+
+**What is sent.** Every request has two parts:
+
+- *System prompt:* a role statement (“marine biologist writing
+  phytoplankton monitoring reports for the Swedish AlgAware programme”)
+  followed by the full text of `inst/extdata/report_writing_guide.md`
+  (style rules, terminology, example paragraphs).
+- *User prompt:* plain-text aggregates derived from the station summary:
+  - cruise label, e.g. “RV Svea March cruise, 2026-03-10 to 2026-03-14”
+  - per station visit: station name and short code, region (Baltic /
+    West Coast), visit date, number of taxa, total counts/L, biovolume,
+    carbon
+  - top taxa (up to 15 per station, 5 in the cruise overview) with
+    biovolume, counts/L, phytoplankton group, HAB flag and warning-level
+    exceedance
+  - phytoplankton group totals, the mean chlorophyll value and how it
+    was measured (fluorescence or concentration), without any depth
+  - percentage of unclassified images where it exceeds 80 %
+  - bloom-alert instructions when thresholds are met
+  - for the Swedish call: the English summary text itself
+
+**What is never sent.**
+
+- **Depth information.** No sampling depth, depth interval, or CTD
+  profile is included in any prompt. The only chlorophyll figure sent is
+  one mean value per station, labelled just “Chlorophyll fluorescence
+  (mean)” or “Chlorophyll-a concentration (mean)”. When CTD or LIMS is
+  the selected chlorophyll source that mean is computed over 0–20 m
+  (0–10 m for hose samples), but the depth range itself is not passed
+  on. The writing guide names “0-10 m, 0-20 m” once, in a rule telling
+  the model not to report depth-integrated values; that is static
+  instruction text, not data.
+- **Images and per-image data.** ROI pixel data, per-image
+  classifications, classifier scores and feature files.
+- **Identifiers and positions.** Sample (bin) identifiers, latitude and
+  longitude. Stations are referred to by name only.
+- **Local context.** File paths, settings, the annotator name, the
+  classifier model name and the SQLite database.
+- **Raw auxiliary data.** Anything from the CTD, LIMS or FerryBox files
+  beyond the single station-mean chlorophyll value.
+
+**Request parameters.** Model name and messages only. OpenAI and Gemini
+get `temperature = 0.3`; Claude gets `max_tokens = 16000` and no
+sampling parameters. No retention, storage or training opt-out flags are
+set, so data handling on the provider side follows the terms of the API
+account used. Default models: `gpt-5.1`, `gemini-2.5-flash-lite`,
+`claude-opus-5-5` (overridable with `OPENAI_MODEL`, `GEMINI_MODEL`,
+`ANTHROPIC_MODEL`).
+
+**Returned text.** Markdown is stripped, HAB asterisks are enforced from
+the taxa lookup, repeated species binomials are abbreviated, and the
+text is written into the `.docx` with italic taxon names. The report’s
+summary table records which LLM model was used.
+
+## Credentials and configuration
+
+- API keys are read from `OPENAI_API_KEY`, `GEMINI_API_KEY`,
+  `ANTHROPIC_API_KEY` at call time. They are never written to
+  `settings.json`, the database or any log, and are redacted in httr2
+  request objects.
+- Provider precedence when several keys are set: OpenAI, Gemini, Claude;
+  selectable in the Report tab.
+- Timeouts and retries: OpenAI 120 s / 2 tries; Gemini 180 s / 5 tries
+  with backoff; Claude 180 s / 3 tries on 429, 503 and 529.
+
+## Key dependencies
+
+| Package | Role |
+|----|----|
+| `iRfcb` | Dashboard download, ROI/feature parsing, biovolume and carbon, FerryBox reading, WoRMS diatom lookup |
+| `SHARK4R` | Station register, WoRMS phytoplankton group assignment, pie maps |
+| `hdf5r` | Reading classifier HDF5 output |
+| `RSQLite` / `DBI` | Annotations database |
+| `officer` | Word report assembly |
+| `httr2` | LLM API requests |
+| `shiny` / `bslib` | User interface |

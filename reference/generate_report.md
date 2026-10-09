@@ -85,9 +85,9 @@ generate_report(
 
 - use_llm:
 
-  Logical; if TRUE and an LLM API key is configured (OPENAI_API_KEY or
-  GEMINI_API_KEY), generate report text using an LLM. Default FALSE uses
-  placeholder text.
+  Logical; if TRUE and an LLM API key is configured (OPENAI_API_KEY,
+  GEMINI_API_KEY or ANTHROPIC_API_KEY), generate report text using an
+  LLM. Default FALSE uses placeholder text.
 
 - annotator:
 
@@ -116,8 +116,8 @@ generate_report(
 
 - llm_provider:
 
-  Optional character string; LLM provider to use (`"openai"` or
-  `"gemini"`). NULL auto-detects.
+  Optional character string; LLM provider to use (`"openai"`, `"gemini"`
+  or `"claude"`). NULL auto-detects.
 
 - on_llm_progress:
 

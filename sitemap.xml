@@ -5,6 +5,7 @@
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/articles/index.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/articles/installation.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/articles/report-customisation.html</loc></url>
+<url><loc>https://nodc-sweden.github.io/ifcb-algaware/articles/system-overview.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/articles/workflow.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/authors.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/index.html</loc></url>
@@ -39,8 +40,10 @@
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/biovolume-cache.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/bloom_alert_note.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/build_biovolume_cache.html</loc></url>
+<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/build_claude_request.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/build_corrections_export.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/build_cruise_info.html</loc></url>
+<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/build_llm_request.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/build_near_empty_warning.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/build_openai_request.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/build_readiness_items.html</loc></url>
@@ -50,6 +53,7 @@
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/build_station_description_prompts.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/build_station_group_summary.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/build_summary_rows.html</loc></url>
+<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/call_claude.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/call_gemini.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/call_llm.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/call_llm_batch.html</loc></url>
@@ -100,9 +104,11 @@
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/enrich_corrections_for_export.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/ensure_hab_asterisks.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/escape_markdown_label.html</loc></url>
+<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/extract_claude_content.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/extract_current_year_from_ctd.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/extract_gallery_pngs.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/extract_llm_content.html</loc></url>
+<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/extract_llm_text.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/extract_month_year.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/extract_pngs_cached.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/extract_pngs_with_fallback.html</loc></url>
@@ -149,6 +155,7 @@
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/justify_row.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/launch_app.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/list_h5_files.html</loc></url>
+<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/llm_api_key_vars.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/llm_available.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/llm_model_name.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/llm_provider.html</loc></url>

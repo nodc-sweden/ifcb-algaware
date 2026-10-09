@@ -37,7 +37,8 @@ generate_english_summary(
 
 - provider:
 
-  LLM provider (`"openai"` or `"gemini"`). NULL auto-detects.
+  LLM provider (`"openai"`, `"gemini"` or `"claude"`). NULL
+  auto-detects.
 
 - unclassified_fractions:
 

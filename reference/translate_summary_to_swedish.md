@@ -20,7 +20,8 @@ translate_summary_to_swedish(
 
 - provider:
 
-  LLM provider (`"openai"` or `"gemini"`). NULL auto-detects.
+  LLM provider (`"openai"`, `"gemini"` or `"claude"`). NULL
+  auto-detects.
 
 - chl_measure:
 

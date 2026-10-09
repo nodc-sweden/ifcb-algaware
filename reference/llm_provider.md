@@ -10,5 +10,5 @@ llm_provider()
 
 ## Value
 
-Character string: `"openai"`, `"gemini"`, or `"none"`. When both keys
-are set, OpenAI is preferred.
+Character string: `"openai"`, `"gemini"`, `"claude"`, or `"none"`. When
+several keys are set, the first in that order is preferred.

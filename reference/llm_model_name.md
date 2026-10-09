@@ -1,7 +1,7 @@
 # Get the model name for a provider
 
-Uses the environment variable `OPENAI_MODEL` or `GEMINI_MODEL` if set,
-otherwise falls back to built-in defaults.
+Uses the environment variable `OPENAI_MODEL`, `GEMINI_MODEL` or
+`ANTHROPIC_MODEL` if set, otherwise falls back to built-in defaults.
 
 ## Usage
 
@@ -13,8 +13,8 @@ llm_model_name(provider = llm_provider())
 
 - provider:
 
-  Character string: `"openai"` or `"gemini"`. Defaults to the active
-  provider.
+  Character string: `"openai"`, `"gemini"` or `"claude"`. Defaults to
+  the active provider.
 
 ## Value
 

@@ -66,6 +66,9 @@
 #'   \code{SHARK4R::assign_phytoplankton_group()}). Used to render the
 #'   per-station phytoplankton group composition pie map. If \code{NULL},
 #'   the assignments are computed on demand via SHARK4R when available.
+#' @param threshold_adjustments Optional data.frame from
+#'   \code{threshold_summary()} with the class thresholds adjusted during
+#'   validation; listed in the report's summary table.
 #' @return Invisible path to the created document.
 #' @export
 generate_report <- function(output_path, station_summary,
@@ -96,7 +99,8 @@ generate_report <- function(output_path, station_summary,
                             lims_data_full = NULL,
                             chl_stats = NULL,
                             chl_map_source = "ferrybox",
-                            phyto_groups = NULL) {
+                            phyto_groups = NULL,
+                            threshold_adjustments = NULL) {
   template <- system.file("templates", "report_template.docx",
                           package = "algaware")
   if (!nzchar(template)) {
@@ -292,45 +296,11 @@ generate_report <- function(output_path, station_summary,
   english_text <- abbreviate_repeated_binomials(english_text, taxa_lookup)$text
   doc <- add_formatted_par(doc, english_text, taxa_lookup, style = "Normal")
 
-  summary_rows <- data.frame(
-    Parameter = character(0), Value = character(0),
-    stringsAsFactors = FALSE
+  summary_rows <- build_summary_rows(
+    image_counts = image_counts, n_station_samples = n_station_samples,
+    total_bio_images = total_bio_images, classifier_name = classifier_name,
+    threshold_adjustments = threshold_adjustments, llm_model = llm_model
   )
-  if (!is.null(image_counts) && nrow(image_counts) > 0) {
-    summary_rows <- rbind(summary_rows, data.frame(
-      Parameter = "Total samples collected (cruise)",
-      Value = as.character(nrow(image_counts)),
-      stringsAsFactors = FALSE
-    ))
-  }
-  if (!is.null(n_station_samples)) {
-    summary_rows <- rbind(summary_rows, data.frame(
-      Parameter = "Samples from AlgAware stations",
-      Value = as.character(n_station_samples),
-      stringsAsFactors = FALSE
-    ))
-  }
-  if (!is.null(total_bio_images)) {
-    summary_rows <- rbind(summary_rows, data.frame(
-      Parameter = "Biological images analysed",
-      Value = format(total_bio_images, big.mark = ","),
-      stringsAsFactors = FALSE
-    ))
-  }
-  if (!is.null(classifier_name) && nzchar(classifier_name)) {
-    summary_rows <- rbind(summary_rows, data.frame(
-      Parameter = "Classification model (PyTorch)",
-      Value = classifier_name,
-      stringsAsFactors = FALSE
-    ))
-  }
-  if (!is.null(llm_model) && nzchar(llm_model)) {
-    summary_rows <- rbind(summary_rows, data.frame(
-      Parameter = "LLM model (text generation)",
-      Value = llm_model,
-      stringsAsFactors = FALSE
-    ))
-  }
   if (nrow(summary_rows) > 0) {
     month_year <- extract_month_year(cruise_info)
     table_caption <- if (nzchar(month_year)) {
@@ -526,4 +496,51 @@ generate_report <- function(output_path, station_summary,
   }
 
   invisible(output_path)
+}
+
+#' Rows of the report's data summary table (Table 1)
+#'
+#' @param image_counts Optional data frame of cruise-wide image counts.
+#' @param n_station_samples Optional number of samples from AlgAware stations.
+#' @param total_bio_images Optional number of biological images analysed.
+#' @param classifier_name Optional classifier model name.
+#' @param threshold_adjustments Optional data.frame from
+#'   \code{threshold_summary()}.
+#' @param llm_model Optional LLM model name.
+#' @return A data.frame with \code{Parameter} and \code{Value} columns.
+#' @keywords internal
+build_summary_rows <- function(image_counts = NULL, n_station_samples = NULL,
+                               total_bio_images = NULL,
+                               classifier_name = NULL,
+                               threshold_adjustments = NULL,
+                               llm_model = NULL) {
+  has_text <- function(x) !is.null(x) && nzchar(x)
+  rows <- list(
+    if (!is.null(image_counts) && nrow(image_counts) > 0) {
+      c("Total samples collected (cruise)", as.character(nrow(image_counts)))
+    },
+    if (!is.null(n_station_samples)) {
+      c("Samples from AlgAware stations", as.character(n_station_samples))
+    },
+    if (!is.null(total_bio_images)) {
+      c("Biological images analysed",
+        format(total_bio_images, big.mark = ","))
+    },
+    if (has_text(classifier_name)) {
+      c("Classification model (PyTorch)", classifier_name)
+    },
+    if (has_text(format_threshold_adjustments(threshold_adjustments))) {
+      c("Adjusted class thresholds (trained \u2192 applied)",
+        format_threshold_adjustments(threshold_adjustments))
+    },
+    if (has_text(llm_model)) {
+      c("LLM model (text generation)", llm_model)
+    }
+  )
+  rows <- Filter(Negate(is.null), rows)
+  data.frame(
+    Parameter = vapply(rows, `[`, character(1), 1),
+    Value = vapply(rows, `[`, character(1), 2),
+    stringsAsFactors = FALSE
+  )
 }

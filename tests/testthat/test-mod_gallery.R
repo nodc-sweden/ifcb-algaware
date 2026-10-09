@@ -67,3 +67,34 @@ test_that("match_pending_echo handles an empty queue and NA selection", {
   expect_false(match_pending_echo(c("A", "B"), NA_character_)$is_echo)
   expect_true(match_pending_echo(c(NA_character_, "B"), NA_character_)$is_echo)
 })
+
+# ---- order_images ----
+
+test_that("order_images sorts by ascending score when requested", {
+  imgs <- data.frame(roi_number = 1:3, score = c(0.9, 0.2, 0.5))
+  expect_equal(order_images(imgs, TRUE)$roi_number, c(2L, 3L, 1L))
+})
+
+test_that("order_images keeps the original order by default", {
+  imgs <- data.frame(roi_number = 1:3, score = c(0.9, 0.2, 0.5))
+  expect_equal(order_images(imgs, FALSE)$roi_number, 1:3)
+})
+
+test_that("order_images tolerates a missing score column", {
+  imgs <- data.frame(roi_number = 1:3)
+  expect_equal(order_images(imgs, TRUE)$roi_number, 1:3)
+})
+
+# ---- page_dimmed_ids ----
+
+test_that("page_dimmed_ids keeps only the dimmed images on the page", {
+  imgs <- data.frame(sample_name = c("S1", "S1", "S2"), roi_number = c(1L, 2L, 7L))
+  expect_equal(page_dimmed_ids(imgs, c("S1_2", "S2_7", "S9_1")),
+               c("S1_2", "S2_7"))
+})
+
+test_that("page_dimmed_ids returns nothing without a page or dimmed images", {
+  imgs <- data.frame(sample_name = "S1", roi_number = 1L)
+  expect_equal(page_dimmed_ids(NULL, "S1_1"), character(0))
+  expect_equal(page_dimmed_ids(imgs, character(0)), character(0))
+})

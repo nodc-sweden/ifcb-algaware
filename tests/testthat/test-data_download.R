@@ -55,7 +55,8 @@ test_that("read_h5_classifications returns empty df for empty dir", {
   result <- read_h5_classifications(tmp_dir)
   expect_s3_class(result, "data.frame")
   expect_equal(nrow(result), 0)
-  expect_equal(names(result), c("sample_name", "roi_number", "class_name", "score"))
+  expect_equal(names(result), c("sample_name", "roi_number", "class_name",
+                                "class_auto", "score"))
 })
 
 test_that("download_raw_data creates dest_dir", {
@@ -409,7 +410,8 @@ test_that("read_h5_classifications reads real H5 file correctly", {
   result <- read_h5_classifications(tmp_dir)
   expect_s3_class(result, "data.frame")
   expect_true(nrow(result) > 0)
-  expect_equal(names(result), c("sample_name", "roi_number", "class_name", "score"))
+  expect_equal(names(result), c("sample_name", "roi_number", "class_name",
+                                "class_auto", "score"))
   expect_equal(unique(result$sample_name), "D20250714T110535_IFCB134")
   expect_type(result$roi_number, "integer")
   expect_type(result$score, "double")
@@ -556,4 +558,142 @@ test_that("download functions pass tuning to iRfcb", {
                       "D20250714T110535_IFCB134", dir)
   })
   expect_equal(seen$sleep_time, 1.5)
+})
+
+# ---- Class thresholds ----
+
+# Copy the real H5 fixture into a fresh temp dir; skips when unavailable.
+copy_h5_fixture <- function(prefix) {
+  h5_path <- testthat::test_path("test_data",
+                                  "D20250714T110535_IFCB134_class.h5")
+  skip_if_not(file.exists(h5_path), "Test H5 file not available")
+  skip_if_not_installed("hdf5r")
+  tmp_dir <- file.path(tempdir(), paste0(prefix, Sys.getpid()))
+  dir.create(tmp_dir, showWarnings = FALSE)
+  file.copy(h5_path, tmp_dir)
+  tmp_dir
+}
+
+# Write a minimal synthetic H5 classification file. Datasets set to NULL
+# are left out.
+write_test_h5 <- function(path, class_labels = c("A", "B"),
+                          thresholds = c(0.5, 0.5),
+                          class_name_auto = c("A", "B", "A")) {
+  scores <- matrix(c(0.9, 0.1, 0.2, 0.8, 0.6, 0.4), nrow = 2)
+  h5 <- hdf5r::H5File$new(path, "w")
+  on.exit(h5$close_all(), add = TRUE)
+  h5[["roi_numbers"]] <- 1:3
+  h5[["class_name"]] <- c("A", "B", "A")
+  h5[["output_scores"]] <- scores
+  if (!is.null(class_labels)) h5[["class_labels"]] <- class_labels
+  if (!is.null(thresholds)) h5[["thresholds"]] <- thresholds
+  if (!is.null(class_name_auto)) h5[["class_name_auto"]] <- class_name_auto
+  invisible(path)
+}
+
+test_that("read_h5_classifications reads class_auto from the H5 file", {
+  tmp_dir <- copy_h5_fixture("h5_auto_")
+  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+
+  result <- read_h5_classifications(tmp_dir)
+  expect_type(result$class_auto, "character")
+  expect_false(anyNA(result$class_auto))
+  # class_name is either the auto class or "unclassified"
+  expect_true(all(result$class_name == result$class_auto |
+                    result$class_name == "unclassified"))
+})
+
+test_that("read_h5_classifications derives class_auto from scores if absent", {
+  skip_if_not_installed("hdf5r")
+  tmp_dir <- file.path(tempdir(), paste0("h5_noauto_", Sys.getpid()))
+  dir.create(tmp_dir, showWarnings = FALSE)
+  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+  write_test_h5(file.path(tmp_dir, "D20220101T000000_IFCB134_class.h5"),
+                class_name_auto = NULL)
+
+  result <- read_h5_classifications(tmp_dir)
+  expect_equal(result$class_auto, c("A", "B", "A"))
+})
+
+test_that("read_h5_classifications sets class_auto to NA without labels", {
+  skip_if_not_installed("hdf5r")
+  tmp_dir <- file.path(tempdir(), paste0("h5_nolabels_", Sys.getpid()))
+  dir.create(tmp_dir, showWarnings = FALSE)
+  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+  write_test_h5(file.path(tmp_dir, "D20220101T000000_IFCB134_class.h5"),
+                class_labels = NULL, thresholds = NULL,
+                class_name_auto = NULL)
+
+  result <- read_h5_classifications(tmp_dir)
+  expect_equal(nrow(result), 3)
+  expect_true(all(is.na(result$class_auto)))
+})
+
+test_that("read_thresholds returns a named vector of trained thresholds", {
+  tmp_dir <- copy_h5_fixture("h5_thr_")
+  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+
+  result <- read_thresholds(tmp_dir)
+  expect_type(result, "double")
+  expect_true(length(result) > 0)
+  expect_false(is.null(names(result)))
+  expect_true(all(result >= 0 & result <= 1))
+})
+
+test_that("trained thresholds reproduce the stored class labels", {
+  # The core guarantee of the threshold feature: recomputing every class
+  # from class_auto + score at its trained threshold changes nothing.
+  tmp_dir <- copy_h5_fixture("h5_thr_repro_")
+  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+
+  cls <- read_h5_classifications(tmp_dir)
+  trained <- read_thresholds(tmp_dir)
+  recomputed <- apply_thresholds(cls, trained)
+  expect_equal(recomputed$class_name, cls$class_name)
+})
+
+test_that("read_thresholds returns NULL when a file lacks thresholds", {
+  skip_if_not_installed("hdf5r")
+  tmp_dir <- file.path(tempdir(), paste0("h5_nothr_", Sys.getpid()))
+  dir.create(tmp_dir, showWarnings = FALSE)
+  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+  write_test_h5(file.path(tmp_dir, "D20220101T000000_IFCB134_class.h5"))
+  write_test_h5(file.path(tmp_dir, "D20220102T000000_IFCB134_class.h5"),
+                thresholds = NULL)
+
+  expect_null(read_thresholds(tmp_dir))
+})
+
+test_that("read_thresholds returns NULL with a warning when files disagree", {
+  skip_if_not_installed("hdf5r")
+  tmp_dir <- file.path(tempdir(), paste0("h5_thrdiff_", Sys.getpid()))
+  dir.create(tmp_dir, showWarnings = FALSE)
+  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+  write_test_h5(file.path(tmp_dir, "D20220101T000000_IFCB134_class.h5"))
+  write_test_h5(file.path(tmp_dir, "D20220102T000000_IFCB134_class.h5"),
+                thresholds = c(0.5, 0.7))
+
+  expect_warning(result <- read_thresholds(tmp_dir), "differ between")
+  expect_null(result)
+})
+
+test_that("read_thresholds only reads the requested samples", {
+  skip_if_not_installed("hdf5r")
+  tmp_dir <- file.path(tempdir(), paste0("h5_thrsel_", Sys.getpid()))
+  dir.create(tmp_dir, showWarnings = FALSE)
+  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+  write_test_h5(file.path(tmp_dir, "D20220101T000000_IFCB134_class.h5"))
+  write_test_h5(file.path(tmp_dir, "D20220102T000000_IFCB134_class.h5"),
+                thresholds = c(0.5, 0.7))
+
+  result <- read_thresholds(tmp_dir, sample_ids = "D20220101T000000_IFCB134")
+  expect_equal(result, c(A = 0.5, B = 0.5))
+})
+
+test_that("read_thresholds returns NULL for an empty directory", {
+  tmp_dir <- file.path(tempdir(), paste0("h5_thrempty_", Sys.getpid()))
+  dir.create(tmp_dir, showWarnings = FALSE)
+  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+
+  expect_null(read_thresholds(tmp_dir))
 })

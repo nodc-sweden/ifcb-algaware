@@ -131,6 +131,11 @@
   box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
 }
 
+.image-card.below-threshold {
+  opacity: 0.35;
+  border-style: dashed !important;
+}
+
 .image-card img {
   display: block;
   max-height: 120px;

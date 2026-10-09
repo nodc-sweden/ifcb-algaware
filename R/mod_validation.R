@@ -603,8 +603,7 @@ mod_validation_server <- function(id, rv, config) {
       )
       if (is.null(df)) return()
 
-      required <- c("sample_name", "roi_number", "original_class", "new_class")
-      missing_cols <- setdiff(required, names(df))
+      missing_cols <- missing_import_columns(df)
       if (length(missing_cols) > 0) {
         shiny::showNotification(
           paste0("File is missing required columns: ",
@@ -615,84 +614,54 @@ mod_validation_server <- function(id, rv, config) {
       }
 
       df$roi_number <- as.integer(df$roi_number)
-      n_import <- nrow(df)
-      n_current <- nrow(rv$corrections)
-
-      # Preview what will change
-      relabels <- df[df$new_class != "unclassified", ]
-      invalidated <- unique(df$original_class[df$new_class == "unclassified"])
-
-      warning_text <- if (n_current > 0) {
-        shiny::p(
-          style = "color: #dc3545;",
-          shiny::icon("triangle-exclamation"),
-          paste0(" This will replace your ", n_current,
-                 " existing correction(s).")
-        )
-      }
+      parts <- split_corrections_import(df)
+      thresholds <- adjustments_from_import(parts$thresholds,
+                                            rv$thresholds_trained)
 
       shiny::showModal(shiny::modalDialog(
         title = "Import Corrections",
-        shiny::p(paste0("Import ", n_import, " correction(s) from '",
-                        input$import_corrections_file$name, "'?")),
-        if (nrow(relabels) > 0) {
-          agg <- stats::aggregate(roi_number ~ original_class + new_class,
-                                  data = relabels, FUN = length)
-          shiny::p(
-            "Relabels: ",
-            shiny::tags$ul(lapply(seq_len(nrow(agg)), function(i) {
-              shiny::tags$li(paste0(agg$roi_number[i], "x ", agg$original_class[i],
-                                   " \u2192 ", agg$new_class[i]))
-            }))
-          )
-        },
-        if (length(invalidated) > 0) {
-          shiny::p(paste0("Unclassified: ", paste(invalidated, collapse = ", ")))
-        },
-        warning_text,
+        import_preview_ui(parts$corrections, thresholds,
+                          input$import_corrections_file$name,
+                          n_current = nrow(rv$corrections),
+                          n_current_thresholds =
+                            length(rv$threshold_adjustments)),
         footer = shiny::tagList(
           shiny::actionButton(ns("confirm_import_corrections"), "Apply",
                               class = "btn-primary"),
           shiny::modalButton("Cancel")
         ),
-        # Store df for use in the confirm observer via a temp file to avoid
-        # closure issues with reactive invalidation
         easyClose = FALSE
       ))
 
-      # Cache parsed df for the confirm step
-      import_cache(df)
+      # Cache the parsed import for the confirm step
+      import_cache(list(corrections = parts$corrections,
+                        adjustments = thresholds$adjustments))
     })
 
     import_cache <- shiny::reactiveVal(NULL)
 
     shiny::observeEvent(input$confirm_import_corrections, {
-      df <- import_cache()
-      shiny::req(df, rv$classifications_original)
+      cached <- import_cache()
+      shiny::req(cached, rv$classifications_original)
+      df <- cached$corrections
 
       orig <- rv$classifications_original
-
-      # Apply all corrections to a fresh copy of original
       keys_orig <- paste0(orig$sample_name, "_", orig$roi_number)
       keys_imp  <- paste0(df$sample_name,   "_", df$roi_number)
-      match_idx <- match(keys_imp, keys_orig)
-      valid     <- !is.na(match_idx)
+      valid     <- keys_imp %in% keys_orig
 
-      result <- orig
-      result$class_name[match_idx[valid]] <- df$new_class[valid]
-
-      rv$classifications_all <- result
-      # `classifications_original` is the full load-time snapshot, so re-apply
-      # the current sample exclusions when deriving the active slice.
-      # Assigning the full set here used to resurrect excluded samples in
-      # rv$classifications, inflating the report's image totals.
-      active <- if (!is.null(rv$matched_metadata_all)) {
-        setdiff(unique(rv$matched_metadata_all$pid), rv$excluded_samples)
-      } else {
-        unique(result$sample_name)
-      }
-      rv$classifications <- result[result$sample_name %in% active, ,
-                                   drop = FALSE]
+      # Rebuild from the load-time snapshot: the file's threshold adjustments
+      # (replacing the session's, like the corrections), then its
+      # corrections. `classifications_original` holds every sample, so the
+      # current exclusions are re-applied for the active slice (assigning the
+      # full set used to resurrect excluded samples in rv$classifications,
+      # inflating the report's image totals).
+      composed <- compose_classifications(orig, cached$adjustments, df,
+                                          active_sample_ids(rv))
+      rv$classifications_all <- composed$all
+      rv$classifications <- composed$active
+      rv$threshold_adjustments <- cached$adjustments
+      rv$threshold_dimmed <- character(0)
 
       # Rebuild corrections log (drop custom metadata columns)
       rv$corrections <- df[, c("sample_name", "roi_number",
@@ -723,7 +692,8 @@ mod_validation_server <- function(id, rv, config) {
       shiny::removeModal()
 
       n_unmatched <- sum(!valid)
-      msg <- paste0("Applied ", sum(valid), " correction(s).")
+      msg <- paste0("Applied ", sum(valid), " correction(s) and ",
+                    length(cached$adjustments), " threshold adjustment(s).")
       if (n_unmatched > 0) {
         msg <- paste0(msg, " ", n_unmatched,
                       " row(s) did not match any image in this dataset.")
@@ -732,31 +702,51 @@ mod_validation_server <- function(id, rv, config) {
     })
 
     # ---- 7. Auto-save corrections (crash protection) ----
-    # Every time the user navigates to another class or region, write the
-    # corrections log to <local_storage_path>/corrections/ -- the same
-    # enriched CSV as "Download corrections", so a session lost to a crash
-    # (or closed without downloading) can be restored with "Import
-    # corrections". Saves only when the log changed since the last write;
-    # a failed write warns once per session and never blocks validation.
+    # Every time the user navigates to another class or region or changes a
+    # class threshold, write the corrections log and threshold adjustments
+    # to <local_storage_path>/corrections/ -- the same CSV as "Download
+    # corrections", so a session lost to a crash (or closed without
+    # downloading) can be restored with "Import corrections". Saves only when
+    # either changed since the last write; a failed write warns once per
+    # session and never blocks validation.
+    # autosave_last holds the state last written and the data load it
+    # belongs to (rv$load_count).
     autosave_last <- NULL
     autosave_warned <- FALSE
 
     do_autosave <- function(notify = TRUE) {
       if (!isTRUE(rv$data_loaded)) return(invisible(NULL))
       corrections <- rv$corrections
-      if (is.null(corrections) || nrow(corrections) == 0 ||
-          identical(corrections, autosave_last)) {
+      if (is.null(corrections)) return(invisible(NULL))
+      state <- list(corrections = corrections,
+                    adjustments = rv$threshold_adjustments)
+      has_content <- nrow(corrections) > 0 || length(state$adjustments) > 0
+      # A newly loaded cruise starts a fresh corrections log (see
+      # reset_corrections_state()), so nothing written before the current
+      # load counts as saved: the state is not compared against the previous
+      # load's rows, and that load's file is never overwritten.
+      load_id <- rv$load_count
+      first_save <- is.null(autosave_last) ||
+        !identical(autosave_last$load, load_id)
+      # Nothing to save yet, or nothing changed since the last save. Once
+      # something was saved in this load, an emptied state is still written,
+      # so undoing everything is reflected in the recovery file.
+      unchanged <- !first_save && identical(state, autosave_last$state)
+      if ((first_save && !has_content) || unchanged) {
         return(invisible(NULL))
       }
 
-      # First save of this session: an existing file on disk is from an
-      # earlier session (possibly the crash being recovered from), so have
-      # the helper set it aside as ..._prev.csv instead of clobbering it.
+      # First save of this load: an existing file on disk is from an earlier
+      # session (possibly the crash being recovered from) or an earlier load,
+      # so have the helper set it aside as ..._prev.csv instead of clobbering
+      # it.
       result <- autosave_corrections(corrections, rv$custom_classes,
                                      config$local_storage_path,
-                                     backup_existing = is.null(autosave_last))
+                                     backup_existing = first_save,
+                                     thresholds = current_threshold_table(rv),
+                                     allow_empty = TRUE)
       if (result$success) {
-        autosave_last <<- corrections
+        autosave_last <<- list(load = load_id, state = state)
       } else if (notify && !autosave_warned && !is.null(result$error)) {
         autosave_warned <<- TRUE
         shiny::showNotification(
@@ -768,16 +758,9 @@ mod_validation_server <- function(id, rv, config) {
       invisible(NULL)
     }
 
-    shiny::observeEvent(list(rv$current_class_idx, rv$current_region), {
+    shiny::observeEvent(list(rv$current_class_idx, rv$current_region,
+                             rv$threshold_adjustments), {
       do_autosave()
-    }, ignoreInit = TRUE)
-
-    # A newly loaded cruise starts a fresh corrections log (see
-    # reset_corrections_state()), so forget what was last written: the next
-    # save must not compare against the previous cruise's rows, and it sets
-    # the file from that cruise aside as ..._prev.csv instead of overwriting.
-    shiny::observeEvent(rv$matched_metadata_all, {
-      autosave_last <<- NULL
     }, ignoreInit = TRUE)
 
     # Flush on clean session end so work done in the last visited class is

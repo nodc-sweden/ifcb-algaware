@@ -35,7 +35,8 @@ generate_report(
   lims_data_full = NULL,
   chl_stats = NULL,
   chl_map_source = "ferrybox",
-  phyto_groups = NULL
+  phyto_groups = NULL,
+  threshold_adjustments = NULL
 )
 }
 \arguments{
@@ -130,6 +131,10 @@ section with regional fluorescence profiles and time series).}
 \code{SHARK4R::assign_phytoplankton_group()}). Used to render the
 per-station phytoplankton group composition pie map. If \code{NULL},
 the assignments are computed on demand via SHARK4R when available.}
+
+\item{threshold_adjustments}{Optional data.frame from
+\code{threshold_summary()} with the class thresholds adjusted during
+validation; listed in the report's summary table.}
 }
 \value{
 Invisible path to the created document.

@@ -87,7 +87,9 @@ plain-text editor and separate fields with a tab character.
 
 ### 1. Log in to the IFCB dashboard
 
-Navigate to <http://ifcb-dashboard-utv.smhi.se/> in your browser.
+Open your IFCB Dashboard in a browser. This is the address you entered as
+**Dashboard URL** in the AlgAware-IFCB settings, for example
+`https://ifcb.example.com/`.
 
 If you are not already logged in, click the **Log in** link at the bottom of
 the page.

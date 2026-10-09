@@ -64,6 +64,8 @@ navbar:
           href: articles/report-customisation.html
         - text: Uploading Metadata to the IFCB Dashboard
           href: articles/ifcb-dashboard-metadata.html
+        - text: System Overview
+          href: articles/system-overview.html
 
 articles:
   - title: Guides
@@ -73,6 +75,7 @@ articles:
       - workflow
       - report-customisation
       - ifcb-dashboard-metadata
+      - articles/system-overview
 
 reference:
   - title: Launch Application

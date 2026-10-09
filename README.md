@@ -94,7 +94,7 @@ The application opens in your default browser.
 ### Report Generation
 
 - Automated Word document (`.docx`) with all plots and station sections
-- AI-generated summaries and station descriptions via OpenAI or Google Gemini
+- AI-generated summaries and station descriptions via OpenAI, Google Gemini or Anthropic Claude
 - Front page with phytoplankton group composition pie map and narrative caption
 - Front-page mosaic designer with interactive taxon and image selection
 - Image mosaics for top taxa per region (adaptive layout for chains vs. compact organisms)
@@ -131,9 +131,11 @@ text (summaries and station descriptions):
 |----------|----------|
 | `OPENAI_API_KEY` | OpenAI (default: gpt-5.1) |
 | `GEMINI_API_KEY` | Google Gemini (default: gemini-2.5-flash-lite) |
+| `ANTHROPIC_API_KEY` | Anthropic Claude (default: claude-opus-5-5) |
 
-Override the model with `OPENAI_MODEL` or `GEMINI_MODEL`. When both keys are
-set, OpenAI is used by default.
+Override the model with `OPENAI_MODEL`, `GEMINI_MODEL` or `ANTHROPIC_MODEL`.
+When several keys are set, OpenAI is used by default; the provider can be
+switched in the Report tab.
 
 ## Bundled Data
 
@@ -172,7 +174,7 @@ algaware/
 │   ├── taxa.R                 # Taxon label formatting and class resolution
 │   ├── stations.R             # Station matching
 │   ├── report.R               # Word document builder
-│   ├── llm.R                  # LLM integration (OpenAI/Gemini)
+│   ├── llm.R                  # LLM integration (OpenAI/Gemini/Claude)
 │   └── utils.R                # Settings and utilities
 ├── inst/
 │   ├── app/                   # Shiny app (ui.R, server.R)

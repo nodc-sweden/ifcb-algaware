@@ -27,6 +27,120 @@ extract_llm_content <- function(result) {
   text
 }
 
+#' Extract and validate the text content of a Claude Messages API response
+#'
+#' The Messages API returns a list of content blocks rather than
+#' \code{choices}; with thinking enabled the first block can be an empty
+#' \code{thinking} block, so the first \code{text} block is selected. A
+#' refusal arrives as HTTP 200 with \code{stop_reason = "refusal"} and a
+#' \code{max_tokens} stop means the text was truncated; both raise so the
+#' callers' placeholder-text fallbacks handle them, as for
+#' \code{extract_llm_content}.
+#'
+#' @param result Parsed JSON body of a Messages API response.
+#' @return Length-1 character string.
+#' @keywords internal
+extract_claude_content <- function(result) {
+  stop_reason <- result$stop_reason %||% "unknown"
+  if (identical(stop_reason, "refusal")) {
+    category <- result$stop_details$category %||% "unspecified"
+    stop("LLM refused the request (category: ", category, ")", call. = FALSE)
+  }
+  if (identical(stop_reason, "max_tokens")) {
+    stop("LLM output was truncated (stop_reason: max_tokens)", call. = FALSE)
+  }
+  texts <- Filter(function(block) identical(block$type, "text"),
+                  result$content %||% list())
+  text <- if (length(texts) > 0) texts[[1]]$text else NULL
+  if (!is.character(text) || length(text) != 1 || is.na(text) ||
+      !nzchar(text)) {
+    stop("LLM returned empty content (stop_reason: ", stop_reason, ")",
+         call. = FALSE)
+  }
+  text
+}
+
+#' Call the Claude API
+#'
+#' @param system_prompt System prompt string.
+#' @param user_prompt User prompt string.
+#' @param model Claude model name (default: \code{llm_model_name("claude")}).
+#' @param temperature Ignored. Current Claude models reject sampling
+#'   parameters; the argument is kept so all providers share one signature.
+#' @return Character string with the generated text.
+#' @keywords internal
+call_claude <- function(system_prompt, user_prompt,
+                        model = llm_model_name("claude"),
+                        temperature = NULL) {
+  resp <- httr2::req_perform(
+    build_claude_request(system_prompt, user_prompt, model)
+  )
+  result <- httr2::resp_body_json(resp)
+  strip_markdown(extract_claude_content(result))
+}
+
+#' Build a Claude Messages API request
+#'
+#' Shared by the single-call path (\code{call_claude}) and the parallel
+#' batch path (\code{call_llm_batch}). The body is kept minimal so a model
+#' override via \code{ANTHROPIC_MODEL} works across model generations: no
+#' \code{thinking} block (current models run adaptive thinking by default)
+#' and no sampling parameters (rejected with a 400 by current models).
+#'
+#' @param system_prompt System prompt string.
+#' @param user_prompt User prompt string.
+#' @param model Claude model name.
+#' @param temperature Ignored; see \code{call_claude}.
+#' @return An httr2 request object.
+#' @keywords internal
+build_claude_request <- function(system_prompt, user_prompt,
+                                 model = llm_model_name("claude"),
+                                 temperature = NULL) {
+  if (!requireNamespace("httr2", quietly = TRUE)) {
+    stop("Package 'httr2' is required for LLM API calls. ",
+         "Install it with: install.packages(\"httr2\")", call. = FALSE)
+  }
+  api_key <- Sys.getenv("ANTHROPIC_API_KEY", "")
+  if (!nzchar(api_key)) {
+    stop("ANTHROPIC_API_KEY environment variable is not set.", call. = FALSE)
+  }
+
+  # max_tokens is required by the Messages API and also caps the (billed)
+  # thinking tokens, so it is set well above the length of a report section.
+  body <- list(
+    model = model,
+    max_tokens = 16000,
+    system = system_prompt,
+    messages = list(
+      list(role = "user", content = user_prompt)
+    )
+  )
+
+  # 180s timeout because adaptive thinking makes responses slower than the
+  # chat-completions providers. 429 = rate-limited, 503/529 = overloaded;
+  # all transient, so retry with backoff (httr2 honours Retry-After).
+  httr2::request("https://api.anthropic.com/v1/messages") |>
+    httr2::req_headers(
+      `x-api-key` = api_key,
+      `anthropic-version` = "2023-06-01",
+      `Content-Type` = "application/json",
+      # httr2 only redacts Authorization by default; keep the key out of
+      # printed request objects like the Bearer-token providers.
+      .redact = "x-api-key"
+    ) |>
+    httr2::req_body_json(body) |>
+    httr2::req_timeout(180) |>
+    httr2::req_retry(
+      max_tries = 3,
+      is_transient = \(resp) httr2::resp_status(resp) %in% c(429L, 503L, 529L),
+      backoff = ~ 5
+    ) |>
+    httr2::req_error(body = function(resp) {
+      tryCatch(httr2::resp_body_json(resp)$error$message,
+               error = function(e) NULL)
+    })
+}
+
 #' Call the OpenAI API
 #'
 #' @param system_prompt System prompt string.
@@ -163,14 +277,16 @@ call_gemini <- function(system_prompt, user_prompt,
 
 #' Call an LLM provider
 #'
-#' Dispatches to \code{call_openai} or \code{call_gemini}. When
-#' \code{provider} is NULL, auto-detects from available API keys.
+#' Dispatches to \code{call_openai}, \code{call_gemini} or
+#' \code{call_claude}. When \code{provider} is NULL, auto-detects from
+#' available API keys.
 #'
 #' @param system_prompt System prompt string.
 #' @param user_prompt User prompt string.
-#' @param provider Character string: \code{"openai"} or \code{"gemini"}.
-#'   NULL (default) auto-detects.
-#' @param temperature Sampling temperature (default: 0.3).
+#' @param provider Character string: \code{"openai"}, \code{"gemini"} or
+#'   \code{"claude"}. NULL (default) auto-detects.
+#' @param temperature Sampling temperature (default: 0.3). Not sent to
+#'   Claude, which rejects sampling parameters.
 #' @return Character string with the generated text.
 #' @keywords internal
 call_llm <- function(system_prompt, user_prompt, provider = NULL,
@@ -181,16 +297,17 @@ call_llm <- function(system_prompt, user_prompt, provider = NULL,
                          temperature = temperature),
     gemini = call_gemini(system_prompt, user_prompt,
                          temperature = temperature),
-    stop("No LLM API key configured. Set OPENAI_API_KEY or GEMINI_API_KEY.",
-         call. = FALSE)
+    claude = call_claude(system_prompt, user_prompt),
+    stop("No LLM API key configured. Set OPENAI_API_KEY, GEMINI_API_KEY ",
+         "or ANTHROPIC_API_KEY.", call. = FALSE)
   )
 }
 
 #' Does a provider support parallel requests?
 #'
-#' OpenAI accounts have per-minute rate limits comfortably above the
-#' handful of concurrent station descriptions a report needs. The Gemini
-#' free tier is limited to a few requests per minute (see
+#' OpenAI and Anthropic accounts have per-minute rate limits comfortably
+#' above the handful of concurrent station descriptions a report needs.
+#' The Gemini free tier is limited to a few requests per minute (see
 #' \code{call_gemini}), so it must stay sequential.
 #'
 #' @param provider Provider name, or NULL to auto-detect.
@@ -198,22 +315,53 @@ call_llm <- function(system_prompt, user_prompt, provider = NULL,
 #' @keywords internal
 llm_supports_parallel <- function(provider = NULL) {
   if (is.null(provider)) provider <- llm_provider()
-  identical(provider, "openai")
+  provider %in% c("openai", "claude")
+}
+
+#' Build a request for a provider that supports parallel requests
+#'
+#' @param provider \code{"openai"} or \code{"claude"}.
+#' @inheritParams call_llm
+#' @return An httr2 request object.
+#' @keywords internal
+build_llm_request <- function(provider, system_prompt, user_prompt,
+                              temperature = 0.3) {
+  switch(provider,
+    openai = build_openai_request(system_prompt, user_prompt,
+                                  temperature = temperature),
+    claude = build_claude_request(system_prompt, user_prompt),
+    stop("Provider '", provider, "' does not support parallel requests.",
+         call. = FALSE)
+  )
+}
+
+#' Extract the generated text from a parsed provider response
+#'
+#' @param provider Provider name.
+#' @param result Parsed JSON response body.
+#' @return Length-1 character string.
+#' @keywords internal
+extract_llm_text <- function(provider, result) {
+  if (identical(provider, "claude")) {
+    extract_claude_content(result)
+  } else {
+    extract_llm_content(result)
+  }
 }
 
 #' Call an LLM provider for a batch of independent prompts
 #'
-#' For providers that support it (OpenAI), all requests are performed
-#' concurrently with \code{httr2::req_perform_parallel()}, collapsing n
-#' sequential round trips into roughly the latency of the slowest one.
-#' Other providers fall back to a sequential loop (Gemini keeps its
-#' rate-limit delay). Each prompt gets an independent result: one failed
-#' request never aborts the batch.
+#' For providers that support it (OpenAI, Claude), all requests are
+#' performed concurrently with \code{httr2::req_perform_parallel()},
+#' collapsing n sequential round trips into roughly the latency of the
+#' slowest one. Other providers fall back to a sequential loop (Gemini
+#' keeps its rate-limit delay). Each prompt gets an independent result: one
+#' failed request never aborts the batch.
 #'
 #' @param prompts List of prompts, each a list with \code{system} and
 #'   \code{user} strings.
-#' @param provider Character string: \code{"openai"} or \code{"gemini"}.
-#'   NULL (default) auto-detects.
+#' @param provider Character string: \code{"openai"}, \code{"gemini"} or
+#'   \code{"claude"}. NULL (default) auto-detects.
 #' @param temperature Sampling temperature (default: 0.3).
 #' @param on_progress Optional callback \code{function(i, n)} invoked
 #'   before each request in the sequential fallback (not used in the
@@ -232,7 +380,7 @@ call_llm_batch <- function(prompts, provider = NULL, temperature = 0.3,
 
   if (llm_supports_parallel(provider)) {
     reqs <- lapply(prompts, function(p) {
-      build_openai_request(p$system, p$user, temperature = temperature)
+      build_llm_request(provider, p$system, p$user, temperature = temperature)
     })
     resps <- httr2::req_perform_parallel(reqs, on_error = "continue",
                                          progress = FALSE, max_active = 5)
@@ -242,7 +390,7 @@ call_llm_batch <- function(prompts, provider = NULL, temperature = 0.3,
       }
       tryCatch({
         result <- httr2::resp_body_json(resp)
-        as_success(strip_markdown(extract_llm_content(result)))
+        as_success(strip_markdown(extract_llm_text(provider, result)))
       }, error = function(e) as_failure(conditionMessage(e)))
     }))
   }

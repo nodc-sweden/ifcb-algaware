@@ -109,7 +109,7 @@ from the SHARK station register:
 ## 5. Configure LLM API keys (optional)
 
 AlgAware-IFCB can generate Swedish and English report text automatically using
-OpenAI (GPT-4.1) or Google Gemini. This requires an API key from the respective
+OpenAI, Google Gemini or Anthropic Claude. This requires an API key from the respective
 provider and the `httr2` package (installed with `dependencies = TRUE`).
 
 ### Set up the key in RStudio
@@ -132,14 +132,22 @@ or
 GEMINI_API_KEY=AIzaxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
+or
+
+```
+ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxxxxxxxxxxxxxx
+```
+
 Save the file, then restart R (Session → Restart R in RStudio). The key will
 be available to AlgAware-IFCB every time you launch the app.
 
-If both keys are set, OpenAI is used by default. Override the model by adding:
+If several keys are set, OpenAI is used by default and the provider can be
+switched in the Report tab. Override the model by adding:
 
 ```
 OPENAI_MODEL=gpt-4.1
 GEMINI_MODEL=gemini-2.5-flash-lite
+ANTHROPIC_MODEL=claude-opus-5-5
 ```
 
 > **Security:** Never share your `.Renviron` file or paste your API key into

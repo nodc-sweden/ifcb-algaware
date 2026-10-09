@@ -13,7 +13,7 @@ translate_summary_to_swedish(
 \arguments{
 \item{english_text}{Character string with the English summary to translate.}
 
-\item{provider}{LLM provider (\code{"openai"} or \code{"gemini"}).
+\item{provider}{LLM provider (\code{"openai"}, \code{"gemini"} or \code{"claude"}).
 NULL auto-detects.}
 
 \item{chl_measure}{How the active chlorophyll source is measured,

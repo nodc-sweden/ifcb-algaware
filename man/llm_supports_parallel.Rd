@@ -13,9 +13,9 @@ llm_supports_parallel(provider = NULL)
 TRUE when independent requests may be performed concurrently.
 }
 \description{
-OpenAI accounts have per-minute rate limits comfortably above the
-handful of concurrent station descriptions a report needs. The Gemini
-free tier is limited to a few requests per minute (see
+OpenAI and Anthropic accounts have per-minute rate limits comfortably
+above the handful of concurrent station descriptions a report needs.
+The Gemini free tier is limited to a few requests per minute (see
 \code{call_gemini}), so it must stay sequential.
 }
 \keyword{internal}

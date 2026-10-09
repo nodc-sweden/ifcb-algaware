@@ -7,7 +7,8 @@
 llm_providers()
 }
 \value{
-Character vector of provider names with valid API keys.
+Character vector of provider names with valid API keys, in
+precedence order (\code{"openai"}, \code{"gemini"}, \code{"claude"}).
 }
 \description{
 List available LLM providers

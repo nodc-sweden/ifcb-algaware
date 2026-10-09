@@ -59,7 +59,7 @@ generate_report(
 name used for automated classification.}
 
 \item{use_llm}{Logical; if TRUE and an LLM API key is configured
-(OPENAI_API_KEY or GEMINI_API_KEY), generate report text using an
+(OPENAI_API_KEY, GEMINI_API_KEY or ANTHROPIC_API_KEY), generate report text using an
 LLM. Default FALSE uses placeholder text.}
 
 \item{annotator}{Character string with the analyst name for the
@@ -78,7 +78,7 @@ text generation (e.g. \code{"gpt-4.1"}).}
 matched to AlgAware stations.}
 
 \item{llm_provider}{Optional character string; LLM provider to use
-(\code{"openai"} or \code{"gemini"}). NULL auto-detects.}
+(\code{"openai"}, \code{"gemini"} or \code{"claude"}). NULL auto-detects.}
 
 \item{on_llm_progress}{Optional callback function called before each LLM
 request with arguments \code{(step, total, detail)} for progress

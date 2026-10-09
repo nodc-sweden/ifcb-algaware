@@ -122,7 +122,8 @@ mod_report_server <- function(id, rv, config, phyto_groups_reactive = NULL) {
         use_llm_checked <- isTRUE(input$use_llm %||% TRUE)
         provider_labels <- c(
           openai = paste0("OpenAI (", llm_model_name("openai"), ")"),
-          gemini = paste0("Gemini (", llm_model_name("gemini"), ")")
+          gemini = paste0("Gemini (", llm_model_name("gemini"), ")"),
+          claude = paste0("Claude (", llm_model_name("claude"), ")")
         )
         choices <- stats::setNames(providers, provider_labels[providers])
         provider_ui <- if (length(providers) > 1) {
@@ -160,7 +161,8 @@ mod_report_server <- function(id, rv, config, phyto_groups_reactive = NULL) {
         shiny::div(
           class = "llm-status unavailable",
           shiny::icon("pencil"),
-          " Manual text mode (set OPENAI_API_KEY or GEMINI_API_KEY for AI text)"
+          " Manual text mode (set OPENAI_API_KEY, GEMINI_API_KEY or ",
+          "ANTHROPIC_API_KEY for AI text)"
         )
       }
     })

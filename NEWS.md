@@ -1,3 +1,13 @@
+# algaware (development version)
+
+## New features
+
+- Anthropic Claude is available as a third LLM provider for AI-generated
+  report text. Set `ANTHROPIC_API_KEY` to enable it (default model
+  `claude-opus-5-5`, override with `ANTHROPIC_MODEL`). Like OpenAI, Claude
+  generates the station descriptions in parallel. When several keys are
+  set, the provider is selectable in the Report tab.
+
 # algaware 0.4.0
 
 ## Bug fixes

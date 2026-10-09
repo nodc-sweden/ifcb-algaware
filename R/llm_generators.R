@@ -98,7 +98,7 @@ bloom_alert_note <- function(station_summary, phyto_groups = NULL,
 #' @param cruise_info Cruise info string.
 #' @param phyto_groups Optional phytoplankton group table used to provide
 #'   explicit group assignments in the prompt text.
-#' @param provider LLM provider (\code{"openai"} or \code{"gemini"}).
+#' @param provider LLM provider (\code{"openai"}, \code{"gemini"} or \code{"claude"}).
 #'   NULL auto-detects.
 #' @param unclassified_fractions Optional per-sample fractions of unclassified detections supplied to the prompt.
 #' @param chl_measure How the active chlorophyll source is measured,
@@ -171,7 +171,7 @@ generate_swedish_summary <- function(station_summary, taxa_lookup = NULL,
 #' Translate an English summary to Swedish
 #'
 #' @param english_text Character string with the English summary to translate.
-#' @param provider LLM provider (\code{"openai"} or \code{"gemini"}).
+#' @param provider LLM provider (\code{"openai"}, \code{"gemini"} or \code{"claude"}).
 #'   NULL auto-detects.
 #' @param chl_measure How the active chlorophyll source is measured,
 #'   \code{"fluorescence"} (FerryBox/CTD) or \code{"concentration"} (LIMS
@@ -217,7 +217,7 @@ translate_summary_to_swedish <- function(english_text, provider = NULL,
 #' @param cruise_info Cruise info string.
 #' @param phyto_groups Optional phytoplankton group table used to provide
 #'   explicit group assignments in the prompt text.
-#' @param provider LLM provider (\code{"openai"} or \code{"gemini"}).
+#' @param provider LLM provider (\code{"openai"}, \code{"gemini"} or \code{"claude"}).
 #'   NULL auto-detects.
 #' @param unclassified_fractions Optional per-sample unclassified percentages
 #'   for contextualizing the summary.
@@ -285,7 +285,7 @@ generate_english_summary <- function(station_summary, taxa_lookup = NULL,
 #' @param all_stations_summary Optional full station_summary for context.
 #' @param phyto_groups Optional phytoplankton group table used to provide
 #'   explicit group assignments in the prompt text.
-#' @param provider LLM provider (\code{"openai"} or \code{"gemini"}).
+#' @param provider LLM provider (\code{"openai"}, \code{"gemini"} or \code{"claude"}).
 #'   NULL auto-detects.
 #' @param unclassified_pct Optional per-class unclassified percentage info used for context.
 #' @param chl_measure How the active chlorophyll source is measured,

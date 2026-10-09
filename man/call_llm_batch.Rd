@@ -10,8 +10,8 @@ call_llm_batch(prompts, provider = NULL, temperature = 0.3, on_progress = NULL)
 \item{prompts}{List of prompts, each a list with \code{system} and
 \code{user} strings.}
 
-\item{provider}{Character string: \code{"openai"} or \code{"gemini"}.
-NULL (default) auto-detects.}
+\item{provider}{Character string: \code{"openai"}, \code{"gemini"} or
+\code{"claude"}. NULL (default) auto-detects.}
 
 \item{temperature}{Sampling temperature (default: 0.3).}
 
@@ -25,11 +25,11 @@ list with \code{text} (character or NULL) and \code{error}
 (character or NULL).
 }
 \description{
-For providers that support it (OpenAI), all requests are performed
-concurrently with \code{httr2::req_perform_parallel()}, collapsing n
-sequential round trips into roughly the latency of the slowest one.
-Other providers fall back to a sequential loop (Gemini keeps its
-rate-limit delay). Each prompt gets an independent result: one failed
-request never aborts the batch.
+For providers that support it (OpenAI, Claude), all requests are
+performed concurrently with \code{httr2::req_perform_parallel()},
+collapsing n sequential round trips into roughly the latency of the
+slowest one. Other providers fall back to a sequential loop (Gemini
+keeps its rate-limit delay). Each prompt gets an independent result: one
+failed request never aborts the batch.
 }
 \keyword{internal}

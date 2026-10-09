@@ -496,14 +496,80 @@ test_that("call_gemini errors without API key", {
   })
 })
 
+test_that("call_claude errors without API key", {
+  withr::with_envvar(c(ANTHROPIC_API_KEY = ""), {
+    expect_error(
+      algaware:::call_claude("system", "user"),
+      "ANTHROPIC_API_KEY"
+    )
+  })
+})
+
+test_that("build_claude_request sends a Messages API body without temperature", {
+  withr::with_envvar(c(ANTHROPIC_API_KEY = "sk-ant-test", ANTHROPIC_MODEL = ""), {
+    req <- algaware:::build_claude_request("sys prompt", "user prompt")
+    body <- req$body$data
+    expect_equal(body$model, "claude-opus-5-5")
+    expect_equal(body$system, "sys prompt")
+    expect_equal(body$messages, list(list(role = "user", content = "user prompt")))
+    expect_true(is.numeric(body$max_tokens) && body$max_tokens > 0)
+    # Current Claude models reject sampling parameters with a 400.
+    expect_null(body$temperature)
+    headers <- httr2::req_get_headers(req, "reveal")
+    expect_equal(headers[["x-api-key"]], "sk-ant-test")
+    expect_equal(headers[["anthropic-version"]], "2023-06-01")
+    expect_null(headers[["Authorization"]])
+    # The key must be redacted when the request object is printed.
+    printed <- paste(utils::capture.output(print(req)), collapse = "\n")
+    expect_false(grepl("sk-ant-test", printed, fixed = TRUE))
+  })
+})
+
+test_that("extract_claude_content returns the first text block", {
+  result <- list(
+    stop_reason = "end_turn",
+    content = list(
+      list(type = "thinking", thinking = ""),
+      list(type = "text", text = "Generated text")
+    )
+  )
+  expect_equal(algaware:::extract_claude_content(result), "Generated text")
+})
+
+test_that("extract_claude_content errors on refusal, truncation and empty output", {
+  refusal <- list(stop_reason = "refusal",
+                  stop_details = list(type = "refusal", category = "cyber"),
+                  content = list())
+  expect_error(algaware:::extract_claude_content(refusal), "refus")
+
+  truncated <- list(stop_reason = "max_tokens",
+                    content = list(list(type = "text", text = "partial")))
+  expect_error(algaware:::extract_claude_content(truncated), "max_tokens")
+
+  no_text <- list(stop_reason = "end_turn",
+                  content = list(list(type = "thinking", thinking = "")))
+  expect_error(algaware:::extract_claude_content(no_text), "empty")
+
+  empty_text <- list(stop_reason = "end_turn",
+                     content = list(list(type = "text", text = "")))
+  expect_error(algaware:::extract_claude_content(empty_text), "empty")
+})
+
 test_that("llm_provider returns correct provider", {
-  withr::with_envvar(c(OPENAI_API_KEY = "sk-test", GEMINI_API_KEY = ""), {
+  withr::with_envvar(c(OPENAI_API_KEY = "sk-test", GEMINI_API_KEY = "",
+                       ANTHROPIC_API_KEY = ""), {
     expect_equal(llm_provider(), "openai")
   })
-  withr::with_envvar(c(OPENAI_API_KEY = "", GEMINI_API_KEY = "AIza-test"), {
+  withr::with_envvar(c(OPENAI_API_KEY = "", GEMINI_API_KEY = "AIza-test",
+                       ANTHROPIC_API_KEY = ""), {
     expect_equal(llm_provider(), "gemini")
   })
-  withr::with_envvar(c(OPENAI_API_KEY = "", GEMINI_API_KEY = ""), {
+  withr::with_envvar(c(OPENAI_API_KEY = "", GEMINI_API_KEY = "",
+                       ANTHROPIC_API_KEY = "sk-ant-test"), {
+    expect_equal(llm_provider(), "claude")
+  })
+  withr::with_envvar(c(OPENAI_API_KEY = "", GEMINI_API_KEY = "",
+                       ANTHROPIC_API_KEY = ""), {
     expect_equal(llm_provider(), "none")
   })
 })
@@ -515,13 +581,22 @@ test_that("llm_provider prefers OpenAI when both keys set", {
 })
 
 test_that("llm_available detects Gemini key", {
-  withr::with_envvar(c(OPENAI_API_KEY = "", GEMINI_API_KEY = "AIza-test"), {
+  withr::with_envvar(c(OPENAI_API_KEY = "", GEMINI_API_KEY = "AIza-test",
+                       ANTHROPIC_API_KEY = ""), {
+    expect_true(llm_available())
+  })
+})
+
+test_that("llm_available detects Anthropic key", {
+  withr::with_envvar(c(OPENAI_API_KEY = "", GEMINI_API_KEY = "",
+                       ANTHROPIC_API_KEY = "sk-ant-test"), {
     expect_true(llm_available())
   })
 })
 
 test_that("call_llm errors with no provider", {
-  withr::with_envvar(c(OPENAI_API_KEY = "", GEMINI_API_KEY = ""), {
+  withr::with_envvar(c(OPENAI_API_KEY = "", GEMINI_API_KEY = "",
+                       ANTHROPIC_API_KEY = ""), {
     expect_error(
       algaware:::call_llm("system", "user"),
       "No LLM API key configured"
@@ -530,22 +605,31 @@ test_that("call_llm errors with no provider", {
 })
 
 test_that("llm_providers returns all available providers", {
-  withr::with_envvar(c(OPENAI_API_KEY = "sk-test", GEMINI_API_KEY = "AIza-test"), {
+  withr::with_envvar(c(OPENAI_API_KEY = "sk-test", GEMINI_API_KEY = "AIza-test",
+                       ANTHROPIC_API_KEY = "sk-ant-test"), {
     providers <- llm_providers()
-    expect_equal(providers, c("openai", "gemini"))
+    expect_equal(providers, c("openai", "gemini", "claude"))
   })
-  withr::with_envvar(c(OPENAI_API_KEY = "", GEMINI_API_KEY = "AIza-test"), {
+  withr::with_envvar(c(OPENAI_API_KEY = "", GEMINI_API_KEY = "AIza-test",
+                       ANTHROPIC_API_KEY = ""), {
     expect_equal(llm_providers(), "gemini")
   })
-  withr::with_envvar(c(OPENAI_API_KEY = "", GEMINI_API_KEY = ""), {
+  withr::with_envvar(c(OPENAI_API_KEY = "", GEMINI_API_KEY = "",
+                       ANTHROPIC_API_KEY = "sk-ant-test"), {
+    expect_equal(llm_providers(), "claude")
+  })
+  withr::with_envvar(c(OPENAI_API_KEY = "", GEMINI_API_KEY = "",
+                       ANTHROPIC_API_KEY = ""), {
     expect_equal(llm_providers(), character(0))
   })
 })
 
 test_that("llm_model_name returns correct default per provider", {
-  withr::with_envvar(c(OPENAI_MODEL = "", GEMINI_MODEL = ""), {
+  withr::with_envvar(c(OPENAI_MODEL = "", GEMINI_MODEL = "",
+                       ANTHROPIC_MODEL = ""), {
     expect_equal(llm_model_name("openai"), "gpt-5.1")
     expect_equal(llm_model_name("gemini"), "gemini-2.5-flash-lite")
+    expect_equal(llm_model_name("claude"), "claude-opus-5-5")
   })
 })
 
@@ -555,6 +639,9 @@ test_that("llm_model_name respects env var override", {
   })
   withr::with_envvar(c(GEMINI_MODEL = "gemini-3.0-flash"), {
     expect_equal(llm_model_name("gemini"), "gemini-3.0-flash")
+  })
+  withr::with_envvar(c(ANTHROPIC_MODEL = "claude-sonnet-5-5"), {
+    expect_equal(llm_model_name("claude"), "claude-sonnet-5-5")
   })
 })
 
@@ -1102,15 +1189,22 @@ test_that("bloom_alert_note and cruise summary survive an all-unclassified input
 
 # -- llm_supports_parallel ----------------------------------------------------
 
-test_that("llm_supports_parallel is TRUE for openai only", {
+test_that("llm_supports_parallel is TRUE for openai and claude only", {
   expect_true(algaware:::llm_supports_parallel("openai"))
+  expect_true(algaware:::llm_supports_parallel("claude"))
   expect_false(algaware:::llm_supports_parallel("gemini"))
   expect_false(algaware:::llm_supports_parallel("none"))
-  withr::with_envvar(c(OPENAI_API_KEY = "sk-test", GEMINI_API_KEY = ""), {
+  withr::with_envvar(c(OPENAI_API_KEY = "sk-test", GEMINI_API_KEY = "",
+                       ANTHROPIC_API_KEY = ""), {
     expect_true(algaware:::llm_supports_parallel(NULL))
   })
-  withr::with_envvar(c(OPENAI_API_KEY = "", GEMINI_API_KEY = "AIza-test"), {
+  withr::with_envvar(c(OPENAI_API_KEY = "", GEMINI_API_KEY = "AIza-test",
+                       ANTHROPIC_API_KEY = ""), {
     expect_false(algaware:::llm_supports_parallel(NULL))
+  })
+  withr::with_envvar(c(OPENAI_API_KEY = "", GEMINI_API_KEY = "",
+                       ANTHROPIC_API_KEY = "sk-ant-test"), {
+    expect_true(algaware:::llm_supports_parallel(NULL))
   })
 })
 
@@ -1175,6 +1269,48 @@ test_that("call_llm_batch parallel path maps responses and conditions", {
     expect_null(results[[2]]$text)
     expect_match(results[[2]]$error, "timeout")
     expect_equal(results[[3]]$text, "third text")
+  })
+})
+
+test_that("call_llm_batch parallel path parses Claude-shaped responses", {
+  withr::with_envvar(c(ANTHROPIC_API_KEY = "sk-ant-test"), {
+    batch <- algaware:::call_llm_batch
+    fake_resp <- function(text, stop_reason = "end_turn") {
+      structure(list(payload = list(
+        stop_reason = stop_reason,
+        content = list(
+          list(type = "thinking", thinking = ""),
+          list(type = "text", text = text)
+        )
+      )), class = "httr2_response")
+    }
+    captured_reqs <- NULL
+    mockery::stub(batch, "httr2::req_perform_parallel", function(reqs, ...) {
+      captured_reqs <<- reqs
+      list(
+        fake_resp("first text"),
+        fake_resp("cut off", stop_reason = "max_tokens"),
+        simpleError("timeout")
+      )
+    })
+    mockery::stub(batch, "httr2::resp_body_json",
+                  function(resp, ...) resp$payload)
+
+    prompts <- list(
+      list(system = "s", user = "a"),
+      list(system = "s", user = "b"),
+      list(system = "s", user = "c")
+    )
+    results <- batch(prompts, provider = "claude")
+
+    expect_length(captured_reqs, 3)
+    expect_equal(httr2::req_get_headers(captured_reqs[[1]], "reveal")[["x-api-key"]],
+                 "sk-ant-test")
+    expect_equal(results[[1]]$text, "first text")
+    expect_null(results[[2]]$text)
+    expect_match(results[[2]]$error, "max_tokens")
+    expect_null(results[[3]]$text)
+    expect_match(results[[3]]$error, "timeout")
   })
 })
 

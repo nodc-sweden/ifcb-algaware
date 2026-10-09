@@ -269,6 +269,8 @@ Read and resolve classifier data
   : Read classifications from H5 files
 - [`read_classifier_name()`](https://nodc-sweden.github.io/ifcb-algaware/reference/read_classifier_name.md)
   : Read classifier name from an H5 classification file
+- [`read_thresholds()`](https://nodc-sweden.github.io/ifcb-algaware/reference/read_thresholds.md)
+  : Read the trained per-class thresholds from H5 classification files
 - [`resolve_class_list()`](https://nodc-sweden.github.io/ifcb-algaware/reference/resolve_class_list.md)
   : Resolve the active class list
 - [`copy_classification_files()`](https://nodc-sweden.github.io/ifcb-algaware/reference/copy_classification_files.md)
@@ -417,6 +419,10 @@ UI and server module functions
   : Settings Module Server
 - [`mod_settings_ui()`](https://nodc-sweden.github.io/ifcb-algaware/reference/mod_settings_ui.md)
   : Settings Module UI
+- [`mod_thresholds_server()`](https://nodc-sweden.github.io/ifcb-algaware/reference/mod_thresholds_server.md)
+  : Class Thresholds Module Server
+- [`mod_thresholds_ui()`](https://nodc-sweden.github.io/ifcb-algaware/reference/mod_thresholds_ui.md)
+  : Class Thresholds Module UI
 - [`mod_validation_server()`](https://nodc-sweden.github.io/ifcb-algaware/reference/mod_validation_server.md)
   : Validation Module Server
 - [`mod_validation_ui()`](https://nodc-sweden.github.io/ifcb-algaware/reference/mod_validation_ui.md)

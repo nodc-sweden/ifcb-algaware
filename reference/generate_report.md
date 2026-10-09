@@ -39,7 +39,8 @@ generate_report(
   lims_data_full = NULL,
   chl_stats = NULL,
   chl_map_source = "ferrybox",
-  phyto_groups = NULL
+  phyto_groups = NULL,
+  threshold_adjustments = NULL
 )
 ```
 
@@ -198,6 +199,13 @@ generate_report(
   Used to render the per-station phytoplankton group composition pie
   map. If `NULL`, the assignments are computed on demand via SHARK4R
   when available.
+
+- threshold_adjustments:
+
+  Optional data.frame from
+  [`threshold_summary()`](https://nodc-sweden.github.io/ifcb-algaware/reference/threshold_summary.md)
+  with the class thresholds adjusted during validation; listed in the
+  report's summary table.
 
 ## Value
 

@@ -2,9 +2,10 @@
 
 Reads H5 classification files, computes biovolume data for each
 classified image, aggregates results by station visit, and extracts the
-classifier name from the first H5 file. Non-biological classes are
-excluded from biovolume but kept in the classification data frame for
-gallery display.
+classifier name from the first H5 file and the trained per-class
+thresholds (`NULL` when the files lack them or disagree). Non-biological
+classes are excluded from biovolume but kept in the classification data
+frame for gallery display.
 
 ## Usage
 

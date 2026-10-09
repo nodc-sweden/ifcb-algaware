@@ -35,7 +35,7 @@ footer {
 
     <a class="navbar-brand me-2" href="../index.html">algaware</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -70,9 +70,21 @@ footer {
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/nodc-sweden/ifcb-algaware/blob/0.4.0/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/nodc-sweden/ifcb-algaware/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="development version" id="algaware-development-version">algaware (development version)<a class="anchor" aria-label="anchor" href="#algaware-development-version"></a></h2>
+<div class="section level3">
+<h3 id="new-features-development-version">New features<a class="anchor" aria-label="anchor" href="#new-features-development-version"></a></h3>
+<ul><li>The Validate sidebar has a new “Class threshold” slider for adjusting the classifier threshold of the class shown in the gallery. Raising it moves images scoring below the new threshold to <code>"unclassified"</code>; lowering it returns unclassified images whose top-scoring class it is. A live preview counts the images that would move and dims them in the gallery before you click “Apply”. Thresholds apply per class across all loaded samples, the trained thresholds are read from the H5 classification files, and manual corrections always take precedence. Adjusted classes are listed with a reset link each, so a class emptied by a high threshold can still be restored. The slider is disabled when the H5 files lack thresholds or come from different classifiers.</li>
+<li>Threshold adjustments are saved in the corrections CSV (“Download corrections”, the report’s corrections export and the autosave) as extra rows marked by a new <code>record_type</code> column (<code>"correction"</code> or <code>"threshold"</code>), with the trained and applied threshold and the number of images moved. “Import corrections” restores them together with the corrections, replacing the session’s adjustments; thresholds saved for a different classifier are skipped with a note. Files from earlier versions import as before, with all thresholds at their trained values.</li>
+<li>Adjusted class thresholds are listed in the report’s data summary table, next to the classification model.</li>
+<li>The gallery has a “Sort by score” toggle that shows the lowest classifier scores first, to review borderline images.</li>
+<li>
+<code><a href="../reference/read_h5_classifications.html">read_h5_classifications()</a></code> now also returns <code>class_auto</code>, the top-scoring class before thresholding, and the new <code><a href="../reference/read_thresholds.html">read_thresholds()</a></code> reads the trained per-class thresholds.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.4.0" id="algaware-040">algaware 0.4.0<a class="anchor" aria-label="anchor" href="#algaware-040"></a></h2>
 <div class="section level3">

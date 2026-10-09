@@ -1,11 +1,11 @@
 # Auto-save the corrections log to the local storage path
 
-Writes the same enriched corrections CSV that the "Download corrections"
-button produces (see
-[`enrich_corrections_for_export()`](https://nodc-sweden.github.io/ifcb-algaware/reference/enrich_corrections_for_export.md))
-to `<storage_path>/corrections/algaware_corrections_<YYYYMMDD>.csv`, so
-that work lost to a crash – or to closing the app without downloading –
-can be recovered with the existing "Import corrections" button. The
+Writes the same corrections CSV that the "Download corrections" button
+produces – corrections plus any class threshold adjustments (see
+[`build_corrections_export()`](https://nodc-sweden.github.io/ifcb-algaware/reference/build_corrections_export.md))
+– to `<storage_path>/corrections/algaware_corrections_<YYYYMMDD>.csv`,
+so that work lost to a crash – or to closing the app without downloading
+– can be recovered with the existing "Import corrections" button. The
 corrections log is cumulative, so each save overwrites the day's file
 with the complete state.
 
@@ -16,7 +16,9 @@ autosave_corrections(
   corrections,
   custom_classes,
   storage_path,
-  backup_existing = FALSE
+  backup_existing = FALSE,
+  thresholds = NULL,
+  allow_empty = FALSE
 )
 ```
 
@@ -40,6 +42,18 @@ autosave_corrections(
   must then come from an earlier session (e.g. one that crashed), so it
   is set aside as `..._prev.csv` instead of being overwritten. Later
   saves in the same session overwrite in place.
+
+- thresholds:
+
+  Optional data.frame of threshold adjustments from
+  [`threshold_summary()`](https://nodc-sweden.github.io/ifcb-algaware/reference/threshold_summary.md).
+
+- allow_empty:
+
+  Write the file even when there are no corrections and no threshold
+  adjustments. Used after an earlier save in the session, so undoing
+  everything (e.g. resetting all thresholds) is not left out of the
+  recovery file.
 
 ## Value
 

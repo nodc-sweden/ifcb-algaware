@@ -10,7 +10,8 @@ build_summary_rows(
   total_bio_images = NULL,
   classifier_name = NULL,
   threshold_adjustments = NULL,
-  llm_model = NULL
+  llm_model = NULL,
+  microscopy = NULL
 )
 }
 \arguments{
@@ -26,6 +27,8 @@ build_summary_rows(
 \code{threshold_summary()}.}
 
 \item{llm_model}{Optional LLM model name.}
+
+\item{microscopy}{Optional microscopy observations used in the report.}
 }
 \value{
 A data.frame with \code{Parameter} and \code{Value} columns.

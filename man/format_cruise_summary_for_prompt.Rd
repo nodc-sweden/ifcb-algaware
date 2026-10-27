@@ -9,7 +9,8 @@ format_cruise_summary_for_prompt(
   taxa_lookup = NULL,
   unclassified_fractions = NULL,
   phyto_groups = NULL,
-  chl_measure = "fluorescence"
+  chl_measure = "fluorescence",
+  microscopy = NULL
 )
 }
 \arguments{
@@ -27,6 +28,9 @@ explicit group assignments in the prompt text.}
 \item{chl_measure}{How the chlorophyll value is measured,
 \code{"fluorescence"} (FerryBox/CTD) or \code{"concentration"} (LIMS
 bottle/hose filter samples). Controls how the value is labelled.}
+
+\item{microscopy}{Optional enriched microscopy observations for stations
+without IFCB data; appended as a separate qualitative block.}
 }
 \value{
 Character string with cruise-level overview.

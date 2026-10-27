@@ -62,6 +62,14 @@ Each station description follows a consistent pattern:
    - Example: "Chlorophyll fluorescence was elevated compared to other stations, consistent with the high diatom biovolume observed by the IFCB."
    - Example: "Despite relatively low chlorophyll fluorescence, the IFCB detected moderate biovolume dominated by large-celled diatoms."
 
+### Microscopy stations
+- Stations without IFCB data may instead have been analysed by qualitative light microscopy (Plankton Toolbox). Their data are abundance classes, not biovolume: 1 = observed, 2 = several cells, 3 = 1-10%, 4 = 10-50%, 5 = 50-100%.
+- Describe these stations qualitatively from the classes: 5 = dominant, 4 = very common, 3 = common, 1-2 = present in low numbers. Base diversity on the number of taxa observed.
+- Never state biovolume, carbon, cell concentrations or warning levels for them, and never compare their abundances quantitatively with the IFCB stations.
+- Exception to "no methodology descriptions": state in one short clause that the station was analysed by light microscopy (e.g. "In the light microscopy sample, ...").
+- Heterotrophic taxa (e.g. Protoperidinium) are seen by microscopy; they are not underrepresented as they are in IFCB data.
+- Example: "In the light microscopy sample, the cyanobacterium Dolichospermum planctonicum dominated, and Pseudanabaena acicularis was very common. Diatoms were present with several taxa in low numbers."
+
 ### Grouping stations
 - When two nearby stations show very similar conditions, they may be described together.
   - Example: "BY31 Landsort deep 22nd of October, BY38 23rd of October -- Both phytoplankton diversity and total cell numbers were low."

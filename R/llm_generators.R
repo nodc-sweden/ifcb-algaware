@@ -96,29 +96,49 @@ bloom_alert_note <- function(station_summary, phyto_groups = NULL,
 #' The writing guide asks for one paragraph per region. When a cruise only
 #' has stations on one coast, this returns an instruction telling the LLM to
 #' write only that region's paragraph, so it does not invent a description of
-#' the coast that has no data.
+#' the coast that has no data. Microscopy stations count as sampling their
+#' coast; a coast covered by microscopy only gets an instruction to keep its
+#' paragraph qualitative.
 #'
 #' @param station_summary Full station_summary data frame.
+#' @param microscopy Optional microscopy observations (with \code{COAST}) for
+#'   stations without IFCB data.
 #' @return Character string with the instruction, or \code{""} when both
-#'   coasts (or neither) were sampled.
+#'   coasts have IFCB data (or no coast has any data).
 #' @keywords internal
-region_coverage_note <- function(station_summary) {
-  if (is.null(station_summary) || !"COAST" %in% names(station_summary)) {
-    return("")
+region_coverage_note <- function(station_summary, microscopy = NULL) {
+  coasts_of <- function(x) {
+    if (is.null(x) || !"COAST" %in% names(x)) return(character(0))
+    unique(x$COAST[!is.na(x$COAST)])
   }
-  coasts <- unique(station_summary$COAST[!is.na(station_summary$COAST)])
-  has_east <- "EAST" %in% coasts
-  has_west <- "WEST" %in% coasts
-  if (has_east == has_west) return("")
+  labels <- c(WEST = "West Coast", EAST = "Baltic Sea")
+  ifcb <- coasts_of(station_summary)
+  mic <- coasts_of(microscopy)
+  covered <- intersect(names(labels), union(ifcb, mic))
+  if (length(covered) == 0) return("")
 
-  sampled <- if (has_east) "Baltic Sea" else "West Coast"
-  missing <- if (has_east) "West Coast" else "Baltic Sea"
-  paste0(
-    "\n\nREGIONS SAMPLED: This cruise has station data from the ", sampled,
-    " only; there are no ", missing, " stations. Write only the ", sampled,
-    " paragraph. Do not write a ", missing, " paragraph, and do not describe ",
-    "or speculate about plankton conditions in the ", missing, "."
-  )
+  notes <- character(0)
+  if (length(covered) == 1) {
+    sampled <- labels[[covered]]
+    missing <- labels[[setdiff(names(labels), covered)]]
+    notes <- paste0(
+      "This cruise has station data from the ", sampled,
+      " only; there are no ", missing, " stations. Write only the ", sampled,
+      " paragraph. Do not write a ", missing, " paragraph, and do not describe ",
+      "or speculate about plankton conditions in the ", missing, "."
+    )
+  }
+  for (coast in setdiff(intersect(covered, mic), ifcb)) {
+    notes <- c(notes, paste0(
+      "The ", labels[[coast]], " stations have no IFCB data and were analysed ",
+      "by qualitative light microscopy only. Base the ", labels[[coast]],
+      " paragraph on the microscopy stations, describe abundances ",
+      "qualitatively, and do not compare them quantitatively with the IFCB ",
+      "results."
+    ))
+  }
+  if (length(notes) == 0) return("")
+  paste0("\n\nREGIONS SAMPLED: ", paste(notes, collapse = " "))
 }
 
 #' Generate the Swedish summary text
@@ -134,21 +154,25 @@ region_coverage_note <- function(station_summary) {
 #' @param chl_measure How the active chlorophyll source is measured,
 #'   \code{"fluorescence"} (FerryBox/CTD) or \code{"concentration"} (LIMS
 #'   bottle/hose filter samples). Adjusts the chlorophyll terminology used.
+#' @param microscopy Optional enriched microscopy observations for stations
+#'   without IFCB data (see \code{enrich_microscopy_taxa()}).
 #' @return Character string with Swedish summary.
 #' @export
 generate_swedish_summary <- function(station_summary, taxa_lookup = NULL,
                                      cruise_info = "", phyto_groups = NULL,
                                      provider = NULL,
                                      unclassified_fractions = NULL,
-                                     chl_measure = "fluorescence") {
+                                     chl_measure = "fluorescence",
+                                     microscopy = NULL) {
   guide <- load_writing_guide()
   cruise_data <- format_cruise_summary_for_prompt(station_summary, taxa_lookup,
                                                   unclassified_fractions = unclassified_fractions,
                                                   phyto_groups = phyto_groups,
-                                                  chl_measure = chl_measure)
+                                                  chl_measure = chl_measure,
+                                                  microscopy = microscopy)
   chl_terms <- chl_measure_terms(chl_measure)
   bloom_note <- bloom_alert_note(station_summary, phyto_groups, lang = "sv")
-  coverage_note <- region_coverage_note(station_summary)
+  coverage_note <- region_coverage_note(station_summary, microscopy)
 
   system_prompt <- paste0(
     "You are a marine biologist writing phytoplankton monitoring reports ",
@@ -256,21 +280,25 @@ translate_summary_to_swedish <- function(english_text, provider = NULL,
 #' @param chl_measure How the active chlorophyll source is measured,
 #'   \code{"fluorescence"} (FerryBox/CTD) or \code{"concentration"} (LIMS
 #'   bottle/hose filter samples). Adjusts the chlorophyll terminology used.
+#' @param microscopy Optional enriched microscopy observations for stations
+#'   without IFCB data (see \code{enrich_microscopy_taxa()}).
 #' @return Character string with English summary.
 #' @export
 generate_english_summary <- function(station_summary, taxa_lookup = NULL,
                                      cruise_info = "", phyto_groups = NULL,
                                      provider = NULL,
                                      unclassified_fractions = NULL,
-                                     chl_measure = "fluorescence") {
+                                     chl_measure = "fluorescence",
+                                     microscopy = NULL) {
   guide <- load_writing_guide()
   cruise_data <- format_cruise_summary_for_prompt(station_summary, taxa_lookup,
                                                   unclassified_fractions = unclassified_fractions,
                                                   phyto_groups = phyto_groups,
-                                                  chl_measure = chl_measure)
+                                                  chl_measure = chl_measure,
+                                                  microscopy = microscopy)
   chl_terms <- chl_measure_terms(chl_measure)
   bloom_note <- bloom_alert_note(station_summary, phyto_groups, lang = "en")
-  coverage_note <- region_coverage_note(station_summary)
+  coverage_note <- region_coverage_note(station_summary, microscopy)
 
   system_prompt <- paste0(
     "You are a marine biologist writing phytoplankton monitoring reports ",

@@ -13,7 +13,8 @@ generate_station_descriptions(
   llm_provider = NULL,
   on_llm_progress = NULL,
   unclassified_fractions = NULL,
-  chl_measure = "fluorescence"
+  chl_measure = "fluorescence",
+  microscopy = NULL
 )
 }
 \arguments{
@@ -32,6 +33,9 @@ generate_station_descriptions(
 \item{unclassified_fractions}{Named list of unclassified percentages.}
 
 \item{chl_measure}{Chlorophyll measurement terminology key.}
+
+\item{microscopy}{Optional microscopy observations; visits whose
+\code{source} is \code{"microscopy"} get the qualitative prompt.}
 }
 \value{
 Character vector of descriptions, one per visit row.

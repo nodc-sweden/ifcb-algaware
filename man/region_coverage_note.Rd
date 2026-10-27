@@ -4,19 +4,24 @@
 \alias{region_coverage_note}
 \title{Restrict the summary to the regions that were actually sampled}
 \usage{
-region_coverage_note(station_summary)
+region_coverage_note(station_summary, microscopy = NULL)
 }
 \arguments{
 \item{station_summary}{Full station_summary data frame.}
+
+\item{microscopy}{Optional microscopy observations (with \code{COAST}) for
+stations without IFCB data.}
 }
 \value{
 Character string with the instruction, or \code{""} when both
-coasts (or neither) were sampled.
+coasts have IFCB data (or no coast has any data).
 }
 \description{
 The writing guide asks for one paragraph per region. When a cruise only
 has stations on one coast, this returns an instruction telling the LLM to
 write only that region's paragraph, so it does not invent a description of
-the coast that has no data.
+the coast that has no data. Microscopy stations count as sampling their
+coast; a coast covered by microscopy only gets an instruction to keep its
+paragraph qualitative.
 }
 \keyword{internal}

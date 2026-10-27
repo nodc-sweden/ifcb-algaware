@@ -33,6 +33,20 @@
 - `read_h5_classifications()` now also returns `class_auto`, the
   top-scoring class before thresholding, and the new `read_thresholds()`
   reads the trained per-class thresholds.
+- Stations the IFCB did not sample, such as a whole coast, can be filled in
+  from qualitative light microscopy samples. Upload the Plankton Toolbox
+  `.xlsx` exports under "Microscopy samples" in the Report panel; each file
+  is listed as used or skipped with the reason (IFCB data for the station
+  takes precedence; unknown stations, samples dated more than 7 days outside
+  the cruise and duplicates are skipped). Used samples get their own station
+  section marked "(microscopy)", are covered by the summaries, and are named
+  in the introduction and Table 1, but are left out of every figure. The LLM
+  describes them qualitatively from the 1-5 abundance classes and does not
+  compare them numerically with IFCB stations. Microscopy taxa are matched
+  against WoRMS and the IOC-UNESCO list of harmful algae, so potentially
+  harmful taxa are marked with an asterisk. New functions:
+  `read_microscopy_sample()`, `load_microscopy_samples()`,
+  `select_gap_samples()` and `enrich_microscopy_taxa()`.
 
 ## Bug fixes
 

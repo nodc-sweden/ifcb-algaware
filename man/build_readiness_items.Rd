@@ -4,7 +4,13 @@
 \alias{build_readiness_items}
 \title{Build the report readiness item list}
 \usage{
-build_readiness_items(data_loaded, ctd_loaded, baltic_mosaic, westcoast_mosaic)
+build_readiness_items(
+  data_loaded,
+  ctd_loaded,
+  baltic_mosaic,
+  westcoast_mosaic,
+  microscopy_stations = character(0)
+)
 }
 \arguments{
 \item{data_loaded}{Logical, whether IFCB data has been loaded.}
@@ -14,6 +20,9 @@ build_readiness_items(data_loaded, ctd_loaded, baltic_mosaic, westcoast_mosaic)
 \item{baltic_mosaic}{Front-page Baltic mosaic or \code{NULL}.}
 
 \item{westcoast_mosaic}{Front-page West Coast mosaic or \code{NULL}.}
+
+\item{microscopy_stations}{Names of the stations filled in with
+microscopy samples; listed as an extra item when there are any.}
 }
 \value{
 List of items with \code{ok} (logical) and \code{label} (character).

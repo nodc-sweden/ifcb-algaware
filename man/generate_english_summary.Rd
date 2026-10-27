@@ -11,7 +11,8 @@ generate_english_summary(
   phyto_groups = NULL,
   provider = NULL,
   unclassified_fractions = NULL,
-  chl_measure = "fluorescence"
+  chl_measure = "fluorescence",
+  microscopy = NULL
 )
 }
 \arguments{
@@ -33,6 +34,9 @@ for contextualizing the summary.}
 \item{chl_measure}{How the active chlorophyll source is measured,
 \code{"fluorescence"} (FerryBox/CTD) or \code{"concentration"} (LIMS
 bottle/hose filter samples). Adjusts the chlorophyll terminology used.}
+
+\item{microscopy}{Optional enriched microscopy observations for stations
+without IFCB data (see \code{enrich_microscopy_taxa()}).}
 }
 \value{
 Character string with English summary.

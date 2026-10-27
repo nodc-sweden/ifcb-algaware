@@ -91,6 +91,36 @@ bloom_alert_note <- function(station_summary, phyto_groups = NULL,
          paste(notes, collapse = "\n"))
 }
 
+#' Restrict the summary to the regions that were actually sampled
+#'
+#' The writing guide asks for one paragraph per region. When a cruise only
+#' has stations on one coast, this returns an instruction telling the LLM to
+#' write only that region's paragraph, so it does not invent a description of
+#' the coast that has no data.
+#'
+#' @param station_summary Full station_summary data frame.
+#' @return Character string with the instruction, or \code{""} when both
+#'   coasts (or neither) were sampled.
+#' @keywords internal
+region_coverage_note <- function(station_summary) {
+  if (is.null(station_summary) || !"COAST" %in% names(station_summary)) {
+    return("")
+  }
+  coasts <- unique(station_summary$COAST[!is.na(station_summary$COAST)])
+  has_east <- "EAST" %in% coasts
+  has_west <- "WEST" %in% coasts
+  if (has_east == has_west) return("")
+
+  sampled <- if (has_east) "Baltic Sea" else "West Coast"
+  missing <- if (has_east) "West Coast" else "Baltic Sea"
+  paste0(
+    "\n\nREGIONS SAMPLED: This cruise has station data from the ", sampled,
+    " only; there are no ", missing, " stations. Write only the ", sampled,
+    " paragraph. Do not write a ", missing, " paragraph, and do not describe ",
+    "or speculate about plankton conditions in the ", missing, "."
+  )
+}
+
 #' Generate the Swedish summary text
 #'
 #' @param station_summary Full station_summary data frame.
@@ -118,6 +148,7 @@ generate_swedish_summary <- function(station_summary, taxa_lookup = NULL,
                                                   chl_measure = chl_measure)
   chl_terms <- chl_measure_terms(chl_measure)
   bloom_note <- bloom_alert_note(station_summary, phyto_groups, lang = "sv")
+  coverage_note <- region_coverage_note(station_summary)
 
   system_prompt <- paste0(
     "You are a marine biologist writing phytoplankton monitoring reports ",
@@ -130,7 +161,7 @@ generate_swedish_summary <- function(station_summary, taxa_lookup = NULL,
     "Write the Swedish summary (Sammanfattning) for this AlgAware cruise report.\n\n",
     "Cruise: ", cruise_info, "\n\n",
     "Station data overview:\n", cruise_data, "\n\n",
-    "Write the summary in Swedish, using one paragraph per region ",
+    "Write the summary in Swedish, using one paragraph per sampled region ",
     "(West Coast and Baltic Sea), clearly separated. Follow the style described in the ",
     "writing guide. Mark potentially harmful taxa (potentiellt skadliga taxa) ",
     "with an asterisk (*). Never use the term 'HAB species' or 'HAB-arter'; ",
@@ -162,7 +193,8 @@ generate_swedish_summary <- function(station_summary, taxa_lookup = NULL,
     "Place it after 'spp.' or 'sp.' when present (e.g. 'Pseudochattonella spp.*', ",
     "NOT 'Pseudochattonella* spp.*'). Never place an asterisk after the genus name alone ",
     "when 'spp.' or 'sp.' follows.",
-    bloom_note
+    bloom_note,
+    coverage_note
   )
 
   call_llm(system_prompt, user_prompt, provider = provider)
@@ -238,6 +270,7 @@ generate_english_summary <- function(station_summary, taxa_lookup = NULL,
                                                   chl_measure = chl_measure)
   chl_terms <- chl_measure_terms(chl_measure)
   bloom_note <- bloom_alert_note(station_summary, phyto_groups, lang = "en")
+  coverage_note <- region_coverage_note(station_summary)
 
   system_prompt <- paste0(
     "You are a marine biologist writing phytoplankton monitoring reports ",
@@ -272,7 +305,8 @@ generate_english_summary <- function(station_summary, taxa_lookup = NULL,
     "Place it after 'spp.' or 'sp.' when present (e.g. 'Pseudochattonella spp.*', ",
     "NOT 'Pseudochattonella* spp.*'). Never place an asterisk after the genus name alone ",
     "when 'spp.' or 'sp.' follows.",
-    bloom_note
+    bloom_note,
+    coverage_note
   )
 
   call_llm(system_prompt, user_prompt, provider = provider)

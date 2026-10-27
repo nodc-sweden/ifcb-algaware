@@ -24,7 +24,7 @@ The station descriptions are organized under regional headings:
 - Do NOT use bullet points or numbered lists. Write flowing prose.
 
 ### Summaries (Sammanfattning / Abstract)
-- Write one paragraph per region (West Coast and Baltic Sea), clearly separated.
+- Write one paragraph per region (West Coast and Baltic Sea), clearly separated. If the cruise only has stations in one region, write only that region's paragraph and do not describe the region without data.
 - Cover all sea areas visited during the cruise.
 - Mention dominant taxonomic groups based on the group information provided in the prompt data.
 - Highlight notable or unusual findings.

@@ -965,6 +965,81 @@ test_that("bloom_alert_note uses median_time when visit_date absent", {
   expect_true(grepl("SPRING BLOOM", result))
 })
 
+# -- region_coverage_note -----------------------------------------------------
+
+# coverage_ss() builds a minimal station_summary with one visit per coast.
+coverage_ss <- function(coasts) {
+  data.frame(
+    STATION_NAME_SHORT      = paste0("S", seq_along(coasts)),
+    COAST                   = coasts,
+    visit_date              = as.Date("2024-03-15"),
+    visit_id                = paste0("S", seq_along(coasts), "_v1"),
+    name                    = "Diatoms",
+    AphiaID                 = 1L,
+    biovolume_mm3_per_liter = 0.5,
+    carbon_ug_per_liter     = 5,
+    counts_per_liter        = 500,
+    chl_mean                = 2,
+    stringsAsFactors        = FALSE
+  )
+}
+
+test_that("region_coverage_note is empty when both coasts were sampled", {
+  expect_equal(algaware:::region_coverage_note(coverage_ss(c("EAST", "WEST"))),
+               "")
+})
+
+test_that("region_coverage_note restricts a Baltic-only cruise to the Baltic", {
+  result <- algaware:::region_coverage_note(coverage_ss("EAST"))
+  expect_true(grepl("Baltic Sea only", result))
+  expect_true(grepl("Do not write a West Coast paragraph", result))
+  expect_false(grepl("Do not write a Baltic Sea paragraph", result))
+})
+
+test_that("region_coverage_note restricts a West Coast-only cruise to the West Coast", {
+  result <- algaware:::region_coverage_note(coverage_ss(c("WEST", "WEST")))
+  expect_true(grepl("West Coast only", result))
+  expect_true(grepl("Do not write a Baltic Sea paragraph", result))
+  expect_false(grepl("Do not write a West Coast paragraph", result))
+})
+
+test_that("region_coverage_note ignores NA coasts", {
+  result <- algaware:::region_coverage_note(coverage_ss(c("EAST", NA)))
+  expect_true(grepl("Baltic Sea only", result))
+})
+
+test_that("region_coverage_note is empty for NULL, empty or coast-less input", {
+  expect_equal(algaware:::region_coverage_note(NULL), "")
+  expect_equal(algaware:::region_coverage_note(coverage_ss("EAST")[0, ]), "")
+  expect_equal(algaware:::region_coverage_note(coverage_ss(c(NA, NA))), "")
+  expect_equal(algaware:::region_coverage_note(data.frame(x = 1)), "")
+})
+
+test_that("summary prompts include the region coverage note for one-coast cruises", {
+  prompts <- character(0)
+  local_mocked_bindings(call_llm = function(system_prompt, user_prompt, ...) {
+    prompts <<- c(prompts, user_prompt)
+    "ok"
+  })
+  ss <- coverage_ss("EAST")
+  generate_english_summary(ss)
+  generate_swedish_summary(ss)
+  expect_length(prompts, 2L)
+  expect_true(all(grepl("Do not write a West Coast paragraph", prompts)))
+})
+
+test_that("summary prompts omit the region coverage note when both coasts were sampled", {
+  prompts <- character(0)
+  local_mocked_bindings(call_llm = function(system_prompt, user_prompt, ...) {
+    prompts <<- c(prompts, user_prompt)
+    "ok"
+  })
+  ss <- coverage_ss(c("EAST", "WEST"))
+  generate_english_summary(ss)
+  generate_swedish_summary(ss)
+  expect_false(any(grepl("REGIONS SAMPLED", prompts)))
+})
+
 # -- abbreviate_repeated_binomials --------------------------------------------
 
 test_that("abbreviate_repeated_binomials keeps first mention, abbreviates later", {

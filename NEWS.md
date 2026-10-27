@@ -34,6 +34,13 @@
   top-scoring class before thresholding, and the new `read_thresholds()`
   reads the trained per-class thresholds.
 
+## Bug fixes
+
+- For a cruise with stations on only one coast, the AI-generated summary
+  now covers only that coast. The prompt previously asked for one paragraph
+  per region regardless, which could lead the LLM to describe the coast
+  that had no data.
+
 # algaware 0.4.0
 
 ## Bug fixes

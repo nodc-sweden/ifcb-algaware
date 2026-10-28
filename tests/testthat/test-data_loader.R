@@ -98,3 +98,24 @@ test_that("sanitize_error_msg keeps context after inner colons", {
   prefixed <- paste0("Error in download(): ", msg)
   expect_equal(algaware:::sanitize_error_msg(prefixed), msg)
 })
+
+test_that("download_all_data copies H5 files into a per-source folder", {
+  copied_to <- NULL
+  local_mocked_bindings(
+    download_raw_data = function(...) invisible(NULL),
+    download_features = function(...) invisible(NULL),
+    copy_classification_files = function(classification_path, sample_ids,
+                                         dest_dir, ...) {
+      copied_to <<- dest_dir
+      invisible(character(0))
+    }
+  )
+  config <- list(dashboard_url = "https://example.org/", dashboard_dataset = "",
+                 classification_path = "Z:/ifcb/V7")
+
+  dirs <- download_all_data(config, "D20220101T000000_IFCB134", "store")
+
+  expect_equal(dirs$class_dir,
+               classification_cache_dir("store", "Z:/ifcb/V7"))
+  expect_equal(copied_to, dirs$class_dir)
+})

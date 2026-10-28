@@ -302,3 +302,23 @@ test_that("phyto group config lists Ciliates before the Mesodinium carve-out", {
   expect_lt(match("Ciliates", custom), match("Mesodinium spp.", custom))
   expect_equal(cfg$custom$Ciliates$phylum, "Ciliophora")
 })
+
+test_that("taxa lookup covers every class of the V7 classifier", {
+  v7_classes <- readLines(testthat::test_path("test_data", "V7_classes.txt"))
+  lookup <- load_taxa_lookup()
+
+  expect_equal(setdiff(v7_classes, lookup$clean_names), character(0))
+  expect_false(anyDuplicated(lookup$clean_names) > 0)
+})
+
+test_that("taxa lookup flags new V7 taxa correctly", {
+  lookup <- load_taxa_lookup()
+  row <- function(cls) lookup[lookup$clean_names == cls, ]
+
+  expect_true(row("Dinophysis_caudata")$HAB)
+  # Diatom genera missing from the offline genus pattern list
+  for (cls in c("Delphineis_spp", "Diploneis_spp", "Podosira_spp")) {
+    expect_true(row(cls)$is_diatom, info = cls)
+  }
+  expect_false(row("Rotifera")$is_diatom)
+})

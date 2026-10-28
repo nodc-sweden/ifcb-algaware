@@ -46,7 +46,8 @@ default_settings <- function() {
     ferrybox_path = "",
     local_storage_path = file.path(getwd(), "algaware_data"),
     db_folder = "",
-    non_biological_classes = "detritus,Air_bubbles,Beads,Debris,mix,mixed",
+    non_biological_classes = paste0("detritus,Air_bubbles,Beads,Debris,mix,",
+                                    "mixed,Mixed,Faecal_pellet"),
     annotator = "",
     report_dnr = "",
     extra_stations = list(),
@@ -55,7 +56,8 @@ default_settings <- function() {
     n_mosaic_images = 32L,    # Max images per mosaic panel
     include_class_mosaics = FALSE,  # Include per-class mosaics in report
     ctd_cnv_folder = "",            # Path to folder with .cnv CTD files
-    ctd_lims_path = ""              # Path to LIMS data.txt file
+    ctd_lims_path = "",             # Path to LIMS data.txt file
+    settings_version = 2L           # Bumped when saved settings need migrating
   )
 }
 
@@ -125,11 +127,46 @@ load_settings <- function() {
       defaults[[key]] <- saved[[key]]
     }
     defaults$extra_stations <- normalize_extra_stations(defaults$extra_stations)
-    defaults
+    migrate_settings(defaults, saved$settings_version %||% 1L)
   }, error = function(e) {
     warning("Failed to load settings: ", e$message, call. = FALSE)
     default_settings()
   })
+}
+
+#' Bring settings saved by an older algaware version up to date
+#'
+#' Each step runs once: the migrated settings carry the current
+#' \code{settings_version}, which is persisted on the next save, so later
+#' user edits (e.g. removing a class again) are kept.
+#'
+#' @param settings Settings list with saved values merged over the defaults.
+#' @param saved_version \code{settings_version} of the saved file (1 for
+#'   files written before the field existed).
+#' @return The migrated settings list.
+#' @keywords internal
+migrate_settings <- function(settings, saved_version) {
+  if (saved_version < 2) {
+    # The V7 classifier renamed "mixed" to "Mixed" and added Faecal_pellet
+    settings$non_biological_classes <- add_non_bio_classes(
+      settings$non_biological_classes, c("Mixed", "Faecal_pellet")
+    )
+  }
+  settings$settings_version <- default_settings()$settings_version
+  settings
+}
+
+#' Append classes to a comma-separated non-biological class string
+#'
+#' @param class_string Comma-separated class names.
+#' @param classes Class names to add when not already listed.
+#' @return The extended comma-separated string.
+#' @keywords internal
+add_non_bio_classes <- function(class_string, classes) {
+  missing <- setdiff(classes, parse_non_bio_classes(class_string))
+  if (length(missing) == 0) return(class_string)
+  if (!nzchar(trimws(class_string))) return(paste(missing, collapse = ","))
+  paste(c(sub("[,[:space:]]+$", "", class_string), missing), collapse = ",")
 }
 
 #' Normalise extra_stations to a list of per-station lists

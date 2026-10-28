@@ -697,3 +697,139 @@ test_that("read_thresholds returns NULL for an empty directory", {
 
   expect_null(read_thresholds(tmp_dir))
 })
+
+# ifcb-classify writes an H5 file without any datasets for a bin with no
+# images, and a 1 x n_classes score matrix for a bin with a single image.
+write_empty_h5 <- function(path) {
+  h5 <- hdf5r::H5File$new(path, "w")
+  h5$close_all()
+  invisible(path)
+}
+
+write_single_roi_h5 <- function(path) {
+  h5 <- hdf5r::H5File$new(path, "w")
+  on.exit(h5$close_all(), add = TRUE)
+  h5[["roi_numbers"]] <- 7L
+  h5[["class_name"]] <- "B"
+  h5[["class_name_auto"]] <- "B"
+  h5[["class_labels"]] <- c("A", "B")
+  h5[["thresholds"]] <- c(0.5, 0.5)
+  h5[["output_scores"]] <- matrix(c(0.3, 0.7), nrow = 2)
+  invisible(path)
+}
+
+test_that("read_h5_classifications skips empty H5 files without warning", {
+  skip_if_not_installed("hdf5r")
+  tmp_dir <- withr::local_tempdir()
+  write_test_h5(file.path(tmp_dir, "D20220101T000000_IFCB134_class.h5"))
+  write_empty_h5(file.path(tmp_dir, "D20220102T000000_IFCB134_class.h5"))
+
+  expect_no_warning(result <- read_h5_classifications(tmp_dir))
+  expect_equal(unique(result$sample_name), "D20220101T000000_IFCB134")
+  expect_equal(nrow(result), 3)
+})
+
+test_that("read_h5_classifications reads files with a single ROI", {
+  skip_if_not_installed("hdf5r")
+  tmp_dir <- withr::local_tempdir()
+  write_single_roi_h5(file.path(tmp_dir, "D20220101T000000_IFCB134_class.h5"))
+
+  expect_no_warning(result <- read_h5_classifications(tmp_dir))
+  expect_equal(result$roi_number, 7L)
+  expect_equal(result$class_name, "B")
+  expect_equal(result$class_auto, "B")
+  expect_equal(result$score, 0.7)
+})
+
+test_that("read_auto_classes handles a single ROI without class_name_auto", {
+  skip_if_not_installed("hdf5r")
+  tmp_dir <- withr::local_tempdir()
+  path <- file.path(tmp_dir, "D20220101T000000_IFCB134_class.h5")
+  write_single_roi_h5(path)
+  h5 <- hdf5r::H5File$new(path, "r+")
+  h5$link_delete("class_name_auto")
+  h5$close_all()
+
+  result <- read_h5_classifications(tmp_dir)
+  expect_equal(result$class_auto, "B")
+})
+
+test_that("read_thresholds ignores empty H5 files", {
+  skip_if_not_installed("hdf5r")
+  tmp_dir <- withr::local_tempdir()
+  write_test_h5(file.path(tmp_dir, "D20220101T000000_IFCB134_class.h5"))
+  write_empty_h5(file.path(tmp_dir, "D20220102T000000_IFCB134_class.h5"))
+
+  expect_equal(read_thresholds(tmp_dir), c(A = 0.5, B = 0.5))
+})
+
+test_that("read_thresholds returns NULL when only empty files exist", {
+  skip_if_not_installed("hdf5r")
+  tmp_dir <- withr::local_tempdir()
+  write_empty_h5(file.path(tmp_dir, "D20220101T000000_IFCB134_class.h5"))
+
+  expect_null(read_thresholds(tmp_dir))
+})
+
+test_that("read_classifier_name skips files without a classifier name", {
+  skip_if_not_installed("hdf5r")
+  tmp_dir <- withr::local_tempdir()
+  write_empty_h5(file.path(tmp_dir, "D20220101T000000_IFCB134_class.h5"))
+  path <- write_test_h5(file.path(tmp_dir, "D20220102T000000_IFCB134_class.h5"))
+  h5 <- hdf5r::H5File$new(path, "r+")
+  h5[["classifier_name"]] <- "Model-V7"
+  h5$close_all()
+
+  expect_equal(read_classifier_name(tmp_dir), "Model-V7")
+})
+
+test_that("read_classifier_name only reads the requested samples", {
+  skip_if_not_installed("hdf5r")
+  tmp_dir <- withr::local_tempdir()
+  for (spec in list(c("D20220101T000000_IFCB134", "Model-V6"),
+                    c("D20220102T000000_IFCB134", "Model-V7"))) {
+    path <- write_test_h5(file.path(tmp_dir, paste0(spec[1], "_class.h5")))
+    h5 <- hdf5r::H5File$new(path, "r+")
+    h5[["classifier_name"]] <- spec[2]
+    h5$close_all()
+  }
+
+  expect_equal(read_classifier_name(tmp_dir, "D20220102T000000_IFCB134"),
+               "Model-V7")
+})
+
+test_that("classification_cache_dir keeps the legacy folder without a source", {
+  expect_equal(classification_cache_dir("store", ""),
+               file.path("store", "classified"))
+})
+
+test_that("classification_cache_dir separates different source folders", {
+  v6 <- classification_cache_dir("store", "Z:/ifcb/V6")
+  v7 <- classification_cache_dir("store", "Z:/ifcb/V7")
+  expect_false(identical(v6, v7))
+  expect_equal(dirname(v7), file.path("store", "classified_sources"))
+  expect_match(basename(v7), "^[A-Za-z0-9._-]+$")
+  expect_match(basename(v7), "V7$")
+})
+
+test_that("classification_cache_dir ignores slash style and trailing slash", {
+  expect_equal(classification_cache_dir("store", "Z:\\ifcb\\V7\\"),
+               classification_cache_dir("store", "Z:/ifcb/V7"))
+})
+
+test_that("source folders are not read when no classification path is set", {
+  # H5 files are listed recursively, so per-source copies must not live
+  # inside the folder used without a configured source
+  skip_if_not_installed("hdf5r")
+  storage <- withr::local_tempdir()
+  sample_id <- "D20220101T000000_IFCB134"
+  for (src in c("Z:/ifcb/V6", "Z:/ifcb/V7")) {
+    dir <- classification_cache_dir(storage, src)
+    dir.create(dir, recursive = TRUE)
+    write_test_h5(file.path(dir, paste0(sample_id, "_class.h5")))
+  }
+  local_dir <- classification_cache_dir(storage, "")
+  dir.create(local_dir)
+
+  expect_equal(nrow(read_h5_classifications(local_dir, sample_id)), 0)
+})

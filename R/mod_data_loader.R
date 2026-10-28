@@ -90,7 +90,7 @@ filter_and_match <- function(dashboard_metadata, selection_mode, cruise,
 download_all_data <- function(config, sample_ids, storage) {
   raw_dir <- file.path(storage, "raw")
   feat_dir <- file.path(storage, "features")
-  class_dir <- file.path(storage, "classified")
+  class_dir <- classification_cache_dir(storage, config$classification_path)
 
   download_raw_data(config$dashboard_url, sample_ids, raw_dir)
 
@@ -172,7 +172,7 @@ process_classifications <- function(config, dirs, sample_ids, matched,
 
   station_summary <- aggregate_station_data(biovolume_data, matched)
 
-  classifier_name <- read_classifier_name(dirs$class_dir)
+  classifier_name <- read_classifier_name(dirs$class_dir, sample_ids)
   thresholds_trained <- read_thresholds(dirs$class_dir, sample_ids)
 
   list(

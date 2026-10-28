@@ -14,11 +14,14 @@ If NULL, reads all .h5 files in the directory.}
 }
 \value{
 A named numeric vector (class name -> trained threshold), or
-\code{NULL} when there are no files, any file lacks the thresholds, or
-the files disagree (with a warning in that last case).
+\code{NULL} when there are no non-empty files, any of them lacks the
+thresholds, or they disagree (with a warning in that last case).
 }
 \description{
 Reads \code{class_labels} and \code{thresholds} from each H5 file. All
 files must carry identical thresholds (the same classifier), since the
 threshold adjustment feature works on one threshold per class.
+}
+\details{
+Empty files (bins without images) carry no thresholds and are ignored.
 }

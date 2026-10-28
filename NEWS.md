@@ -34,6 +34,34 @@
   top-scoring class before thresholding, and the new `read_thresholds()`
   reads the trained per-class thresholds.
 
+- Support for the V7 classifier (223 classes): the taxa lookup gains the
+  41 V7 classes it lacked, including renamed V6 classes (e.g.
+  `Amphidinium_Katodinium`, `Fragilaria_spp`) and new taxa such as the
+  potentially harmful *Dinophysis caudata*. Names, AphiaIDs, groups and the
+  diatom carbon formula now resolve offline for every V7 class. Rows for
+  classes no longer in V7 are kept for older classifications.
+- `Mixed` (V7's spelling of `mixed`) and `Faecal_pellet` are now
+  non-biological by default. Saved settings from earlier versions get both
+  added once on the next start; remove them in Settings to opt out.
+- H5 files copied from the classification path are now cached per source
+  folder (`<local storage>/classified_sources/<source path>`), so switching
+  the classification path to another classifier's output (e.g. from a `V6`
+  to a `V7` folder) no longer reuses files copied from the previous one.
+  `<local storage>/classified/` is now only read when no classification
+  path is set; files earlier versions copied there are otherwise unused and
+  can be deleted.
+
+## Bug fixes
+
+- H5 files of bins with a single image are read correctly; they were
+  skipped with a "dim(X) must have a positive length" warning.
+- Empty H5 files, written by ifcb-classify for bins without images, are
+  skipped quietly and no longer disable threshold adjustment for the whole
+  cruise.
+- The classification model shown in the report is read from the loaded
+  cruise's own H5 files, skipping files without a classifier name, instead
+  of from the first file in the local folder.
+
 # algaware 0.4.0
 
 ## Bug fixes

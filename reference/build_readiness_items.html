@@ -81,7 +81,13 @@ footer {
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">build_readiness_items</span><span class="op">(</span><span class="va">data_loaded</span>, <span class="va">ctd_loaded</span>, <span class="va">baltic_mosaic</span>, <span class="va">westcoast_mosaic</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">build_readiness_items</span><span class="op">(</span></span>
+<span>  <span class="va">data_loaded</span>,</span>
+<span>  <span class="va">ctd_loaded</span>,</span>
+<span>  <span class="va">baltic_mosaic</span>,</span>
+<span>  <span class="va">westcoast_mosaic</span>,</span>
+<span>  microscopy_stations <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">character</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -102,6 +108,11 @@ footer {
 
 <dt id="arg-westcoast-mosaic">westcoast_mosaic<a class="anchor" aria-label="anchor" href="#arg-westcoast-mosaic"></a></dt>
 <dd><p>Front-page West Coast mosaic or <code>NULL</code>.</p></dd>
+
+
+<dt id="arg-microscopy-stations">microscopy_stations<a class="anchor" aria-label="anchor" href="#arg-microscopy-stations"></a></dt>
+<dd><p>Names of the stations filled in with
+microscopy samples; listed as an extra item when there are any.</p></dd>
 
 </dl></div>
     <div class="section level2">

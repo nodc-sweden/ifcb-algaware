@@ -40,7 +40,8 @@ generate_report(
   chl_stats = NULL,
   chl_map_source = "ferrybox",
   phyto_groups = NULL,
-  threshold_adjustments = NULL
+  threshold_adjustments = NULL,
+  microscopy = NULL
 )
 ```
 
@@ -206,6 +207,16 @@ generate_report(
   [`threshold_summary()`](https://nodc-sweden.github.io/ifcb-algaware/reference/threshold_summary.md)
   with the class thresholds adjusted during validation; listed in the
   report's summary table.
+
+- microscopy:
+
+  Optional enriched microscopy observations for stations without IFCB
+  data (from
+  [`select_gap_samples()`](https://nodc-sweden.github.io/ifcb-algaware/reference/select_gap_samples.md)
+  and
+  [`enrich_microscopy_taxa()`](https://nodc-sweden.github.io/ifcb-algaware/reference/enrich_microscopy_taxa.md)).
+  They get station sections and appear in the summaries, introduction
+  and Table 1, but never in the figures.
 
 ## Value
 

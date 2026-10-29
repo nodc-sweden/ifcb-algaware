@@ -122,7 +122,8 @@ mosaics.</p>
 <span>  chl_stats <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  chl_map_source <span class="op">=</span> <span class="st">"ferrybox"</span>,</span>
 <span>  phyto_groups <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  threshold_adjustments <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  threshold_adjustments <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  microscopy <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -288,6 +289,13 @@ the assignments are computed on demand via SHARK4R when available.</p></dd>
 <dd><p>Optional data.frame from
 <code><a href="threshold_summary.html">threshold_summary()</a></code> with the class thresholds adjusted during
 validation; listed in the report's summary table.</p></dd>
+
+
+<dt id="arg-microscopy">microscopy<a class="anchor" aria-label="anchor" href="#arg-microscopy"></a></dt>
+<dd><p>Optional enriched microscopy observations for stations
+without IFCB data (from <code><a href="select_gap_samples.html">select_gap_samples()</a></code> and
+<code><a href="enrich_microscopy_taxa.html">enrich_microscopy_taxa()</a></code>). They get station sections and appear
+in the summaries, introduction and Table 1, but never in the figures.</p></dd>
 
 </dl></div>
     <div class="section level2">

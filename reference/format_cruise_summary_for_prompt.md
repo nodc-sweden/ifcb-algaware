@@ -10,7 +10,8 @@ format_cruise_summary_for_prompt(
   taxa_lookup = NULL,
   unclassified_fractions = NULL,
   phyto_groups = NULL,
-  chl_measure = "fluorescence"
+  chl_measure = "fluorescence",
+  microscopy = NULL
 )
 ```
 
@@ -39,6 +40,11 @@ format_cruise_summary_for_prompt(
   How the chlorophyll value is measured, `"fluorescence"` (FerryBox/CTD)
   or `"concentration"` (LIMS bottle/hose filter samples). Controls how
   the value is labelled.
+
+- microscopy:
+
+  Optional enriched microscopy observations for stations without IFCB
+  data; appended as a separate qualitative block.
 
 ## Value
 

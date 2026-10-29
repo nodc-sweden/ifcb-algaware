@@ -9,7 +9,6 @@
   `claude-opus-5-5`, override with `ANTHROPIC_MODEL`). Like OpenAI,
   Claude generates the station descriptions in parallel. When several
   keys are set, the provider is selectable in the Report tab.
-
 - The Validate sidebar has a new “Class threshold” slider for adjusting
   the classifier threshold of the class shown in the gallery. Raising it
   moves images scoring below the new threshold to `"unclassified"`;
@@ -21,7 +20,6 @@
   Adjusted classes are listed with a reset link each, so a class emptied
   by a high threshold can still be restored. The slider is disabled when
   the H5 files lack thresholds or come from different classifiers.
-
 - Threshold adjustments are saved in the corrections CSV (“Download
   corrections”, the report’s corrections export and the autosave) as
   extra rows marked by a new `record_type` column (`"correction"` or
@@ -31,18 +29,40 @@
   a different classifier are skipped with a note. Files from earlier
   versions import as before, with all thresholds at their trained
   values.
-
 - Adjusted class thresholds are listed in the report’s data summary
   table, next to the classification model.
-
 - The gallery has a “Sort by score” toggle that shows the lowest
   classifier scores first, to review borderline images.
-
 - [`read_h5_classifications()`](https://nodc-sweden.github.io/ifcb-algaware/reference/read_h5_classifications.md)
   now also returns `class_auto`, the top-scoring class before
   thresholding, and the new
   [`read_thresholds()`](https://nodc-sweden.github.io/ifcb-algaware/reference/read_thresholds.md)
   reads the trained per-class thresholds.
+- Stations the IFCB did not sample, such as a whole coast, can be filled
+  in from qualitative light microscopy samples. Upload the Plankton
+  Toolbox `.xlsx` exports under “Microscopy samples” in the Report
+  panel; each file is listed as used or skipped with the reason (IFCB
+  data for the station takes precedence; unknown stations, samples dated
+  more than 7 days outside the cruise and duplicates are skipped). Used
+  samples get their own station section marked “(microscopy)”, are
+  covered by the summaries, and are named in the introduction and Table
+  1, but are left out of every figure. The LLM describes them
+  qualitatively from the 1-5 abundance classes and does not compare them
+  numerically with IFCB stations. Microscopy taxa are matched against
+  WoRMS and the IOC-UNESCO list of harmful algae, so potentially harmful
+  taxa are marked with an asterisk. New functions:
+  [`read_microscopy_sample()`](https://nodc-sweden.github.io/ifcb-algaware/reference/read_microscopy_sample.md),
+  [`load_microscopy_samples()`](https://nodc-sweden.github.io/ifcb-algaware/reference/load_microscopy_samples.md),
+  [`select_gap_samples()`](https://nodc-sweden.github.io/ifcb-algaware/reference/select_gap_samples.md)
+  and
+  [`enrich_microscopy_taxa()`](https://nodc-sweden.github.io/ifcb-algaware/reference/enrich_microscopy_taxa.md).
+
+### Bug fixes
+
+- For a cruise with stations on only one coast, the AI-generated summary
+  now covers only that coast. The prompt previously asked for one
+  paragraph per region regardless, which could lead the LLM to describe
+  the coast that had no data.
 
 - Support for the V7 classifier (223 classes): the taxa lookup gains the
   41 V7 classes it lacked, including renamed V6 classes (e.g.

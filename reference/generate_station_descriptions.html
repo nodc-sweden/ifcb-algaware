@@ -102,7 +102,8 @@ matching the previous per-station error handling.</p>
 <span>  llm_provider <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  on_llm_progress <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  unclassified_fractions <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  chl_measure <span class="op">=</span> <span class="st">"fluorescence"</span></span>
+<span>  chl_measure <span class="op">=</span> <span class="st">"fluorescence"</span>,</span>
+<span>  microscopy <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -138,6 +139,11 @@ matching the previous per-station error handling.</p>
 
 <dt id="arg-chl-measure">chl_measure<a class="anchor" aria-label="anchor" href="#arg-chl-measure"></a></dt>
 <dd><p>Chlorophyll measurement terminology key.</p></dd>
+
+
+<dt id="arg-microscopy">microscopy<a class="anchor" aria-label="anchor" href="#arg-microscopy"></a></dt>
+<dd><p>Optional microscopy observations; visits whose
+<code>source</code> is <code>"microscopy"</code> get the qualitative prompt.</p></dd>
 
 </dl></div>
     <div class="section level2">

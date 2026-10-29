@@ -86,7 +86,8 @@ footer {
 <span>  taxa_lookup <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  unclassified_fractions <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  phyto_groups <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  chl_measure <span class="op">=</span> <span class="st">"fluorescence"</span></span>
+<span>  chl_measure <span class="op">=</span> <span class="st">"fluorescence"</span>,</span>
+<span>  microscopy <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -117,6 +118,11 @@ explicit group assignments in the prompt text.</p></dd>
 <dd><p>How the chlorophyll value is measured,
 <code>"fluorescence"</code> (FerryBox/CTD) or <code>"concentration"</code> (LIMS
 bottle/hose filter samples). Controls how the value is labelled.</p></dd>
+
+
+<dt id="arg-microscopy">microscopy<a class="anchor" aria-label="anchor" href="#arg-microscopy"></a></dt>
+<dd><p>Optional enriched microscopy observations for stations
+without IFCB data; appended as a separate qualitative block.</p></dd>
 
 </dl></div>
     <div class="section level2">

@@ -26,9 +26,10 @@ text generation is optional and only used in the report step.
 | FerryBox folder (optional) | Tab-delimited `.txt` exports from the R/V Svea FerryBox, with numeric parameter codes as column headers; the app uses chlorophyll fluorescence (8063) and its QC flag (88063) | Local filesystem via `iRfcb` |
 | CTD folder (optional) | SeaBird `.cnv` casts (fluorescence profiles) | Local filesystem via `oce` |
 | LIMS file (optional) | Tab-delimited discrete chlorophyll bottle/hose data | Local filesystem |
+| Microscopy samples (optional) | Plankton Toolbox `.xlsx` exports of qualitative light microscopy samples (station, date, position, depth, analyst, taxa with abundance class 1–5) for stations without IFCB data | Browser upload in the Report panel, read via [`SHARK4R::read_ptbx()`](https://sharksmhi.github.io/SHARK4R/reference/read_ptbx.html) |
 | Bundled in package | Taxa lookup (name, AphiaID, HAB flag, warning level, diatom flag), station list, station synonym mapper, phytoplankton group config, 1991–2020 chlorophyll climatology, Word template, LLM writing guide | `inst/` |
 | SHARK station register | Station names and positions | Shipped inside the `SHARK4R` package; no network |
-| WoRMS (World Register of Marine Species) | Taxonomic group and diatom status per class | Network, via `SHARK4R` / `iRfcb`; sends scientific names and AphiaIDs only |
+| WoRMS (World Register of Marine Species) | Taxonomic group and diatom status per class; AphiaID and rank of microscopy taxa; the IOC-UNESCO list of harmful algae (HAB flags for microscopy taxa) | Network, via `SHARK4R` / `iRfcb`; sends scientific names and AphiaIDs only |
 | Natural Earth | Coastline for maps | From installed `rnaturalearthdata` package; no download |
 
 ### Persistent storage written by the app
@@ -62,6 +63,7 @@ text generation is optional and only used in the report step.
 |----|----|----|
 | Configured IFCB Dashboard | Metadata, image counts, raw and feature files | None (as configured) |
 | WoRMS REST API | Taxonomic lookups; results cached in memory while R is running | None |
+| `https://www.marinespecies.org/hab/` | IOC-UNESCO harmful algae list, fetched once per R session when microscopy samples are used | None |
 | `https://api.openai.com/v1/chat/completions` | Report text (OpenAI) | `Authorization: Bearer` |
 | `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions` | Report text (Google Gemini) | `Authorization: Bearer` |
 | `https://api.anthropic.com/v1/messages` | Report text (Anthropic Claude) | `x-api-key` |
@@ -81,7 +83,7 @@ also falls back to a placeholder, never aborts the report.
 |----|----|----|
 | English summary | 1 | Cruise-wide station overview |
 | Swedish summary | 1 | Translation of the generated English summary (not regenerated from data) |
-| Station description | 1 per station visit | That station’s data plus one-line context for all other stations |
+| Station description | 1 per station visit | That station’s data plus one-line context for all other stations (for a microscopy station: the other microscopy stations only) |
 
 Station descriptions run concurrently (max 5 in flight) for OpenAI and
 Claude; sequentially with a 15 s spacing for Gemini.
@@ -104,6 +106,10 @@ Claude; sequentially with a 15 s spacing for Gemini.
     was measured (fluorescence or concentration), without any depth
   - percentage of unclassified images where it exceeds 80 %
   - bloom-alert instructions when thresholds are met
+  - for microscopy stations (stations without IFCB data): station name,
+    region, date, taxa with their abundance class (1–5), phytoplankton
+    group, trophic type and HAB flag, kept in a separate block marked as
+    qualitative; sampler, depth and analyst are not sent
   - for the Swedish call: the English summary text itself
 
 **What is never sent.**

@@ -11,7 +11,8 @@ build_summary_rows(
   total_bio_images = NULL,
   classifier_name = NULL,
   threshold_adjustments = NULL,
-  llm_model = NULL
+  llm_model = NULL,
+  microscopy = NULL
 )
 ```
 
@@ -41,6 +42,10 @@ build_summary_rows(
 - llm_model:
 
   Optional LLM model name.
+
+- microscopy:
+
+  Optional microscopy observations used in the report.
 
 ## Value
 

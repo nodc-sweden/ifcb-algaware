@@ -172,24 +172,35 @@ fluorescence (8063) and its QC flag (88063)</td>
 <td>Local filesystem</td>
 </tr>
 <tr class="even">
+<td>Microscopy samples (optional)</td>
+<td>Plankton Toolbox <code>.xlsx</code> exports of qualitative light
+microscopy samples (station, date, position, depth, analyst, taxa with
+abundance class 1–5) for stations without IFCB data</td>
+<td>Browser upload in the Report panel, read via
+<code><a href="https://sharksmhi.github.io/SHARK4R/reference/read_ptbx.html" class="external-link">SHARK4R::read_ptbx()</a></code>
+</td>
+</tr>
+<tr class="odd">
 <td>Bundled in package</td>
 <td>Taxa lookup (name, AphiaID, HAB flag, warning level, diatom flag),
 station list, station synonym mapper, phytoplankton group config,
 1991–2020 chlorophyll climatology, Word template, LLM writing guide</td>
 <td><code>inst/</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>SHARK station register</td>
 <td>Station names and positions</td>
 <td>Shipped inside the <code>SHARK4R</code> package; no network</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>WoRMS (World Register of Marine Species)</td>
-<td>Taxonomic group and diatom status per class</td>
+<td>Taxonomic group and diatom status per class; AphiaID and rank of
+microscopy taxa; the IOC-UNESCO list of harmful algae (HAB flags for
+microscopy taxa)</td>
 <td>Network, via <code>SHARK4R</code> / <code>iRfcb</code>; sends
 scientific names and AphiaIDs only</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>Natural Earth</td>
 <td>Coastline for maps</td>
 <td>From installed <code>rnaturalearthdata</code> package; no
@@ -294,16 +305,22 @@ class definitions).</li>
 <td>None</td>
 </tr>
 <tr class="odd">
+<td><code>https://www.marinespecies.org/hab/</code></td>
+<td>IOC-UNESCO harmful algae list, fetched once per R session when
+microscopy samples are used</td>
+<td>None</td>
+</tr>
+<tr class="even">
 <td><code>https://api.openai.com/v1/chat/completions</code></td>
 <td>Report text (OpenAI)</td>
 <td><code>Authorization: Bearer</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>https://generativelanguage.googleapis.com/v1beta/openai/chat/completions</code></td>
 <td>Report text (Google Gemini)</td>
 <td><code>Authorization: Bearer</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>https://api.anthropic.com/v1/messages</code></td>
 <td>Report text (Anthropic Claude)</td>
 <td><code>x-api-key</code></td>
@@ -347,8 +364,8 @@ data)</td>
 <tr class="odd">
 <td>Station description</td>
 <td>1 per station visit</td>
-<td>That station’s data plus one-line context for all other
-stations</td>
+<td>That station’s data plus one-line context for all other stations
+(for a microscopy station: the other microscopy stations only)</td>
 </tr>
 </tbody>
 </table>
@@ -378,6 +395,10 @@ exceedance</li>
 was measured (fluorescence or concentration), without any depth</li>
 <li>percentage of unclassified images where it exceeds 80 %</li>
 <li>bloom-alert instructions when thresholds are met</li>
+<li>for microscopy stations (stations without IFCB data): station name,
+region, date, taxa with their abundance class (1–5), phytoplankton
+group, trophic type and HAB flag, kept in a separate block marked as
+qualitative; sampler, depth and analyst are not sent</li>
 <li>for the Swedish call: the English summary text itself</li>
 </ul>
 </li>

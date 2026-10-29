@@ -88,7 +88,8 @@ footer {
 <span>  phyto_groups <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  provider <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  unclassified_fractions <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  chl_measure <span class="op">=</span> <span class="st">"fluorescence"</span></span>
+<span>  chl_measure <span class="op">=</span> <span class="st">"fluorescence"</span>,</span>
+<span>  microscopy <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -126,6 +127,11 @@ NULL auto-detects.</p></dd>
 <dd><p>How the active chlorophyll source is measured,
 <code>"fluorescence"</code> (FerryBox/CTD) or <code>"concentration"</code> (LIMS
 bottle/hose filter samples). Adjusts the chlorophyll terminology used.</p></dd>
+
+
+<dt id="arg-microscopy">microscopy<a class="anchor" aria-label="anchor" href="#arg-microscopy"></a></dt>
+<dd><p>Optional enriched microscopy observations for stations
+without IFCB data (see <code><a href="enrich_microscopy_taxa.html">enrich_microscopy_taxa()</a></code>).</p></dd>
 
 </dl></div>
     <div class="section level2">

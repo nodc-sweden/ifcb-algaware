@@ -596,9 +596,53 @@ mosaic in the Images tab.</li>
 <li>
 <strong>West Coast mosaic</strong> — turns green after generating a
 mosaic in the Images tab.</li>
+<li>
+<strong>Microscopy</strong> — listed only when microscopy samples
+fill stations without IFCB data (see below).</li>
 </ul>
 <p>CTD data and mosaics are optional. The report is generated with
 whatever is available.</p>
+</div>
+<div class="section level3">
+<h3 id="stations-without-ifcb-data-microscopy-optional">Stations without IFCB data (microscopy, optional)<a class="anchor" aria-label="anchor" href="#stations-without-ifcb-data-microscopy-optional"></a>
+</h3>
+<p>When the IFCB missed stations, for example a whole coast, those
+stations can be added from qualitative light microscopy samples counted
+in <a href="https://plankton-toolbox.org" class="external-link">Plankton Toolbox</a>
+(abundance classes 1–5). Select the Plankton Toolbox <code>.xlsx</code>
+exports under <strong>Microscopy samples</strong> in the Report panel;
+one file per station. Each file is listed as <em>used</em> or
+<em>skipped</em> with a reason:</p>
+<ul>
+<li>
+<strong>IFCB data exists for this station</strong> — IFCB data
+always takes precedence.</li>
+<li>
+<strong>Not an AlgAware station</strong> — the station name, a SHARK
+synonym or the sample position must match an AlgAware station.</li>
+<li>
+<strong>Outside the cruise dates</strong> — the sample is more than
+7 days from the IFCB sampling dates, so it probably belongs to another
+cruise.</li>
+<li>
+<strong>Already used</strong> — only one microscopy sample per
+station is used.</li>
+<li>
+<strong>Could not be read</strong> — not a qualitative Plankton
+Toolbox export.</li>
+</ul>
+<p>Used samples are described in the report text only: they get a
+station section headed “(microscopy)”, are covered by the summaries, and
+are named in the introduction and in Table 1. They are not part of any
+figure, since they have no biovolume, cell concentrations or images. The
+LLM is instructed to describe them qualitatively and not to compare them
+numerically with the IFCB stations. Microscopy taxa are matched against
+WoRMS and the IOC-UNESCO list of harmful algae so that potentially
+harmful taxa get their asterisk; without network access a warning tells
+you that only the IFCB taxa list was used. Chlorophyll for these
+stations is taken from the CTD or LIMS source when one is selected (LIMS
+hose matches a 0–10 m hose sample); with FerryBox selected they have no
+chlorophyll value.</p>
 </div>
 <div class="section level3">
 <h3 id="fill-in-report-metadata">Fill in report metadata<a class="anchor" aria-label="anchor" href="#fill-in-report-metadata"></a>

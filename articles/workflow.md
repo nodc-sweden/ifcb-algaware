@@ -365,9 +365,42 @@ components are ready:
   Images tab.
 - **West Coast mosaic** — turns green after generating a mosaic in the
   Images tab.
+- **Microscopy** — listed only when microscopy samples fill stations
+  without IFCB data (see below).
 
 CTD data and mosaics are optional. The report is generated with whatever
 is available.
+
+### Stations without IFCB data (microscopy, optional)
+
+When the IFCB missed stations, for example a whole coast, those stations
+can be added from qualitative light microscopy samples counted in
+[Plankton Toolbox](https://plankton-toolbox.org) (abundance classes
+1–5). Select the Plankton Toolbox `.xlsx` exports under **Microscopy
+samples** in the Report panel; one file per station. Each file is listed
+as *used* or *skipped* with a reason:
+
+- **IFCB data exists for this station** — IFCB data always takes
+  precedence.
+- **Not an AlgAware station** — the station name, a SHARK synonym or the
+  sample position must match an AlgAware station.
+- **Outside the cruise dates** — the sample is more than 7 days from the
+  IFCB sampling dates, so it probably belongs to another cruise.
+- **Already used** — only one microscopy sample per station is used.
+- **Could not be read** — not a qualitative Plankton Toolbox export.
+
+Used samples are described in the report text only: they get a station
+section headed “(microscopy)”, are covered by the summaries, and are
+named in the introduction and in Table 1. They are not part of any
+figure, since they have no biovolume, cell concentrations or images. The
+LLM is instructed to describe them qualitatively and not to compare them
+numerically with the IFCB stations. Microscopy taxa are matched against
+WoRMS and the IOC-UNESCO list of harmful algae so that potentially
+harmful taxa get their asterisk; without network access a warning tells
+you that only the IFCB taxa list was used. Chlorophyll for these
+stations is taken from the CTD or LIMS source when one is selected (LIMS
+hose matches a 0–10 m hose sample); with FerryBox selected they have no
+chlorophyll value.
 
 ### Fill in report metadata
 

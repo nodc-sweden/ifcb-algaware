@@ -128,6 +128,19 @@ Generate Word reports
 - [`generate_station_description()`](https://nodc-sweden.github.io/ifcb-algaware/reference/generate_station_description.md)
   : Generate a station description
 
+## Microscopy Samples
+
+Qualitative Plankton Toolbox samples for stations without IFCB data
+
+- [`read_microscopy_sample()`](https://nodc-sweden.github.io/ifcb-algaware/reference/read_microscopy_sample.md)
+  : Read a qualitative Plankton Toolbox sample
+- [`load_microscopy_samples()`](https://nodc-sweden.github.io/ifcb-algaware/reference/load_microscopy_samples.md)
+  : Read and station-match a set of microscopy samples
+- [`select_gap_samples()`](https://nodc-sweden.github.io/ifcb-algaware/reference/select_gap_samples.md)
+  : Keep the microscopy samples that fill a gap in the IFCB data
+- [`enrich_microscopy_taxa()`](https://nodc-sweden.github.io/ifcb-algaware/reference/enrich_microscopy_taxa.md)
+  : Add HAB flags, italics and phytoplankton groups to microscopy taxa
+
 ## Database
 
 SQLite database operations

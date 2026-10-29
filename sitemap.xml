@@ -45,10 +45,12 @@
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/build_corrections_export.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/build_cruise_info.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/build_llm_request.html</loc></url>
+<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/build_microscopy_station_prompts.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/build_near_empty_warning.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/build_openai_request.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/build_readiness_items.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/build_relabel_choices.html</loc></url>
+<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/build_report_taxa_lookup.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/build_sample_counts.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/build_sample_table.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/build_station_description_prompts.html</loc></url>
@@ -63,6 +65,7 @@
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/chl_measure_terms.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/classification_cache_dir.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/clear_metadata_cache.html</loc></url>
+<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/coast_region_label.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/coerce_like.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/collect_ferrybox_data.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/compose_classifications.html</loc></url>
@@ -104,6 +107,7 @@
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/drop_unclassified_for_text.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/empty_classifications.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/enrich_corrections_for_export.html</loc></url>
+<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/enrich_microscopy_taxa.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/ensure_hab_asterisks.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/escape_markdown_label.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/extract_claude_content.html</loc></url>
@@ -117,8 +121,10 @@
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/extract_random_taxon_image.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/feature_sample_name.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/fetch_dashboard_metadata.html</loc></url>
+<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/fetch_hab_list.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/fetch_image_counts.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/fetch_metadata_window.html</loc></url>
+<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/fetch_worms_records.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/filter_and_match.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/filter_lims_by_date_range.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/filter_metadata.html</loc></url>
@@ -126,6 +132,8 @@
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/fix_page_numbering.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/follows_threshold_rule.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/format_cruise_summary_for_prompt.html</loc></url>
+<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/format_microscopy_station_for_prompt.html</loc></url>
+<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/format_microscopy_summary_block.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/format_report_paragraph.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/format_station_data_for_prompt.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/format_taxon_labels.html</loc></url>
@@ -144,7 +152,10 @@
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/get_settings_path.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/get_taxon_rois.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/get_top_taxa.html</loc></url>
+<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/group_from_taxon_class.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/h5_is_empty.html</loc></url>
+<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/hab_flags.html</loc></url>
+<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/haversine_m.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/heatmap_group_facets.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/heatmap_group_levels.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/heatmap_group_of.html</loc></url>
@@ -155,6 +166,8 @@
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/init_db_schema.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/is_station_duplicate.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/is_valid_extracted_png.html</loc></url>
+<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/italic_from_name.html</loc></url>
+<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/join_words.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/justify_row.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/launch_app.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/list_h5_files.html</loc></url>
@@ -169,6 +182,7 @@
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/load_chl_statistics.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/load_global_class_list_db.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/load_metadata_cache.html</loc></url>
+<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/load_microscopy_samples.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/load_phyto_group_config.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/load_settings.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/load_shark_stations.html</loc></url>
@@ -177,6 +191,7 @@
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/load_taxa_lookup.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/load_writing_guide.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/match_bins_to_stations.html</loc></url>
+<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/match_microscopy_station.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/match_pending_echo.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/match_stats_station.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/merge_custom_taxa.html</loc></url>
@@ -185,6 +200,12 @@
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/metadata-cache.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/metadata_cache_path.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/metadata_time_col.html</loc></url>
+<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/microscopy_group_overview.html</loc></url>
+<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/microscopy_intro_text.html</loc></url>
+<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/microscopy_output_rules.html</loc></url>
+<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/microscopy_sample_label.html</loc></url>
+<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/microscopy_status_items.html</loc></url>
+<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/microscopy_visits.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/migrate_settings.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/missing_import_columns.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/mod_ctd_server.html</loc></url>
@@ -195,6 +216,8 @@
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/mod_frontpage_ui.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/mod_gallery_server.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/mod_gallery_ui.html</loc></url>
+<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/mod_microscopy_server.html</loc></url>
+<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/mod_microscopy_ui.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/mod_report_server.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/mod_report_ui.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/mod_samples_server.html</loc></url>
@@ -216,13 +239,16 @@
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/paginate_images.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/parse_image_ids.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/parse_non_bio_classes.html</loc></url>
+<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/parse_ptbx_sample.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/parse_single_cnv.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/parse_single_cnv_all.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/phyto_group_colors.html</loc></url>
+<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/prepare_report_microscopy.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/preview_context.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/preview_from_context.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/preview_threshold.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/process_classifications.html</loc></url>
+<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/ptbx_abundance_labels.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/read_auto_classes.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/read_classifier_name.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/read_classifier_name_file.html</loc></url>
@@ -231,12 +257,15 @@
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/read_h5_classifications.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/read_lims_data.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/read_lims_data_all.html</loc></url>
+<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/read_microscopy_sample.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/read_roi_dimensions.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/read_sample_volumes.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/read_thresholds.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/read_thresholds_file.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/recompute_biovolume_data.html</loc></url>
+<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/region_coverage_note.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/replace_named.html</loc></url>
+<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/report_cruise_info.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/reset_corrections_state.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/resolve_class_list.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/resolve_classes.html</loc></url>
@@ -250,6 +279,7 @@
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/save_global_class_list_db.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/save_metadata_cache.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/save_settings.html</loc></url>
+<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/select_gap_samples.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/set_threshold_adjustment.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/split_corrections_import.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/strip_markdown.html</loc></url>

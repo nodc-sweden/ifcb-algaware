@@ -19,7 +19,8 @@ generate_station_descriptions(
   llm_provider = NULL,
   on_llm_progress = NULL,
   unclassified_fractions = NULL,
-  chl_measure = "fluorescence"
+  chl_measure = "fluorescence",
+  microscopy = NULL
 )
 ```
 
@@ -54,6 +55,11 @@ generate_station_descriptions(
 - chl_measure:
 
   Chlorophyll measurement terminology key.
+
+- microscopy:
+
+  Optional microscopy observations; visits whose `source` is
+  `"microscopy"` get the qualitative prompt.
 
 ## Value
 

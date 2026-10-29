@@ -1,6 +1,8 @@
 # Add station report sections to document
 
-Add station report sections to document
+Microscopy stations (stations without IFCB data) are merged into the
+same region and date order as the IFCB stations; their headings are
+marked "(microscopy)".
 
 ## Usage
 
@@ -14,6 +16,7 @@ add_station_sections(
   llm_provider = NULL,
   on_llm_progress = NULL,
   unclassified_fractions = NULL,
-  chl_measure = "fluorescence"
+  chl_measure = "fluorescence",
+  microscopy = NULL
 )
 ```

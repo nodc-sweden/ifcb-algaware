@@ -4,15 +4,18 @@
 \alias{read_classifier_name}
 \title{Read classifier name from an H5 classification file}
 \usage{
-read_classifier_name(h5_dir)
+read_classifier_name(h5_dir, sample_ids = NULL)
 }
 \arguments{
 \item{h5_dir}{Directory containing .h5 files.}
+
+\item{sample_ids}{Optional character vector of sample PIDs to consider.
+If NULL, considers all .h5 files in the directory.}
 }
 \value{
 Character string with the classifier name, or NULL if unavailable.
 }
 \description{
-Extracts the \code{classifier_name} attribute from the first available
-H5 file in a directory.
+Extracts the \code{classifier_name} dataset from the first H5 file in a
+directory that has one (empty files from bins without images do not).
 }

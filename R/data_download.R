@@ -56,6 +56,33 @@ resolve_classification_path <- function(path) {
   p
 }
 
+#' Local folder for H5 files copied from a classification source
+#'
+#' Each classification source (e.g. one folder per classifier version) gets
+#' its own subfolder of \code{<storage>/classified_sources}, named after the
+#' resolved source path. Copied files are never overwritten, so a shared
+#' folder would keep serving results from a previously configured source
+#' after the classification path is switched to another classifier. Without
+#' a configured source, files are read from \code{<storage>/classified}; the
+#' per-source folders live outside it because H5 files are searched
+#' recursively.
+#'
+#' @param storage Local storage directory.
+#' @param classification_path Classification source path as configured.
+#' @return Path to the local folder.
+#' @keywords internal
+classification_cache_dir <- function(storage, classification_path) {
+  if (!nzchar(trimws(classification_path))) {
+    return(file.path(storage, "classified"))
+  }
+
+  key <- gsub("[^A-Za-z0-9._-]+", "_",
+              resolve_classification_path(classification_path))
+  # Keep the most specific end of very long paths
+  key <- substring(key, max(1, nchar(key) - 99))
+  file.path(storage, "classified_sources", gsub("^[_.]+", "", key))
+}
+
 #' Fetch metadata from the IFCB Dashboard
 #'
 #' Wraps \code{iRfcb::ifcb_download_dashboard_metadata()} and extracts
@@ -518,6 +545,17 @@ read_auto_classes <- function(h5, output_scores) {
   rep(NA_character_, ncol(output_scores))
 }
 
+#' Check whether an H5 classification file holds no datasets
+#'
+#' ifcb-classify writes such a file for a bin without any images.
+#'
+#' @param h5 An open \code{hdf5r::H5File}.
+#' @return Logical scalar.
+#' @keywords internal
+h5_is_empty <- function(h5) {
+  nrow(h5$ls()) == 0
+}
+
 #' Read classifications from H5 files
 #'
 #' Reads thresholded class assignments from H5 classification files produced
@@ -549,9 +587,13 @@ read_h5_classifications <- function(h5_dir, sample_ids = NULL) {
       h5 <- hdf5r::H5File$new(h5_path, "r")
       on.exit(h5$close_all(), add = TRUE)
 
+      # A bin without images is written as a file without datasets
+      if (h5_is_empty(h5)) return(NULL)
+
       roi_numbers <- h5[["roi_numbers"]]$read()
       class_names <- h5[["class_name"]]$read()
-      output_scores <- h5[["output_scores"]]$read()
+      # drop = FALSE keeps the classes x ROIs shape for single-ROI files
+      output_scores <- h5[["output_scores"]]$read(drop = FALSE)
       scores <- apply(output_scores, 2, max)
 
       sample_name <- sub("_class.*\\.h5$", "", basename(h5_path))
@@ -582,12 +624,14 @@ read_h5_classifications <- function(h5_dir, sample_ids = NULL) {
 #' files must carry identical thresholds (the same classifier), since the
 #' threshold adjustment feature works on one threshold per class.
 #'
+#' Empty files (bins without images) carry no thresholds and are ignored.
+#'
 #' @param h5_dir Directory containing .h5 files.
 #' @param sample_ids Optional character vector of sample PIDs to read.
 #'   If NULL, reads all .h5 files in the directory.
 #' @return A named numeric vector (class name -> trained threshold), or
-#'   \code{NULL} when there are no files, any file lacks the thresholds, or
-#'   the files disagree (with a warning in that last case).
+#'   \code{NULL} when there are no non-empty files, any of them lacks the
+#'   thresholds, or they disagree (with a warning in that last case).
 #' @export
 read_thresholds <- function(h5_dir, sample_ids = NULL) {
   h5_files <- list_h5_files(h5_dir, sample_ids)
@@ -595,6 +639,8 @@ read_thresholds <- function(h5_dir, sample_ids = NULL) {
 
   per_file <- lapply(h5_files, read_thresholds_file)
   if (any(vapply(per_file, is.null, logical(1)))) return(NULL)
+  per_file <- Filter(length, per_file)
+  if (length(per_file) == 0) return(NULL)
 
   reference <- per_file[[1]]
   same <- vapply(per_file, identical, logical(1), reference)
@@ -609,13 +655,15 @@ read_thresholds <- function(h5_dir, sample_ids = NULL) {
 #' Read the trained thresholds of a single H5 file
 #'
 #' @param h5_path Path to an H5 classification file.
-#' @return A named numeric vector, or \code{NULL} if the file cannot be read
-#'   or lacks \code{class_labels}/\code{thresholds}.
+#' @return A named numeric vector (zero-length for an empty file), or
+#'   \code{NULL} if the file cannot be read or lacks
+#'   \code{class_labels}/\code{thresholds}.
 #' @keywords internal
 read_thresholds_file <- function(h5_path) {
   tryCatch({
     h5 <- hdf5r::H5File$new(h5_path, "r")
     on.exit(h5$close_all(), add = TRUE)
+    if (h5_is_empty(h5)) return(stats::setNames(numeric(0), character(0)))
     if (!h5$exists("class_labels") || !h5$exists("thresholds")) return(NULL)
     class_labels <- h5[["class_labels"]]$read()
     thresholds <- as.numeric(h5[["thresholds"]]$read())
@@ -626,19 +674,31 @@ read_thresholds_file <- function(h5_path) {
 
 #' Read classifier name from an H5 classification file
 #'
-#' Extracts the \code{classifier_name} attribute from the first available
-#' H5 file in a directory.
+#' Extracts the \code{classifier_name} dataset from the first H5 file in a
+#' directory that has one (empty files from bins without images do not).
 #'
 #' @param h5_dir Directory containing .h5 files.
+#' @param sample_ids Optional character vector of sample PIDs to consider.
+#'   If NULL, considers all .h5 files in the directory.
 #' @return Character string with the classifier name, or NULL if unavailable.
 #' @export
-read_classifier_name <- function(h5_dir) {
-  h5_files <- list.files(h5_dir, pattern = "_class.*\\.h5$",
-                         full.names = TRUE, recursive = TRUE)
-  if (length(h5_files) == 0) return(NULL)
+read_classifier_name <- function(h5_dir, sample_ids = NULL) {
+  for (h5_path in list_h5_files(h5_dir, sample_ids)) {
+    name <- read_classifier_name_file(h5_path)
+    if (!is.null(name)) return(name)
+  }
+  NULL
+}
 
+#' Read the classifier name of a single H5 file
+#'
+#' @param h5_path Path to an H5 classification file.
+#' @return Character string, or NULL if the file cannot be read or lacks
+#'   \code{classifier_name}.
+#' @keywords internal
+read_classifier_name_file <- function(h5_path) {
   tryCatch({
-    h5 <- hdf5r::H5File$new(h5_files[1], "r")
+    h5 <- hdf5r::H5File$new(h5_path, "r")
     on.exit(h5$close_all(), add = TRUE)
     if (h5$exists("classifier_name")) {
       h5[["classifier_name"]]$read()

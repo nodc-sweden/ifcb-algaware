@@ -175,3 +175,51 @@ test_that("load_settings handles corrupt JSON gracefully", {
   expect_type(result, "list")
   expect_equal(result$dashboard_url, "")
 })
+
+test_that("default non-biological classes cover the V7 classifier classes", {
+  defaults <- parse_non_bio_classes(
+    algaware:::default_settings()$non_biological_classes
+  )
+  expect_true(all(c("Mixed", "Faecal_pellet", "mixed") %in% defaults))
+})
+
+test_that("load_settings adds V7 non-biological classes to older settings", {
+  settings_path <- file.path(withr::local_tempdir(), "settings.json")
+  jsonlite::write_json(
+    list(non_biological_classes = "detritus,Debris,Air_bubbles,Beads,mix"),
+    settings_path, auto_unbox = TRUE
+  )
+  mockery::stub(load_settings, "get_settings_path", settings_path)
+
+  result <- load_settings()
+
+  expect_equal(result$non_biological_classes,
+               "detritus,Debris,Air_bubbles,Beads,mix,Mixed,Faecal_pellet")
+  expect_equal(result$settings_version,
+               algaware:::default_settings()$settings_version)
+})
+
+test_that("load_settings does not duplicate classes already listed", {
+  settings_path <- file.path(withr::local_tempdir(), "settings.json")
+  jsonlite::write_json(
+    list(non_biological_classes = "Debris, Mixed"),
+    settings_path, auto_unbox = TRUE
+  )
+  mockery::stub(load_settings, "get_settings_path", settings_path)
+
+  expect_equal(load_settings()$non_biological_classes,
+               "Debris, Mixed,Faecal_pellet")
+})
+
+test_that("load_settings keeps current settings as saved", {
+  # Once migrated, a user who removed a class must not get it back
+  settings_path <- file.path(withr::local_tempdir(), "settings.json")
+  jsonlite::write_json(
+    list(non_biological_classes = "Debris",
+         settings_version = algaware:::default_settings()$settings_version),
+    settings_path, auto_unbox = TRUE
+  )
+  mockery::stub(load_settings, "get_settings_path", settings_path)
+
+  expect_equal(load_settings()$non_biological_classes, "Debris")
+})

@@ -10,8 +10,9 @@ read_thresholds_file(h5_path)
 \item{h5_path}{Path to an H5 classification file.}
 }
 \value{
-A named numeric vector, or \code{NULL} if the file cannot be read
-or lacks \code{class_labels}/\code{thresholds}.
+A named numeric vector (zero-length for an empty file), or
+\code{NULL} if the file cannot be read or lacks
+\code{class_labels}/\code{thresholds}.
 }
 \description{
 Read the trained thresholds of a single H5 file

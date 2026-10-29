@@ -36,7 +36,8 @@ generate_report(
   chl_stats = NULL,
   chl_map_source = "ferrybox",
   phyto_groups = NULL,
-  threshold_adjustments = NULL
+  threshold_adjustments = NULL,
+  microscopy = NULL
 )
 }
 \arguments{
@@ -135,6 +136,11 @@ the assignments are computed on demand via SHARK4R when available.}
 \item{threshold_adjustments}{Optional data.frame from
 \code{threshold_summary()} with the class thresholds adjusted during
 validation; listed in the report's summary table.}
+
+\item{microscopy}{Optional enriched microscopy observations for stations
+without IFCB data (from \code{select_gap_samples()} and
+\code{enrich_microscopy_taxa()}). They get station sections and appear
+in the summaries, introduction and Table 1, but never in the figures.}
 }
 \value{
 Invisible path to the created document.

@@ -152,6 +152,14 @@ reference:
       - translate_summary_to_swedish
       - generate_station_description
 
+  - title: Microscopy Samples
+    desc: Qualitative Plankton Toolbox samples for stations without IFCB data
+    contents:
+      - read_microscopy_sample
+      - load_microscopy_samples
+      - select_gap_samples
+      - enrich_microscopy_taxa
+
   - title: Database
     desc: SQLite database operations
     contents:

@@ -113,6 +113,10 @@ add_stacked_bar_section <- function(doc, wide_data, taxa_lookup, title,
 }
 
 #' Add station report sections to document
+#'
+#' Microscopy stations (stations without IFCB data) are merged into the same
+#' region and date order as the IFCB stations; their headings are marked
+#' "(microscopy)".
 #' @keywords internal
 add_station_sections <- function(doc, station_summary,
                                  taxa_lookup = NULL, use_llm = FALSE,
@@ -120,12 +124,20 @@ add_station_sections <- function(doc, station_summary,
                                  llm_provider = NULL,
                                  on_llm_progress = NULL,
                                  unclassified_fractions = NULL,
-                                 chl_measure = "fluorescence") {
+                                 chl_measure = "fluorescence",
+                                 microscopy = NULL) {
   doc <- officer::body_add_break(doc)
   doc <- officer::body_add_par(doc, "Station reports", style = "heading 2")
 
-  visits <- unique(station_summary[, c("STATION_NAME", "STATION_NAME_SHORT",
-                                       "COAST", "visit_date", "visit_id")])
+  visit_cols <- c("STATION_NAME", "STATION_NAME_SHORT", "COAST",
+                  "visit_date", "visit_id")
+  visits <- unique(station_summary[, visit_cols])
+  visits$source <- rep("ifcb", nrow(visits))
+  if (!is.null(microscopy) && nrow(microscopy) > 0) {
+    mic_visits <- unique(microscopy[, visit_cols])
+    mic_visits$source <- "microscopy"
+    visits <- rbind(visits, mic_visits)
+  }
   # Order West Coast ("WEST") before Baltic Sea ("EAST") to match the summary
   # and the other report sections; default alphabetical order would put EAST
   # first.
@@ -144,7 +156,8 @@ add_station_sections <- function(doc, station_summary,
     llm_provider = llm_provider,
     on_llm_progress = on_llm_progress,
     unclassified_fractions = unclassified_fractions,
-    chl_measure = chl_measure
+    chl_measure = chl_measure,
+    microscopy = microscopy
   )
 
   # Track species binomials already written in full so that repeats across
@@ -161,7 +174,10 @@ add_station_sections <- function(doc, station_summary,
     }
 
     station_header <- paste0(visits$STATION_NAME_SHORT[i], " - ",
-                             visits$visit_date[i])
+                             visits$visit_date[i],
+                             if (visits$source[i] == "microscopy") {
+                               " (microscopy)"
+                             })
     doc <- officer::body_add_par(doc, station_header, style = "heading 3")
 
     abbreviated <- abbreviate_repeated_binomials(descriptions[i], taxa_lookup,
@@ -192,6 +208,8 @@ add_station_sections <- function(doc, station_summary,
 #'   \code{add_station_sections()}.
 #' @param unclassified_fractions Named list of unclassified percentages.
 #' @param chl_measure Chlorophyll measurement terminology key.
+#' @param microscopy Optional microscopy observations; visits whose
+#'   \code{source} is \code{"microscopy"} get the qualitative prompt.
 #' @return Character vector of descriptions, one per visit row.
 #' @keywords internal
 generate_station_descriptions <- function(visits, station_summary,
@@ -200,14 +218,26 @@ generate_station_descriptions <- function(visits, station_summary,
                                           llm_provider = NULL,
                                           on_llm_progress = NULL,
                                           unclassified_fractions = NULL,
-                                          chl_measure = "fluorescence") {
+                                          chl_measure = "fluorescence",
+                                          microscopy = NULL) {
   placeholder <- "[Write station description here.]"
   failed <- "[Write station description here. (LLM generation failed)]"
   if (!use_llm || nrow(visits) == 0) {
     return(rep(placeholder, nrow(visits)))
   }
 
+  source <- if ("source" %in% names(visits)) {
+    visits$source
+  } else {
+    rep("ifcb", nrow(visits))
+  }
   prompts <- lapply(seq_len(nrow(visits)), function(i) {
+    if (source[i] == "microscopy") {
+      return(build_microscopy_station_prompts(
+        microscopy[microscopy$visit_id == visits$visit_id[i], ],
+        microscopy, chl_measure = chl_measure
+      ))
+    }
     station_data <- station_summary[
       station_summary$visit_id == visits$visit_id[i], ]
     build_station_description_prompts(

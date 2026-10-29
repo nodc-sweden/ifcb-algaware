@@ -24,7 +24,7 @@ The station descriptions are organized under regional headings:
 - Do NOT use bullet points or numbered lists. Write flowing prose.
 
 ### Summaries (Sammanfattning / Abstract)
-- Write one paragraph per region (West Coast and Baltic Sea), clearly separated.
+- Write one paragraph per region (West Coast and Baltic Sea), clearly separated. If the cruise only has stations in one region, write only that region's paragraph and do not describe the region without data.
 - Cover all sea areas visited during the cruise.
 - Mention dominant taxonomic groups based on the group information provided in the prompt data.
 - Highlight notable or unusual findings.
@@ -61,6 +61,14 @@ Each station description follows a consistent pattern:
 6. **Chlorophyll and biovolume comparison**: If chlorophyll fluorescence data is available, compare with the IFCB biovolume data and note if they are consistent or divergent.
    - Example: "Chlorophyll fluorescence was elevated compared to other stations, consistent with the high diatom biovolume observed by the IFCB."
    - Example: "Despite relatively low chlorophyll fluorescence, the IFCB detected moderate biovolume dominated by large-celled diatoms."
+
+### Microscopy stations
+- Stations without IFCB data may instead have been analysed by qualitative light microscopy (Plankton Toolbox). Their data are abundance classes, not biovolume: 1 = observed, 2 = several cells, 3 = 1-10%, 4 = 10-50%, 5 = 50-100%.
+- Describe these stations qualitatively from the classes: 5 = dominant, 4 = very common, 3 = common, 1-2 = present in low numbers. Base diversity on the number of taxa observed.
+- Never state biovolume, carbon, cell concentrations or warning levels for them, and never compare their abundances quantitatively with the IFCB stations.
+- Exception to "no methodology descriptions": state in one short clause that the station was analysed by light microscopy (e.g. "In the light microscopy sample, ...").
+- Heterotrophic taxa (e.g. Protoperidinium) are seen by microscopy; they are not underrepresented as they are in IFCB data.
+- Example: "In the light microscopy sample, the cyanobacterium Dolichospermum planctonicum dominated, and Pseudanabaena acicularis was very common. Diatoms were present with several taxa in low numbers."
 
 ### Grouping stations
 - When two nearby stations show very similar conditions, they may be described together.

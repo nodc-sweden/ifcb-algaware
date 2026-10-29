@@ -21,6 +21,7 @@ mod_report_ui <- function(id) {
       )
     ),
     shiny::uiOutput(ns("llm_status")),
+    mod_microscopy_ui(ns("microscopy")),
     bslib::tooltip(
       bslib::input_task_button(
         ns("make_report"), "Make Report",
@@ -44,16 +45,26 @@ mod_report_ui <- function(id) {
 #' @param ctd_loaded Logical, whether CTD data has been loaded.
 #' @param baltic_mosaic Front-page Baltic mosaic or \code{NULL}.
 #' @param westcoast_mosaic Front-page West Coast mosaic or \code{NULL}.
+#' @param microscopy_stations Names of the stations filled in with
+#'   microscopy samples; listed as an extra item when there are any.
 #' @return List of items with \code{ok} (logical) and \code{label} (character).
 #' @keywords internal
 build_readiness_items <- function(data_loaded, ctd_loaded,
-                                  baltic_mosaic, westcoast_mosaic) {
-  list(
+                                  baltic_mosaic, westcoast_mosaic,
+                                  microscopy_stations = character(0)) {
+  items <- list(
     list(ok = isTRUE(data_loaded),       label = "IFCB data loaded"),
     list(ok = isTRUE(ctd_loaded),        label = "CTD data (load in CTD tab)"),
     list(ok = !is.null(baltic_mosaic),   label = "Baltic mosaic (Images tab)"),
     list(ok = !is.null(westcoast_mosaic),label = "West Coast mosaic (Images tab)")
   )
+  if (length(microscopy_stations) > 0) {
+    items <- c(items, list(list(
+      ok = TRUE,
+      label = paste0("Microscopy: ", paste(microscopy_stations, collapse = ", "))
+    )))
+  }
+  items
 }
 
 #' Report Module Server
@@ -75,15 +86,25 @@ mod_report_server <- function(id, rv, config, phyto_groups_reactive = NULL) {
 
     # Remove this session's generated files when it ends; tempdir() lives as
     # long as the R process, not the session.
+    mod_microscopy_server("microscopy", rv, config)
+
     session$onSessionEnded(function() {
       unlink(c(shiny::isolate(report_path()),
                shiny::isolate(corrections_path())))
     })
 
     output$report_readiness <- shiny::renderUI({
+      microscopy_stations <- if (!is.null(rv$microscopy_loaded)) {
+        status <- select_gap_samples(rv$microscopy_loaded,
+                                     rv$station_summary)$status
+        status$station[status$used]
+      } else {
+        character(0)
+      }
       items <- build_readiness_items(
         rv$data_loaded, rv$ctd_loaded,
-        rv$frontpage_baltic_mosaic, rv$frontpage_westcoast_mosaic
+        rv$frontpage_baltic_mosaic, rv$frontpage_westcoast_mosaic,
+        microscopy_stations = microscopy_stations
       )
       shiny::tagList(
         shiny::tags$p(class = "small fw-semibold mb-1", "Report contents:"),
@@ -208,6 +229,20 @@ mod_report_server <- function(id, rv, config, phyto_groups_reactive = NULL) {
           baltic_wide <- create_wide_summary(station_summary, "EAST")
           westcoast_wide <- create_wide_summary(station_summary, "WEST")
 
+          # Microscopy samples fill stations without (corrected) IFCB data;
+          # the taxon lookups (WoRMS, HAB list) need the network.
+          microscopy <- NULL
+          if (!is.null(rv$microscopy_loaded)) {
+            shiny::incProgress(0, detail = "Looking up microscopy taxa...")
+            prepared <- prepare_report_microscopy(
+              rv$microscopy_loaded, station_summary, taxa_lookup
+            )
+            microscopy <- prepared$obs
+            for (note in prepared$notes) {
+              shiny::showNotification(note, type = "warning", duration = 15)
+            }
+          }
+
           # Create per-class mosaics (optional, off by default)
           baltic_mosaics <- list()
           westcoast_mosaics <- list()
@@ -317,7 +352,9 @@ mod_report_server <- function(id, rv, config, phyto_groups_reactive = NULL) {
             baltic_wide, westcoast_wide,
             baltic_mosaics, westcoast_mosaics,
             taxa_lookup = taxa_lookup,
-            cruise_info = rv$cruise_info,
+            cruise_info = report_cruise_info(
+              rv$cruise_info, rv$matched_metadata_all$sample_time, microscopy
+            ),
             classifier_name = rv$classifier_name,
             threshold_adjustments = current_threshold_table(rv),
             use_llm = use_llm,
@@ -345,7 +382,8 @@ mod_report_server <- function(id, rv, config, phyto_groups_reactive = NULL) {
               tryCatch(phyto_groups_reactive(), error = function(e) NULL)
             } else {
               NULL
-            }
+            },
+            microscopy = microscopy
           )
 
           report_path(out_file)

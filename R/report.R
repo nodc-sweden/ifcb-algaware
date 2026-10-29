@@ -69,6 +69,10 @@
 #' @param threshold_adjustments Optional data.frame from
 #'   \code{threshold_summary()} with the class thresholds adjusted during
 #'   validation; listed in the report's summary table.
+#' @param microscopy Optional enriched microscopy observations for stations
+#'   without IFCB data (from \code{select_gap_samples()} and
+#'   \code{enrich_microscopy_taxa()}). They get station sections and appear
+#'   in the summaries, introduction and Table 1, but never in the figures.
 #' @return Invisible path to the created document.
 #' @export
 generate_report <- function(output_path, station_summary,
@@ -100,7 +104,8 @@ generate_report <- function(output_path, station_summary,
                             chl_stats = NULL,
                             chl_map_source = "ferrybox",
                             phyto_groups = NULL,
-                            threshold_adjustments = NULL) {
+                            threshold_adjustments = NULL,
+                            microscopy = NULL) {
   template <- system.file("templates", "report_template.docx",
                           package = "algaware")
   if (!nzchar(template)) {
@@ -128,6 +133,22 @@ generate_report <- function(output_path, station_summary,
       by.x = "STATION_NAME_SHORT", by.y = "station_short",
       all.x = TRUE
     )
+  }
+
+  # Microscopy stations take chlorophyll from the same CTD/LIMS source (the
+  # FerryBox values are only computed for IFCB-matched stations), and their
+  # taxa join a report-only copy of the lookup so italics, HAB asterisks and
+  # binomial abbreviation also work for them.
+  if (!is.null(microscopy) && nrow(microscopy) > 0) {
+    microscopy$chl_mean <- if (!is.null(chl_avg) && nrow(chl_avg) > 0) {
+      chl_avg$chl_mean[match(microscopy$STATION_NAME_SHORT,
+                             chl_avg$station_short)]
+    } else {
+      NA_real_
+    }
+    taxa_lookup <- build_report_taxa_lookup(taxa_lookup, microscopy)
+  } else {
+    microscopy <- NULL
   }
 
   cleanup <- new.env(parent = emptyenv())
@@ -211,13 +232,14 @@ generate_report <- function(output_path, station_summary,
       if (nzchar(annotator)) paste0(annotator, ", SMHI") else "SMHI",
       ".",
       if (use_llm) " Report text was drafted with the assistance of a large language model." else NULL
-    ), collapse = "")
+    ), collapse = ""),
+    microscopy_intro_text(microscopy)
   )
   # Only promise the asterisk legend when a HAB-flagged taxon actually
   # appears in this report. Checking the whole lookup (130 of 180 bundled
   # rows are HAB-flagged) printed the legend on every report, including
   # cruises where no asterisk appears anywhere in the document.
-  report_taxa <- unique(station_summary$name)
+  report_taxa <- unique(c(station_summary$name, microscopy$name))
   has_hab <- !is.null(taxa_lookup) &&
     "HAB" %in% names(taxa_lookup) &&
     any(taxa_lookup$HAB[taxa_lookup$name %in% report_taxa] == TRUE,
@@ -243,7 +265,8 @@ generate_report <- function(output_path, station_summary,
 
   doc <- officer::body_add_break(doc)
 
-  n_stations <- length(unique(station_summary$visit_id))
+  n_stations <- length(unique(c(station_summary$visit_id,
+                                 microscopy$visit_id)))
   # Parallel providers perform all station descriptions as one progress step
   llm_total <- if (llm_supports_parallel(llm_provider)) 3L else 2L + n_stations
   llm_step <- 0L
@@ -262,7 +285,8 @@ generate_report <- function(output_path, station_summary,
                                phyto_groups = phyto_groups,
                                provider = llm_provider,
                                unclassified_fractions = unclassified_fractions,
-                               chl_measure = chl_measure),
+                               chl_measure = chl_measure,
+                               microscopy = microscopy),
       error = function(e) {
         warning("LLM English summary failed: ", e$message, call. = FALSE)
         "[Write English summary here. (LLM generation failed)]"
@@ -299,7 +323,8 @@ generate_report <- function(output_path, station_summary,
   summary_rows <- build_summary_rows(
     image_counts = image_counts, n_station_samples = n_station_samples,
     total_bio_images = total_bio_images, classifier_name = classifier_name,
-    threshold_adjustments = threshold_adjustments, llm_model = llm_model
+    threshold_adjustments = threshold_adjustments, llm_model = llm_model,
+    microscopy = microscopy
   )
   if (nrow(summary_rows) > 0) {
     month_year <- extract_month_year(cruise_info)
@@ -442,7 +467,8 @@ generate_report <- function(output_path, station_summary,
                                llm_provider = llm_provider,
                                on_llm_progress = report_progress,
                                unclassified_fractions = unclassified_fractions,
-                               chl_measure = chl_measure)
+                               chl_measure = chl_measure,
+                               microscopy = microscopy)
 
   ctd_full_for_report <- if (!is.null(ctd_data_full) && nrow(ctd_data_full) > 0) {
     ctd_data_full
@@ -507,13 +533,15 @@ generate_report <- function(output_path, station_summary,
 #' @param threshold_adjustments Optional data.frame from
 #'   \code{threshold_summary()}.
 #' @param llm_model Optional LLM model name.
+#' @param microscopy Optional microscopy observations used in the report.
 #' @return A data.frame with \code{Parameter} and \code{Value} columns.
 #' @keywords internal
 build_summary_rows <- function(image_counts = NULL, n_station_samples = NULL,
                                total_bio_images = NULL,
                                classifier_name = NULL,
                                threshold_adjustments = NULL,
-                               llm_model = NULL) {
+                               llm_model = NULL,
+                               microscopy = NULL) {
   has_text <- function(x) !is.null(x) && nzchar(x)
   rows <- list(
     if (!is.null(image_counts) && nrow(image_counts) > 0) {
@@ -535,6 +563,10 @@ build_summary_rows <- function(image_counts = NULL, n_station_samples = NULL,
     },
     if (has_text(llm_model)) {
       c("LLM model (text generation)", llm_model)
+    },
+    if (has_text(microscopy_sample_label(microscopy))) {
+      c("Light microscopy samples (qualitative)",
+        microscopy_sample_label(microscopy))
     }
   )
   rows <- Filter(Negate(is.null), rows)

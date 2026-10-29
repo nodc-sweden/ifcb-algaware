@@ -401,12 +401,15 @@ format_station_data_for_prompt <- function(station_data, taxa_lookup = NULL,
 #' @param chl_measure How the chlorophyll value is measured,
 #'   \code{"fluorescence"} (FerryBox/CTD) or \code{"concentration"} (LIMS
 #'   bottle/hose filter samples). Controls how the value is labelled.
+#' @param microscopy Optional enriched microscopy observations for stations
+#'   without IFCB data; appended as a separate qualitative block.
 #' @return Character string with cruise-level overview.
 #' @keywords internal
 format_cruise_summary_for_prompt <- function(station_summary, taxa_lookup = NULL,
                                              unclassified_fractions = NULL,
                                              phyto_groups = NULL,
-                                             chl_measure = "fluorescence") {
+                                             chl_measure = "fluorescence",
+                                             microscopy = NULL) {
   station_summary <- drop_unclassified_for_text(station_summary)
   station_summary$.row_id_tmp <- seq_len(nrow(station_summary))
   station_summary <- attach_text_groups(station_summary, phyto_groups)
@@ -582,5 +585,6 @@ format_cruise_summary_for_prompt <- function(station_summary, taxa_lookup = NULL
     )
   }
 
-  paste0(paste(station_lines, collapse = "\n"), warning_block)
+  paste0(paste(station_lines, collapse = "\n"), warning_block,
+         format_microscopy_summary_block(microscopy, chl_measure))
 }

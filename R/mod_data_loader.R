@@ -625,6 +625,8 @@ mod_data_loader_server <- function(id, config, rv) {
           reset_corrections_state(rv)
           rv$frontpage_baltic_mosaic <- NULL
           rv$frontpage_westcoast_mosaic <- NULL
+          # Microscopy samples belong to the previous cruise
+          rv$microscopy_loaded <- NULL
 
           # Build descriptive cruise info from sample dates
           rv$cruise_info <- build_cruise_info(matched$sample_time)

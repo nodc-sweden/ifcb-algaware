@@ -9,6 +9,7 @@
   `claude-opus-5-5`, override with `ANTHROPIC_MODEL`). Like OpenAI,
   Claude generates the station descriptions in parallel. When several
   keys are set, the provider is selectable in the Report tab.
+
 - The Validate sidebar has a new “Class threshold” slider for adjusting
   the classifier threshold of the class shown in the gallery. Raising it
   moves images scoring below the new threshold to `"unclassified"`;
@@ -20,6 +21,7 @@
   Adjusted classes are listed with a reset link each, so a class emptied
   by a high threshold can still be restored. The slider is disabled when
   the H5 files lack thresholds or come from different classifiers.
+
 - Threshold adjustments are saved in the corrections CSV (“Download
   corrections”, the report’s corrections export and the autosave) as
   extra rows marked by a new `record_type` column (`"correction"` or
@@ -29,15 +31,48 @@
   a different classifier are skipped with a note. Files from earlier
   versions import as before, with all thresholds at their trained
   values.
+
 - Adjusted class thresholds are listed in the report’s data summary
   table, next to the classification model.
+
 - The gallery has a “Sort by score” toggle that shows the lowest
   classifier scores first, to review borderline images.
+
 - [`read_h5_classifications()`](https://nodc-sweden.github.io/ifcb-algaware/reference/read_h5_classifications.md)
   now also returns `class_auto`, the top-scoring class before
   thresholding, and the new
   [`read_thresholds()`](https://nodc-sweden.github.io/ifcb-algaware/reference/read_thresholds.md)
   reads the trained per-class thresholds.
+
+- Support for the V7 classifier (223 classes): the taxa lookup gains the
+  41 V7 classes it lacked, including renamed V6 classes (e.g.
+  `Amphidinium_Katodinium`, `Fragilaria_spp`) and new taxa such as the
+  potentially harmful *Dinophysis caudata*. Names, AphiaIDs, groups and
+  the diatom carbon formula now resolve offline for every V7 class. Rows
+  for classes no longer in V7 are kept for older classifications.
+
+- `Mixed` (V7’s spelling of `mixed`) and `Faecal_pellet` are now
+  non-biological by default. Saved settings from earlier versions get
+  both added once on the next start; remove them in Settings to opt out.
+
+- H5 files copied from the classification path are now cached per source
+  folder (`<local storage>/classified_sources/<source path>`), so
+  switching the classification path to another classifier’s output
+  (e.g. from a `V6` to a `V7` folder) no longer reuses files copied from
+  the previous one. `<local storage>/classified/` is now only read when
+  no classification path is set; files earlier versions copied there are
+  otherwise unused and can be deleted.
+
+### Bug fixes
+
+- H5 files of bins with a single image are read correctly; they were
+  skipped with a “dim(X) must have a positive length” warning.
+- Empty H5 files, written by ifcb-classify for bins without images, are
+  skipped quietly and no longer disable threshold adjustment for the
+  whole cruise.
+- The classification model shown in the report is read from the loaded
+  cruise’s own H5 files, skipping files without a classifier name,
+  instead of from the first file in the local folder.
 
 ## algaware 0.4.0
 

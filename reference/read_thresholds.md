@@ -24,5 +24,9 @@ read_thresholds(h5_dir, sample_ids = NULL)
 ## Value
 
 A named numeric vector (class name -\> trained threshold), or `NULL`
-when there are no files, any file lacks the thresholds, or the files
-disagree (with a warning in that last case).
+when there are no non-empty files, any of them lacks the thresholds, or
+they disagree (with a warning in that last case).
+
+## Details
+
+Empty files (bins without images) carry no thresholds and are ignored.

@@ -16,5 +16,5 @@ read_thresholds_file(h5_path)
 
 ## Value
 
-A named numeric vector, or `NULL` if the file cannot be read or lacks
-`class_labels`/`thresholds`.
+A named numeric vector (zero-length for an empty file), or `NULL` if the
+file cannot be read or lacks `class_labels`/`thresholds`.

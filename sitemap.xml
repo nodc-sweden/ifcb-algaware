@@ -20,6 +20,7 @@
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/add_heatmap_section.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/add_mosaic_overview.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/add_mosaic_section.html</loc></url>
+<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/add_non_bio_classes.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/add_plot_to_doc.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/add_report_banner.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/add_stacked_bar_section.html</loc></url>
@@ -60,6 +61,7 @@
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/call_openai.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/chl_measure_from_source.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/chl_measure_terms.html</loc></url>
+<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/classification_cache_dir.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/clear_metadata_cache.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/coerce_like.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/collect_ferrybox_data.html</loc></url>
@@ -142,6 +144,7 @@
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/get_settings_path.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/get_taxon_rois.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/get_top_taxa.html</loc></url>
+<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/h5_is_empty.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/heatmap_group_facets.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/heatmap_group_levels.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/heatmap_group_of.html</loc></url>
@@ -182,6 +185,7 @@
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/metadata-cache.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/metadata_cache_path.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/metadata_time_col.html</loc></url>
+<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/migrate_settings.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/missing_import_columns.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/mod_ctd_server.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/mod_ctd_ui.html</loc></url>
@@ -221,6 +225,7 @@
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/process_classifications.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/read_auto_classes.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/read_classifier_name.html</loc></url>
+<url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/read_classifier_name_file.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/read_cnv_folder.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/read_cnv_folder_all.html</loc></url>
 <url><loc>https://nodc-sweden.github.io/ifcb-algaware/reference/read_h5_classifications.html</loc></url>

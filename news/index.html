@@ -35,7 +35,7 @@ footer {
 
     <a class="navbar-brand me-2" href="../index.html">algaware</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -75,9 +75,9 @@ footer {
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="development version" id="algaware-development-version">algaware (development version)<a class="anchor" aria-label="anchor" href="#algaware-development-version"></a></h2>
+<h2 class="pkg-version" data-toc-text="0.5.0" id="algaware-050">algaware 0.5.0<a class="anchor" aria-label="anchor" href="#algaware-050"></a></h2>
 <div class="section level3">
-<h3 id="new-features-development-version">New features<a class="anchor" aria-label="anchor" href="#new-features-development-version"></a></h3>
+<h3 id="new-features-0-5-0">New features<a class="anchor" aria-label="anchor" href="#new-features-0-5-0"></a></h3>
 <ul><li>Anthropic Claude is available as a third LLM provider for AI-generated report text. Set <code>ANTHROPIC_API_KEY</code> to enable it (default model <code>claude-opus-5-5</code>, override with <code>ANTHROPIC_MODEL</code>). Like OpenAI, Claude generates the station descriptions in parallel. When several keys are set, the provider is selectable in the Report tab.</li>
 <li>The Validate sidebar has a new “Class threshold” slider for adjusting the classifier threshold of the class shown in the gallery. Raising it moves images scoring below the new threshold to <code>"unclassified"</code>; lowering it returns unclassified images whose top-scoring class it is. A live preview counts the images that would move and dims them in the gallery before you click “Apply”. Thresholds apply per class across all loaded samples, the trained thresholds are read from the H5 classification files, and manual corrections always take precedence. Adjusted classes are listed with a reset link each, so a class emptied by a high threshold can still be restored. The slider is disabled when the H5 files lack thresholds or come from different classifiers.</li>
 <li>Threshold adjustments are saved in the corrections CSV (“Download corrections”, the report’s corrections export and the autosave) as extra rows marked by a new <code>record_type</code> column (<code>"correction"</code> or <code>"threshold"</code>), with the trained and applied threshold and the number of images moved. “Import corrections” restores them together with the corrections, replacing the session’s adjustments; thresholds saved for a different classifier are skipped with a note. Files from earlier versions import as before, with all thresholds at their trained values.</li>
@@ -88,14 +88,14 @@ footer {
 <li>Stations the IFCB did not sample, such as a whole coast, can be filled in from qualitative light microscopy samples. Upload the Plankton Toolbox <code>.xlsx</code> exports under “Microscopy samples” in the Report panel; each file is listed as used or skipped with the reason (IFCB data for the station takes precedence; unknown stations, samples dated more than 7 days outside the cruise and duplicates are skipped). Used samples get their own station section marked “(microscopy)”, are covered by the summaries, and are named in the introduction and Table 1, but are left out of every figure. The LLM describes them qualitatively from the 1-5 abundance classes and does not compare them numerically with IFCB stations. Microscopy taxa are matched against WoRMS and the IOC-UNESCO list of harmful algae, so potentially harmful taxa are marked with an asterisk. New functions: <code><a href="../reference/read_microscopy_sample.html">read_microscopy_sample()</a></code>, <code><a href="../reference/load_microscopy_samples.html">load_microscopy_samples()</a></code>, <code><a href="../reference/select_gap_samples.html">select_gap_samples()</a></code> and <code><a href="../reference/enrich_microscopy_taxa.html">enrich_microscopy_taxa()</a></code>.</li>
 </ul></div>
 <div class="section level3">
-<h3 id="bug-fixes-development-version">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-development-version"></a></h3>
+<h3 id="bug-fixes-0-5-0">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-5-0"></a></h3>
 <ul><li><p>For a cruise with stations on only one coast, the AI-generated summary now covers only that coast. The prompt previously asked for one paragraph per region regardless, which could lead the LLM to describe the coast that had no data.</p></li>
 <li><p>Support for the V7 classifier (223 classes): the taxa lookup gains the 41 V7 classes it lacked, including renamed V6 classes (e.g. <code>Amphidinium_Katodinium</code>, <code>Fragilaria_spp</code>) and new taxa such as the potentially harmful <em>Dinophysis caudata</em>. Names, AphiaIDs, groups and the diatom carbon formula now resolve offline for every V7 class. Rows for classes no longer in V7 are kept for older classifications.</p></li>
 <li><p><code>Mixed</code> (V7’s spelling of <code>mixed</code>) and <code>Faecal_pellet</code> are now non-biological by default. Saved settings from earlier versions get both added once on the next start; remove them in Settings to opt out.</p></li>
 <li><p>H5 files copied from the classification path are now cached per source folder (<code>&lt;local storage&gt;/classified_sources/&lt;source path&gt;</code>), so switching the classification path to another classifier’s output (e.g. from a <code>V6</code> to a <code>V7</code> folder) no longer reuses files copied from the previous one. <code>&lt;local storage&gt;/classified/</code> is now only read when no classification path is set; files earlier versions copied there are otherwise unused and can be deleted.</p></li>
 </ul></div>
 <div class="section level3">
-<h3 id="bug-fixes-development-version-1">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-development-version-1"></a></h3>
+<h3 id="bug-fixes-0-5-0-1">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-5-0-1"></a></h3>
 <ul><li>H5 files of bins with a single image are read correctly; they were skipped with a “dim(X) must have a positive length” warning.</li>
 <li>Empty H5 files, written by ifcb-classify for bins without images, are skipped quietly and no longer disable threshold adjustment for the whole cruise.</li>
 <li>The classification model shown in the report is read from the loaded cruise’s own H5 files, skipping files without a classifier name, instead of from the first file in the local folder.</li>

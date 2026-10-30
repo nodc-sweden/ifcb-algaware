@@ -89,14 +89,12 @@ footer {
 </ul></div>
 <div class="section level3">
 <h3 id="bug-fixes-0-5-0">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-5-0"></a></h3>
-<ul><li><p>For a cruise with stations on only one coast, the AI-generated summary now covers only that coast. The prompt previously asked for one paragraph per region regardless, which could lead the LLM to describe the coast that had no data.</p></li>
-<li><p>Support for the V7 classifier (223 classes): the taxa lookup gains the 41 V7 classes it lacked, including renamed V6 classes (e.g. <code>Amphidinium_Katodinium</code>, <code>Fragilaria_spp</code>) and new taxa such as the potentially harmful <em>Dinophysis caudata</em>. Names, AphiaIDs, groups and the diatom carbon formula now resolve offline for every V7 class. Rows for classes no longer in V7 are kept for older classifications.</p></li>
-<li><p><code>Mixed</code> (V7’s spelling of <code>mixed</code>) and <code>Faecal_pellet</code> are now non-biological by default. Saved settings from earlier versions get both added once on the next start; remove them in Settings to opt out.</p></li>
-<li><p>H5 files copied from the classification path are now cached per source folder (<code>&lt;local storage&gt;/classified_sources/&lt;source path&gt;</code>), so switching the classification path to another classifier’s output (e.g. from a <code>V6</code> to a <code>V7</code> folder) no longer reuses files copied from the previous one. <code>&lt;local storage&gt;/classified/</code> is now only read when no classification path is set; files earlier versions copied there are otherwise unused and can be deleted.</p></li>
-</ul></div>
-<div class="section level3">
-<h3 id="bug-fixes-0-5-0-1">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-5-0-1"></a></h3>
-<ul><li>H5 files of bins with a single image are read correctly; they were skipped with a “dim(X) must have a positive length” warning.</li>
+<ul><li>For a cruise with stations on only one coast, the AI-generated summary now covers only that coast. The prompt previously asked for one paragraph per region regardless, which could lead the LLM to describe the coast that had no data.</li>
+<li>Support for the V7 classifier (223 classes): the taxa lookup gains the 41 V7 classes it lacked, including renamed V6 classes (e.g. <code>Amphidinium_Katodinium</code>, <code>Fragilaria_spp</code>) and new taxa such as the potentially harmful <em>Dinophysis caudata</em>. Names, AphiaIDs, groups and the diatom carbon formula now resolve offline for every V7 class. Rows for classes no longer in V7 are kept for older classifications.</li>
+<li>
+<code>Mixed</code> (V7’s spelling of <code>mixed</code>) and <code>Faecal_pellet</code> are now non-biological by default. Saved settings from earlier versions get both added once on the next start; remove them in Settings to opt out.</li>
+<li>H5 files copied from the classification path are now cached per source folder (<code>&lt;local storage&gt;/classified_sources/&lt;source path&gt;</code>), so switching the classification path to another classifier’s output (e.g. from a <code>V6</code> to a <code>V7</code> folder) no longer reuses files copied from the previous one. <code>&lt;local storage&gt;/classified/</code> is now only read when no classification path is set; files earlier versions copied there are otherwise unused and can be deleted.</li>
+<li>H5 files of bins with a single image are read correctly; they were skipped with a “dim(X) must have a positive length” warning.</li>
 <li>Empty H5 files, written by ifcb-classify for bins without images, are skipped quietly and no longer disable threshold adjustment for the whole cruise.</li>
 <li>The classification model shown in the report is read from the loaded cruise’s own H5 files, skipping files without a classifier name, instead of from the first file in the local folder.</li>
 </ul></div>

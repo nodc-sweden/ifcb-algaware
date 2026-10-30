@@ -1,4 +1,4 @@
-# algaware (development version)
+# algaware 0.5.0
 
 ## New features
 

@@ -54,7 +54,6 @@
   now covers only that coast. The prompt previously asked for one paragraph
   per region regardless, which could lead the LLM to describe the coast
   that had no data.
-
 - Support for the V7 classifier (223 classes): the taxa lookup gains the
   41 V7 classes it lacked, including renamed V6 classes (e.g.
   `Amphidinium_Katodinium`, `Fragilaria_spp`) and new taxa such as the
@@ -71,9 +70,6 @@
   `<local storage>/classified/` is now only read when no classification
   path is set; files earlier versions copied there are otherwise unused and
   can be deleted.
-
-## Bug fixes
-
 - H5 files of bins with a single image are read correctly; they were
   skipped with a "dim(X) must have a positive length" warning.
 - Empty H5 files, written by ifcb-classify for bins without images, are
